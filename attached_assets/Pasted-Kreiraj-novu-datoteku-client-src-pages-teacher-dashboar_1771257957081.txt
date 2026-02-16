@@ -1,3 +1,9 @@
+Kreiraj novu datoteku: client/src/pages/teacher-dashboard.tsx
+
+Ovo je kompletan učiteljski dashboard sa 5 glavnih sekcija.
+
+KREIRAJ NOVI FAJL client/src/pages/teacher-dashboard.tsx sa ovim sadržajem:
+
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,15 +34,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import {
-  Users,
-  BookOpen,
-  TrendingUp,
-  Award,
+import { 
+  Users, 
+  BookOpen, 
+  TrendingUp, 
+  Award, 
   AlertCircle,
   Plus,
   Mail,
-  Star,
+  Star
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 
@@ -46,34 +52,36 @@ export default function TeacherDashboard() {
   const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
-  const { data: students = [] } = useQuery<any[]>({
+  // Fetch data
+  const { data: students = [] } = useQuery({
     queryKey: ["/api/teacher/students"],
   });
 
-  const { data: inactiveStudents = [] } = useQuery<any[]>({
+  const { data: inactiveStudents = [] } = useQuery({
     queryKey: ["/api/teacher/inactive-students"],
   });
 
-  const { data: books = [] } = useQuery<any[]>({
+  const { data: books = [] } = useQuery({
     queryKey: ["/api/books"],
   });
 
+  // Računaj statistike
   const totalBooks = students.reduce((sum: number, s: any) => {
     const booksRead = s.booksRead || 0;
     return sum + booksRead;
   }, 0);
-
-  const avgBooksPerStudent =
-    students.length > 0 ? (totalBooks / students.length).toFixed(1) : 0;
-
+  
+  const avgBooksPerStudent = students.length > 0 ? (totalBooks / students.length).toFixed(1) : 0;
+  
   const topStudents = [...students]
     .sort((a: any, b: any) => (b.booksRead || 0) - (a.booksRead || 0))
     .slice(0, 5);
 
+  // Dodaj bonus bodove
   const handleAddBonus = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-
+    
     try {
       const response = await fetch("/api/teacher/bonus-points", {
         method: "POST",
@@ -94,20 +102,21 @@ export default function TeacherDashboard() {
         throw new Error();
       }
     } catch (error) {
-      toast({
-        title: "Greška",
+      toast({ 
+        title: "Greška", 
         description: "Nije moguće dodati bonus bodove",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
+  // Kreiraj sedmični izazov
   const handleCreateChallenge = async () => {
     if (!selectedBook) {
-      toast({
-        title: "Greška",
+      toast({ 
+        title: "Greška", 
         description: "Morate odabrati knjigu",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -139,10 +148,10 @@ export default function TeacherDashboard() {
         throw new Error();
       }
     } catch (error) {
-      toast({
-        title: "Greška",
+      toast({ 
+        title: "Greška", 
         description: "Nije moguće kreirati izazov",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -150,7 +159,8 @@ export default function TeacherDashboard() {
   return (
     <DashboardLayout role="teacher">
       <div className="space-y-6">
-        <Card data-testid="card-class-overview">
+        {/* Statistike razreda */}
+        <Card>
           <CardHeader>
             <CardTitle>Pregled razreda</CardTitle>
           </CardHeader>
@@ -158,28 +168,22 @@ export default function TeacherDashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <Users className="mx-auto h-8 w-8 text-primary mb-2" />
-                <div className="text-3xl font-bold" data-testid="text-total-students">
-                  {students.length}
-                </div>
+                <div className="text-3xl font-bold">{students.length}</div>
                 <div className="text-sm text-muted-foreground">Učenika</div>
               </div>
               <div className="text-center">
                 <BookOpen className="mx-auto h-8 w-8 text-primary mb-2" />
-                <div className="text-3xl font-bold" data-testid="text-total-books">
-                  {totalBooks}
-                </div>
+                <div className="text-3xl font-bold">{totalBooks}</div>
                 <div className="text-sm text-muted-foreground">Pročitanih knjiga</div>
               </div>
               <div className="text-center">
                 <TrendingUp className="mx-auto h-8 w-8 text-primary mb-2" />
-                <div className="text-3xl font-bold" data-testid="text-avg-books">
-                  {avgBooksPerStudent}
-                </div>
+                <div className="text-3xl font-bold">{avgBooksPerStudent}</div>
                 <div className="text-sm text-muted-foreground">Prosječno po učeniku</div>
               </div>
               <div className="text-center">
                 <Award className="mx-auto h-8 w-8 text-primary mb-2" />
-                <div className="text-3xl font-bold" data-testid="text-achievers">
+                <div className="text-3xl font-bold">
                   {students.filter((s: any) => (s.booksRead || 0) >= 10).length}
                 </div>
                 <div className="text-sm text-muted-foreground">Učenika sa 10+ knjiga</div>
@@ -188,8 +192,9 @@ export default function TeacherDashboard() {
           </CardContent>
         </Card>
 
+        {/* Top 5 čitača */}
         {topStudents.length > 0 && (
-          <Card data-testid="card-top-readers">
+          <Card>
             <CardHeader>
               <CardTitle>Top 5 čitača ovog mjeseca</CardTitle>
             </CardHeader>
@@ -206,7 +211,7 @@ export default function TeacherDashboard() {
                 </TableHeader>
                 <TableBody>
                   {topStudents.map((student: any, index: number) => (
-                    <TableRow key={student.id} data-testid={`row-top-student-${index}`}>
+                    <TableRow key={student.id}>
                       <TableCell>
                         <Badge variant={index === 0 ? "default" : "secondary"}>
                           #{index + 1}
@@ -219,7 +224,6 @@ export default function TeacherDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          data-testid={`button-bonus-${student.id}`}
                           onClick={() => {
                             setSelectedStudent(student);
                             setBonusDialogOpen(true);
@@ -237,8 +241,9 @@ export default function TeacherDashboard() {
           </Card>
         )}
 
+        {/* Neaktivni učenici */}
         {inactiveStudents.length > 0 && (
-          <Card data-testid="card-inactive-students">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="text-yellow-500" />
@@ -248,16 +253,16 @@ export default function TeacherDashboard() {
             <CardContent>
               <div className="space-y-2">
                 {inactiveStudents.map((student: any) => (
-                  <Alert key={student.id} data-testid={`alert-inactive-${student.id}`}>
+                  <Alert key={student.id}>
                     <AlertTitle>{student.fullName}</AlertTitle>
                     <AlertDescription className="flex items-center justify-between">
                       <span className="text-sm">
                         Posljednja aktivnost:{" "}
-                        {student.lastActivity
+                        {student.lastActivity 
                           ? new Date(student.lastActivity).toLocaleDateString()
                           : "Nikad"}
                       </span>
-                      <Button size="sm" variant="outline" data-testid={`button-contact-${student.id}`}>
+                      <Button size="sm" variant="outline">
                         <Mail className="h-4 w-4 mr-1" />
                         Kontaktiraj roditelja
                       </Button>
@@ -269,7 +274,8 @@ export default function TeacherDashboard() {
           </Card>
         )}
 
-        <Card data-testid="card-weekly-challenge">
+        {/* Sedmični izazov */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Star className="text-yellow-500" />
@@ -278,7 +284,7 @@ export default function TeacherDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Select value={selectedBook} onValueChange={setSelectedBook}>
-              <SelectTrigger data-testid="select-challenge-book">
+              <SelectTrigger>
                 <SelectValue placeholder="Odaberi knjigu sedmice" />
               </SelectTrigger>
               <SelectContent>
@@ -289,11 +295,10 @@ export default function TeacherDashboard() {
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              className="w-full"
+            <Button 
+              className="w-full" 
               onClick={handleCreateChallenge}
               disabled={!selectedBook}
-              data-testid="button-create-challenge"
             >
               Postavi kao sedmični izazov (+10 bonus bodova)
             </Button>
@@ -301,6 +306,7 @@ export default function TeacherDashboard() {
         </Card>
       </div>
 
+      {/* Dialog za bonus bodove */}
       <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -310,7 +316,7 @@ export default function TeacherDashboard() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Učenik</label>
-                <Input value={selectedStudent?.fullName || ""} disabled data-testid="input-bonus-student" />
+                <Input value={selectedStudent?.fullName || ""} disabled />
               </div>
               <div>
                 <label className="text-sm font-medium">Broj bodova</label>
@@ -321,7 +327,6 @@ export default function TeacherDashboard() {
                   max="50"
                   required
                   placeholder="npr. 10"
-                  data-testid="input-bonus-points"
                 />
               </div>
               <div>
@@ -329,11 +334,10 @@ export default function TeacherDashboard() {
                 <Textarea
                   name="reason"
                   required
-                  placeholder="npr. Izvrsna prezentacija o knjizi"
-                  data-testid="input-bonus-reason"
+                  placeholder="npr. Izvrsna prezentacija o knjigi"
                 />
               </div>
-              <Button type="submit" className="w-full" data-testid="button-submit-bonus">
+              <Button type="submit" className="w-full">
                 Dodaj bonus bodove
               </Button>
             </div>
@@ -343,3 +347,5 @@ export default function TeacherDashboard() {
     </DashboardLayout>
   );
 }
+
+Javi kad završiš kreiranje fajla. Zatim ću ti dati dodatne instrukcije za routing i finalne izmjene.
