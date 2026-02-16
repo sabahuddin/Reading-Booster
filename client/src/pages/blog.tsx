@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,42 +95,44 @@ export default function BlogPage() {
                   variants={fadeIn}
                   transition={{ duration: 0.4, delay: index * 0.08 }}
                 >
-                  <Card
-                    className="overflow-visible h-full flex flex-col"
-                    data-testid={`card-blog-${post.id}`}
-                  >
-                    {post.coverImage && (
-                      <img
-                        src={post.coverImage}
-                        alt={post.title}
-                        className="h-48 w-full rounded-t-xl object-cover"
-                      />
-                    )}
-                    <CardContent className="flex flex-1 flex-col p-6">
-                      <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          {new Date(post.publishedAt).toLocaleDateString(
-                            "hr-HR",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )}
-                        </span>
-                      </div>
-                      <h3 className="mb-2 text-lg font-semibold">
-                        {post.title}
-                      </h3>
-                      <p className="flex-1 text-sm text-muted-foreground">
-                        {post.excerpt}
-                      </p>
-                      <p className="mt-3 text-xs text-muted-foreground">
-                        {post.author}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <Link href={`/blog/${post.id}`}>
+                    <Card
+                      className="overflow-visible h-full flex flex-col cursor-pointer transition-shadow hover:shadow-md"
+                      data-testid={`card-blog-${post.id}`}
+                    >
+                      {post.coverImage && (
+                        <img
+                          src={post.coverImage}
+                          alt={post.title}
+                          className="h-48 w-full rounded-t-xl object-cover"
+                        />
+                      )}
+                      <CardContent className="flex flex-1 flex-col p-6">
+                        <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {new Date(post.publishedAt).toLocaleDateString(
+                              "hr-HR",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )}
+                          </span>
+                        </div>
+                        <h3 className="mb-2 text-lg font-semibold">
+                          {post.title}
+                        </h3>
+                        <p className="flex-1 text-sm text-muted-foreground">
+                          {post.excerpt}
+                        </p>
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          {post.author}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 </motion.div>
               ))}
             </div>

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import BlogPage from "@/pages/blog";
+import BlogDetail from "@/pages/blog-detail";
 import PricingPage from "@/pages/pricing";
 import ContactPage from "@/pages/contact";
 import AuthPage from "@/pages/auth-page";
@@ -36,6 +37,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/blog" component={BlogPage} />
+      <Route path="/blog/:id" component={BlogDetail} />
       <Route path="/cijene" component={PricingPage} />
       <Route path="/kontakt" component={ContactPage} />
       <Route path="/biblioteka" component={PublicLibrary} />
