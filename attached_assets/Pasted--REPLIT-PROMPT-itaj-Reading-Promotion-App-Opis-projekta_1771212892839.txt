@@ -1,0 +1,606 @@
+# REPLIT PROMPT — „Čitaj!” (Reading Promotion App)
+
+## Opis projekta
+
+Napravi kompletnu full-stack web aplikaciju po imenu **„Čitaj!”** — platformu za unaprjeđenje čitanja kod djece i odraslih, po uzoru na njemački portal antolin.de. Aplikacija treba biti višejezična (bosanski, njemački, engleski, arapski, turski), sa fokusom na bosanski jezik i islamski obrazovni kontekst.
+
+Korisnici čitaju knjige, zatim na aplikaciji rješavaju kvizove o pročitanom, sakupljaju bodove, učestvuju u takmičenjima i napreduju kroz nivoe. Učitelji i roditelji prate napredak. Sistem podržava pretplate, sponzore i nagrade.
+
+-----
+
+## Tech Stack
+
+- **Frontend:** React + TypeScript + Tailwind CSS
+- **Backend:** Node.js + Express (ili Next.js full-stack)
+- **Baza podataka:** PostgreSQL (Replit Database ili Supabase)
+- **Autentifikacija:** Supabase Auth ili Firebase Auth (email, Google, Apple)
+- **Plaćanja:** Stripe (pretplate i donacije)
+- **Hosting:** Replit Deployments
+- **Storage:** Supabase Storage ili Cloudflare R2 (za slike, audio fajlove)
+
+-----
+
+## Korisničke uloge
+
+### 1. Admin (superadmin)
+
+- Upravlja cijelom platformom
+- Dodaje/uklanja knjige, kvizove, kategorije
+- Upravlja sponzorima, nagradama, takmičenjima
+- Pregleda globalnu statistiku
+- Odobrava nove učitelje/organizacije
+
+### 2. Učitelj / Muallim (Teacher)
+
+- Kreira i upravlja grupama (razred, mektebska grupa)
+- Zadaje knjige i kvizove svojoj grupi
+- Prati napredak svakog učenika (bodovi, broj knjiga, postotak tačnih odgovora)
+- Šalje pohvale i poruke
+- Organizira takmičenja unutar grupe
+- Kreira vlastite kvizove za knjige
+
+### 3. Roditelj (Parent)
+
+- Prati napredak svog djeteta
+- Vidi statistiku čitanja
+- Dobija obavještenja o aktivnostima djeteta
+- Može postaviti čitalačke ciljeve
+
+### 4. Učenik / Čitatelj (Reader)
+
+- Dijete (6-18) ili odrasla osoba
+- Bira knjige, čita ih offline, rješava kvizove online
+- Sakuplja bodove, bedževe, medalje
+- Učestvuje u takmičenjima i izazovima
+- Ima personalizirani profil čitatelja
+
+### 5. Organizacija / Škola / Džemat (Organization)
+
+- Upravlja više grupa i učitelja
+- Pristup organizacijskoj statistici
+- Može organizirati takmičenja na nivou organizacije
+
+-----
+
+## Baza knjiga i kvizova
+
+### Knjiga (Book)
+
+```
+- id
+- naslov (title)
+- autor (author)
+- opis (description)
+- naslovnica (cover_image_url)
+- jezik (language): bs, de, en, ar, tr
+- kategorija: beletristika, lektira, islamska_literatura, mektebske_price, ilmihal, dova_zbirka, biografija, nauka, ostalo
+- uzrast_min, uzrast_max (npr. 6-8, 9-12, 13-16, 17+)
+- nivo_tezine: 1-5
+- broj_stranica
+- isbn (opciono)
+- audio_url (opciono - za audio knjige/čitanje naglas)
+- status: aktivan, u_pripremi, arhiviran
+- kreirao: admin ili učitelj
+- datum_kreiranja
+- tagovi
+```
+
+### Kviz (Quiz)
+
+```
+- id
+- book_id (FK)
+- naslov
+- tip: cijela_knjiga, poglavlje, razumijevanje, refleksija
+- pitanja: [
+    {
+      tekst_pitanja,
+      tip: multiple_choice | true_false | open_ended | image_choice,
+      opcije: [],
+      tacan_odgovor,
+      bodovi: 1-5,
+      objasnjenje (prikazuje se nakon odgovora)
+    }
+  ]
+- broj_pitanja
+- max_bodovi
+- vremensko_ogranicenje (opciono, u minutama)
+- min_prolazni_procenat: 60%
+- kreirao: admin ili učitelj
+- status: odobren, na_cekanju
+```
+
+-----
+
+## Bodovni i motivacioni sistem
+
+### Bodovi (Points)
+
+- Svaki kviz donosi bodove ovisno o tačnosti odgovora
+- Bonus bodovi za: brzinu, uzastopne dane čitanja (streak), teže knjige
+- Dnevni ciljevi čitanja s bonus bodovima
+
+### Nivoi čitatelja (Reader Levels)
+
+```
+Nivo 1: Početnik (0-100 bodova) — ikona: otvorena knjiga
+Nivo 2: Čitač (101-500) — ikona: sova
+Nivo 3: Knjigoljubac (501-1500) — ikona: zvijezda
+Nivo 4: Strastveni čitatelj (1501-5000) — ikona: kruna
+Nivo 5: Majstor čitanja (5001-15000) — ikona: trofej
+Nivo 6: Legenda (15000+) — ikona: dijamant
+```
+
+### Bedževi / Medalje (Badges)
+
+```
+- "Prva knjiga" — pročitao prvu knjigu
+- "Maraton čitač" — pročitao 10 knjiga u mjesecu
+- "Ramazanski čitač" — pročitao 5 knjiga u Ramazanu
+- "Poliglota" — čitao na 3+ jezika
+- "Savršen kviz" — 100% na kvizu
+- "Ustrajni" — streak od 7 dana
+- "Ustrajni+" — streak od 30 dana
+- "Istraživač" — čitao iz 5+ kategorija
+- "Mektebski šampion" — najuspješniji u mektebskoj grupi
+- "Hafiski čitač" — pročitao sve priče o poslanicima
+- Sezonski bedževi: Bajramski čitač, Ljetni čitač, itd.
+```
+
+### Certifikati
+
+- Automatski generirani PDF certifikati za određene miljenike (milestone)
+- Personalizirani s imenom, datumom, brojem pročitanih knjiga
+- Mogu se printati ili podijeliti na društvenim mrežama
+
+-----
+
+## Takmičenja (Competitions)
+
+### Tipovi takmičenja
+
+```
+1. Grupno takmičenje — unutar razreda/mekteba (učitelj kreira)
+2. Školsko takmičenje — između grupa unutar škole/džemata
+3. Globalno takmičenje — svi korisnici platforme (admin kreira)
+4. Sezonski izazovi — Ramazanski izazov, Ljetni čitalački maraton, Sedmica knjige
+5. 1 na 1 dvoboj — dva čitatelja se takmiče ko prvi pročita i riješi kviz
+```
+
+### Struktura takmičenja
+
+```
+- id
+- naziv
+- opis
+- tip: grupno, skolsko, globalno, sezonsko, dvoboj
+- datum_pocetka, datum_zavrsetka
+- pravila (šta se broji: bodovi, broj knjiga, procenat tačnih odgovora)
+- nagrade: [
+    { pozicija: 1, nagrada: "Zlatna medalja + 500 bonus bodova + poklon sponzora" },
+    { pozicija: 2, nagrada: "Srebrna medalja + 300 bonus bodova" },
+    { pozicija: 3, nagrada: "Brončana medalja + 100 bonus bodova" }
+  ]
+- rang_lista (leaderboard) — real-time ažuriranje
+- organizator: admin, učitelj, ili organizacija
+- sponzor_id (opciono)
+- status: nadolazece, aktivno, zavrseno
+```
+
+### Rang-liste (Leaderboards)
+
+- Sedmična, mjesečna, godišnja, sveukupna
+- Po grupi, po školi, po gradu, globalna
+- Filtriranje po uzrastu i kategoriji
+
+-----
+
+## Nagrade (Rewards)
+
+### Digitalne nagrade
+
+- Bedževi i medalje (prikazuju se na profilu)
+- Certifikati (PDF download)
+- Bonus bodovi
+- Otključavanje specijalnih avatara/tema
+- Virtualne nagrade (npr. zlatna knjiga na profilu)
+
+### Fizičke nagrade (od sponzora)
+
+```
+- id
+- naziv
+- opis
+- slika
+- sponzor_id (FK)
+- tip: knjiga, poklon_bon, edukativna_igracka, tablet, stipendija, ostalo
+- vrijednost
+- dostupna_kolicina
+- uslov_za_osvajanje (min bodova, pozicija na takmičenju, itd.)
+- status: dostupna, rezervirana, poslana
+```
+
+### Sistem dostave nagrada
+
+- Pobjednici takmičenja dobijaju obavještenje
+- Kontakt podatci za dostavu fizičkih nagrada
+- Praćenje statusa nagrade: dodijeljena → u pripremi → poslana → primljena
+
+-----
+
+## Pretplate i monetizacija (Subscriptions)
+
+### Besplatni plan (Free)
+
+- Pristup do 5 kvizova mjesečno
+- Osnovni profil čitatelja
+- Pristup javnim takmičenjima
+- Ograničena statistika
+
+### Porodični plan (Family) — 4.99 €/mj ili 49.99 €/god
+
+- Neograničen pristup svim kvizovima
+- Do 5 djece na jednom računu
+- Napredna statistika i praćenje
+- Svi bedževi i certifikati
+- Pristup audio knjigama
+- Prioritetna podrška
+
+### Učiteljski plan (Teacher) — 9.99 €/mj ili 99.99 €/god
+
+- Sve iz porodičnog plana
+- Upravljanje do 50 učenika
+- Kreiranje vlastitih kvizova
+- Organiziranje grupnih takmičenja
+- Detaljni izvještaji o napretku
+- Export statistike (PDF, CSV)
+
+### Školski/Džematski plan (Organization) — 29.99 €/mj ili 299.99 €/god
+
+- Sve iz učiteljskog plana
+- Neograničen broj učitelja i učenika
+- Organizacijski dashboard
+- Branding (logo škole/džemata)
+- Školska/organizacijska takmičenja
+- API pristup
+- Prioritetna podrška + onboarding
+
+### Stripe integracija
+
+```
+- Stripe Checkout za pretplate
+- Stripe Customer Portal za upravljanje pretplatom
+- Webhook handler za: subscription.created, subscription.updated, 
+  subscription.deleted, invoice.paid, invoice.payment_failed
+- Probni period: 14 dana besplatno za sve plaćene planove
+- Godišnja pretplata: 2 mjeseca besplatno
+```
+
+-----
+
+## Sponzori (Sponsors)
+
+### Sponzorski panel
+
+```
+- id
+- naziv_firme
+- logo_url
+- web_stranica
+- kontakt_osoba
+- email
+- tip_sponzorstva: zlatni, srebrni, broncani, partner
+- ugovor_od, ugovor_do
+- budžet
+- status: aktivan, istekao, u_pregovorima
+```
+
+### Sponzorski paketi
+
+```
+Zlatni sponzor (5000+ €/god):
+- Logo na početnoj stranici
+- Imenovanje takmičenja ("Čitaj! takmičenje powered by [Sponzor]")
+- Mogućnost davanja fizičkih nagrada
+- Mjesečni izvještaj o vidljivosti
+- Banner na stranici takmičenja
+
+Srebrni sponzor (2000+ €/god):
+- Logo na stranici sponzora
+- Imenovanje jednog takmičenja godišnje
+- Logo na certifikatima (opciono)
+
+Brončani sponzor (500+ €/god):
+- Logo na stranici sponzora
+- Zahvalnica na platformi
+
+Partner:
+- Nefinansijsko sponzorstvo (knjige, nagrade)
+- Logo na stranici partnera
+```
+
+### Sponzorski dashboard
+
+- Statistika: koliko ljudi je vidjelo logo, koliko takmičenja sponzorirano
+- Pregled dodijeljenih nagrada
+- ROI izvještaji
+
+-----
+
+## Ključne stranice / Ekrani
+
+### Javne stranice
+
+1. **Landing page** — hero sekcija, kako funkcioniše, statistike platforme, sponzori, CTA za registraciju
+1. **Katalog knjiga** — pretraga, filteri (jezik, uzrast, kategorija, težina), sortiraj po popularnosti/ocjeni
+1. **O nama** — misija, tim, kontakt
+1. **Cijena/Pretplate** — prikaz planova s Stripe Checkout
+1. **Sponzori** — prikaz sponzora po nivou
+
+### Dashboard čitatelja
+
+1. **Početna** — trenutni streak, bodovi, preporučene knjige, aktivna takmičenja
+1. **Moje knjige** — pročitane, u toku, lista želja
+1. **Kviz** — odabir knjige → rješavanje kviza → rezultat + objašnjenja
+1. **Profil** — avatar, nivo, bedževi, statistika, certifikati
+1. **Takmičenja** — aktivna takmičenja, rang-lista, moja pozicija
+1. **Rang-lista** — sedmična/mjesečna/godišnja, po grupi/globalno
+
+### Dashboard učitelja
+
+1. **Moje grupe** — lista grupa, dodavanje učenika
+1. **Napredak učenika** — individualni i grupni pregled, grafovi
+1. **Zadaj knjigu** — odabir knjige za grupu s rokom
+1. **Kreiraj kviz** — form za kreiranje pitanja
+1. **Takmičenja** — kreiranje i upravljanje takmičenjima
+1. **Poruke** — slanje pohvala i obavještenja učenicima
+
+### Dashboard roditelja
+
+1. **Moja djeca** — pregled profila svakog djeteta
+1. **Statistika** — grafovi čitanja, bodovi, aktivnost
+1. **Obavještenja** — poruke od učitelja, postignuća djeteta
+
+### Admin panel
+
+1. **Upravljanje knjigama** — CRUD za knjige i kvizove
+1. **Korisnici** — pregled i upravljanje korisnicima
+1. **Takmičenja** — globalna takmičenja
+1. **Sponzori** — upravljanje sponzorima i nagradama
+1. **Statistika** — globalni dashboard: ukupno korisnika, knjiga, kvizova, prihod
+1. **Pretplate** — pregled aktivnih pretplata, prihod, churn rate
+1. **Moderacija** — odobravanje kvizova kreiranih od učitelja
+
+-----
+
+## API Endpoints (REST)
+
+### Auth
+
+```
+POST   /api/auth/register
+POST   /api/auth/login
+POST   /api/auth/logout
+POST   /api/auth/forgot-password
+POST   /api/auth/reset-password
+GET    /api/auth/me
+```
+
+### Books
+
+```
+GET    /api/books                    — lista knjiga (s paginacijom, filterima)
+GET    /api/books/:id                — detalji knjige
+POST   /api/books                    — dodaj knjigu (admin/teacher)
+PUT    /api/books/:id                — uredi knjigu
+DELETE /api/books/:id                — obriši knjigu (admin)
+GET    /api/books/:id/quizzes        — kvizovi za knjigu
+GET    /api/books/recommended        — preporučene knjige za korisnika
+```
+
+### Quizzes
+
+```
+GET    /api/quizzes/:id              — detalji kviza
+POST   /api/quizzes                  — kreiraj kviz (admin/teacher)
+PUT    /api/quizzes/:id              — uredi kviz
+POST   /api/quizzes/:id/submit       — predaj odgovore kviza
+GET    /api/quizzes/:id/results      — rezultati kviza za korisnika
+```
+
+### Users & Progress
+
+```
+GET    /api/users/:id/profile        — profil korisnika
+GET    /api/users/:id/stats          — statistika čitanja
+GET    /api/users/:id/badges         — bedževi korisnika
+GET    /api/users/:id/books          — pročitane knjige
+GET    /api/users/:id/certificates   — certifikati
+```
+
+### Groups
+
+```
+GET    /api/groups                   — moje grupe
+POST   /api/groups                   — kreiraj grupu
+POST   /api/groups/:id/members       — dodaj člana
+GET    /api/groups/:id/stats         — statistika grupe
+POST   /api/groups/:id/assign-book   — zadaj knjigu grupi
+```
+
+### Competitions
+
+```
+GET    /api/competitions              — aktivna takmičenja
+GET    /api/competitions/:id          — detalji takmičenja
+POST   /api/competitions              — kreiraj takmičenje
+GET    /api/competitions/:id/leaderboard — rang-lista
+POST   /api/competitions/:id/join     — pridruži se takmičenju
+```
+
+### Rewards
+
+```
+GET    /api/rewards                   — dostupne nagrade
+GET    /api/rewards/my                — moje nagrade
+POST   /api/rewards/:id/claim         — zatraži nagradu
+```
+
+### Subscriptions
+
+```
+POST   /api/subscriptions/checkout    — Stripe checkout session
+POST   /api/subscriptions/portal      — Stripe customer portal
+POST   /api/webhooks/stripe           — Stripe webhook handler
+GET    /api/subscriptions/status      — status pretplate
+```
+
+### Sponsors
+
+```
+GET    /api/sponsors                  — lista sponzora (javno)
+POST   /api/sponsors                  — dodaj sponzora (admin)
+PUT    /api/sponsors/:id              — uredi sponzora (admin)
+GET    /api/sponsors/:id/stats        — statistika sponzora (admin)
+```
+
+### Leaderboards
+
+```
+GET    /api/leaderboards/global       — globalna rang-lista
+GET    /api/leaderboards/group/:id    — rang-lista grupe
+GET    /api/leaderboards/weekly       — sedmična
+GET    /api/leaderboards/monthly      — mjesečna
+```
+
+-----
+
+## Database šema (PostgreSQL)
+
+Kreiraj sljedeće tabele sa odgovarajućim relacijama, indeksima i foreign key constraintima:
+
+```
+users, user_profiles, organizations, groups, group_members,
+books, quizzes, quiz_questions, quiz_attempts, quiz_answers,
+badges, user_badges, certificates,
+competitions, competition_participants, competition_leaderboard,
+rewards, reward_claims,
+sponsors, sponsor_competitions,
+subscriptions, subscription_plans,
+notifications, reading_streaks, book_assignments,
+parent_child_relations
+```
+
+-----
+
+## Dizajn i UX
+
+- **Paleta boja:** zelena (#2D8B4E) kao primarna (asocijacija na islam i znanje), tamnozelena, bijela, zlato za nagrade
+- **Font:** moderan, čitljiv, s podrškom za latinicu i arapsko pismo
+- **Ikone:** Lucide React ili Heroicons
+- **Responsivan dizajn:** mobile-first, aplikacija mora dobro raditi na telefonu
+- **Dark mode:** opciono
+- **Animacije:** blage animacije za bodove, leveliranje, otključavanje bedževa (confetti efekat)
+- **Pristupačnost:** WCAG 2.1 AA standard
+- **Ilustracije:** topao, prijateljski stil prilagođen djeci, ali ne djetinjast za odrasle korisnike
+
+-----
+
+## Prioritet razvoja (faze)
+
+### Faza 1 — MVP (2-3 sedmice)
+
+- Auth (registracija, login)
+- Baza knjiga s pretragom i filterima
+- Kviz sistem (multiple choice)
+- Bodovni sistem i rang-lista
+- Osnovni korisnički profil
+- Responsivan UI
+
+### Faza 2 — Grupe i učitelji (2 sedmice)
+
+- Učiteljski dashboard
+- Kreiranje grupa i dodavanje učenika
+- Zadavanje knjiga
+- Praćenje napretka učenika
+- Kreiranje kvizova od strane učitelja
+
+### Faza 3 — Takmičenja i nagrade (2 sedmice)
+
+- Sistem takmičenja (svi tipovi)
+- Rang-liste (sedmična, mjesečna, globalna)
+- Bedževi i medalje
+- Certifikati (PDF generiranje)
+- Sistem nagrada
+
+### Faza 4 — Monetizacija (1-2 sedmice)
+
+- Stripe integracija
+- Pretplatnički planovi
+- Sponzorski sistem
+- Admin panel za upravljanje
+
+### Faza 5 — Napredne funkcije
+
+- Audio podrška
+- Roditeljski dashboard
+- Obavještenja (email + push)
+- Organizacijski panel
+- Višejezični interfejs
+- PWA (Progressive Web App)
+
+-----
+
+## Važne napomene za implementaciju
+
+1. **Seed data:** Napravi seed skriptu s 20+ knjiga na bosanskom jeziku (mektebske priče, bošnjačka lektira, islamska literatura) i po 10 pitanja za svaku
+1. **Sigurnost:** Rate limiting na API, validacija svih inputa, zaštita od SQL injection, XSS
+1. **Performance:** Paginacija na svim listama, lazy loading slika, caching rang-lista
+1. **SEO:** Meta tagovi, Open Graph za dijeljenje knjiga
+1. **Testovi:** Osnovno unit/integration testiranje ključnih funkcionalnosti
+1. **Dokumentacija:** README s uputstvima za pokretanje, API dokumentacija
+1. **RTL podrška:** Za arapski jezik, UI mora podržavati right-to-left layout
+1. **GDPR:** Zaštita podataka, posebno za maloljetne korisnike, mogućnost brisanja računa
+
+-----
+
+## Primjer seed podataka za knjige
+
+```json
+[
+  {
+    "naslov": "Priče iz mekteba",
+    "autor": "Zbirka",
+    "jezik": "bs",
+    "kategorija": "mektebske_price",
+    "uzrast_min": 6,
+    "uzrast_max": 10,
+    "nivo_tezine": 1,
+    "opis": "Zbirka poučnih priča za djecu mektebskog uzrasta o lijepom ponašanju, ljubavi prema Allahu i poštovanju roditelja."
+  },
+  {
+    "naslov": "Poslanikovi drugovi",
+    "autor": "Zbirka",
+    "jezik": "bs",
+    "kategorija": "islamska_literatura",
+    "uzrast_min": 10,
+    "uzrast_max": 16,
+    "nivo_tezine": 3,
+    "opis": "Inspirativne priče o ashabima Muhammeda a.s. i njihovoj hrabrosti, mudrosti i predanosti."
+  },
+  {
+    "naslov": "Derviš i smrt",
+    "autor": "Meša Selimović",
+    "jezik": "bs",
+    "kategorija": "beletristika",
+    "uzrast_min": 16,
+    "uzrast_max": 99,
+    "nivo_tezine": 5,
+    "opis": "Roman o unutrašnjim borbama šejha Nurudina u Sarajevu pod osmanskom vlašću."
+  }
+]
+```
+
+-----
+
+Počni s Fazom 1 (MVP). Napravi potpuno funkcionalan prototip s lijepim, modernim dizajnom. Koristi placeholder slike za naslovnice knjiga. Svaki korak commitaj s jasnim porukama.

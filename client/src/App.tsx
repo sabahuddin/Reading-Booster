@@ -4,13 +4,53 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import LandingPage from "@/pages/landing";
+import BlogPage from "@/pages/blog";
+import PricingPage from "@/pages/pricing";
+import ContactPage from "@/pages/contact";
+import AuthPage from "@/pages/auth-page";
+import TeacherDashboard from "@/pages/teacher-dashboard";
+import TeacherStudents from "@/pages/teacher-students";
+import TeacherLibrary from "@/pages/teacher-library";
+import ParentDashboard from "@/pages/parent-dashboard";
+import ParentChildren from "@/pages/parent-children";
+import AdminDashboard from "@/pages/admin-dashboard";
+import AdminBooks from "@/pages/admin-books";
+import AdminQuizzes from "@/pages/admin-quizzes";
+import AdminUsers from "@/pages/admin-users";
+import AdminBlog from "@/pages/admin-blog";
+import AdminMessages from "@/pages/admin-messages";
+import StudentDashboard from "@/pages/student-dashboard";
+import Library from "@/pages/library";
+import BookDetail from "@/pages/book-detail";
+import QuizPage from "@/pages/quiz-page";
+import StudentResults from "@/pages/student-results";
 
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/" component={LandingPage} />
+      <Route path="/blog" component={BlogPage} />
+      <Route path="/cijene" component={PricingPage} />
+      <Route path="/kontakt" component={ContactPage} />
+      <Route path="/prijava" component={AuthPage} />
+      <Route path="/registracija" component={AuthPage} />
+      <Route path="/ucenik" component={StudentDashboard} />
+      <Route path="/ucenik/biblioteka" component={Library} />
+      <Route path="/ucenik/knjiga/:id" component={BookDetail} />
+      <Route path="/ucenik/kviz/:id" component={QuizPage} />
+      <Route path="/ucenik/rezultati" component={StudentResults} />
+      <Route path="/ucitelj" component={TeacherDashboard} />
+      <Route path="/ucitelj/ucenici" component={TeacherStudents} />
+      <Route path="/ucitelj/biblioteka" component={TeacherLibrary} />
+      <Route path="/roditelj" component={ParentDashboard} />
+      <Route path="/roditelj/djeca" component={ParentChildren} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/knjige" component={AdminBooks} />
+      <Route path="/admin/kvizovi" component={AdminQuizzes} />
+      <Route path="/admin/korisnici" component={AdminUsers} />
+      <Route path="/admin/blog" component={AdminBlog} />
+      <Route path="/admin/poruke" component={AdminMessages} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,0 +1,486 @@
+import { db } from "./db";
+import { users, books, quizzes, questions, blogPosts } from "@shared/schema";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+function generateQuestionsForBook(bookTitle: string, quizId: string) {
+  const questionSets: Record<string, Array<{ questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: "a" | "b" | "c" | "d" }>> = {
+    "Mali princ": [
+      { questionText: "Ko je glavni lik u knjizi 'Mali princ'?", optionA: "Pilot", optionB: "Mali princ", optionC: "Lisica", optionD: "Ruža", correctAnswer: "b" },
+      { questionText: "Odakle dolazi Mali princ?", optionA: "Sa Zemlje", optionB: "Sa Marsa", optionC: "Sa malog asteroida B-612", optionD: "Sa Mjeseca", correctAnswer: "c" },
+      { questionText: "Šta Mali princ traži na Zemlji?", optionA: "Blago", optionB: "Prijatelje", optionC: "Vodu", optionD: "Svoju ružu", correctAnswer: "b" },
+      { questionText: "Koji životinja nauči Malog princa o prijateljstvu?", optionA: "Zmija", optionB: "Slon", optionC: "Lisica", optionD: "Ovca", correctAnswer: "c" },
+      { questionText: "Šta znači 'pripitomiti' prema lisici?", optionA: "Držati kao kućnog ljubimca", optionB: "Stvoriti veze i odnose", optionC: "Hraniti svaki dan", optionD: "Naučiti trikove", correctAnswer: "b" },
+      { questionText: "Zašto je ruža posebna za Malog princa?", optionA: "Jer je jedina na svijetu", optionB: "Jer je najljepša", optionC: "Jer ju je on njegovao", optionD: "Jer je zlatna", correctAnswer: "c" },
+      { questionText: "Koliko planeta posjeti Mali princ?", optionA: "Tri", optionB: "Pet", optionC: "Sedam", optionD: "Deset", correctAnswer: "c" },
+      { questionText: "Ko živi na prvoj planeti koju Mali princ posjeti?", optionA: "Kralj", optionB: "Pijanac", optionC: "Geograf", optionD: "Biznismen", correctAnswer: "a" },
+      { questionText: "Šta pilot crta za Malog princa?", optionA: "Konja", optionB: "Ovcu", optionC: "Pticu", optionD: "Cvijet", correctAnswer: "b" },
+      { questionText: "Gdje se pilot srušio sa avionom?", optionA: "U šumi", optionB: "Na moru", optionC: "U pustinji Sahari", optionD: "Na planini", correctAnswer: "c" },
+      { questionText: "Šta autor želi reći frazom 'Bitno je nevidljivo za oči'?", optionA: "Treba nositi naočale", optionB: "Najvažnije stvari se osjećaju srcem", optionC: "Treba gledati u daljinu", optionD: "Nevidljive stvari ne postoje", correctAnswer: "b" },
+      { questionText: "Koji lik na planeti broji zvijezde?", optionA: "Kralj", optionB: "Upaljanđija", optionC: "Biznismen", optionD: "Geograf", correctAnswer: "c" },
+      { questionText: "Šta simbolizira zmija u priči?", optionA: "Mudrost", optionB: "Smrt i povratak kući", optionC: "Opasnost", optionD: "Ljepotu", correctAnswer: "b" },
+      { questionText: "Kako se Mali princ brine o svojoj planeti?", optionA: "Čisti jezera", optionB: "Sadi drveće", optionC: "Čupa baobabe", optionD: "Gradi kuće", correctAnswer: "c" },
+      { questionText: "Šta znači riječ 'asteroid' u tekstu?", optionA: "Velika zvijezda", optionB: "Malo nebesko tijelo", optionC: "Galaksija", optionD: "Sunčev sistem", correctAnswer: "b" },
+      { questionText: "Zašto je upaljanđija nesretan?", optionA: "Nema prijatelja", optionB: "Njegova planeta se prebrzo okreće", optionC: "Ne voli svoj posao", optionD: "Želi putovati", correctAnswer: "b" },
+      { questionText: "Koliko ruža Mali princ nađe u vrtu na Zemlji?", optionA: "Deset", optionB: "Sto", optionC: "Pet hiljada", optionD: "Jednu", correctAnswer: "c" },
+      { questionText: "Šta geograf savjetuje Malom princu?", optionA: "Da posjeti Zemlju", optionB: "Da se vrati kući", optionC: "Da prestane putovati", optionD: "Da nacrta mapu", correctAnswer: "a" },
+      { questionText: "Koja je glavna tema knjige?", optionA: "Avantura u svemiru", optionB: "Prijateljstvo i ljubav", optionC: "Nauka i tehnologija", optionD: "Rat i mir", correctAnswer: "b" },
+      { questionText: "Ko je napisao 'Mali princ'?", optionA: "Victor Hugo", optionB: "Jules Verne", optionC: "Antoine de Saint-Exupéry", optionD: "Albert Camus", correctAnswer: "c" },
+      { questionText: "Šta pijanac radi na svojoj planeti?", optionA: "Pjeva pjesme", optionB: "Pije da zaboravi sramotu što pije", optionC: "Pravi vino", optionD: "Spava cijeli dan", correctAnswer: "b" },
+      { questionText: "Zašto Mali princ napušta svoju planetu?", optionA: "Dosadilo mu je", optionB: "Ruža ga je povrijedila", optionC: "Htio je naučiti letjeti", optionD: "Planeta je bila premala", correctAnswer: "b" },
+      { questionText: "Šta predstavlja baobab u priči?", optionA: "Ljepotu prirode", optionB: "Probleme koje treba riješiti na vrijeme", optionC: "Hranu za životinje", optionD: "Zaštitu od sunca", correctAnswer: "b" },
+      { questionText: "Koji osjećaj prevladava na kraju knjige?", optionA: "Sreća", optionB: "Ljutnja", optionC: "Tuga i nostalgija", optionD: "Strah", correctAnswer: "c" },
+      { questionText: "Šta Mali princ misli o odraslima?", optionA: "Da su pametni", optionB: "Da su čudni i ne razumiju bitne stvari", optionC: "Da su zabavni", optionD: "Da su hrabri", correctAnswer: "b" },
+      { questionText: "Kako završava priča?", optionA: "Mali princ ostaje na Zemlji", optionB: "Pilot i Mali princ lete zajedno", optionC: "Mali princ se vraća na svoju planetu", optionD: "Mali princ postaje pilot", correctAnswer: "c" },
+      { questionText: "Šta pilot nauči od Malog princa?", optionA: "Kako letjeti", optionB: "Kako crtati", optionC: "Da gleda srcem, ne očima", optionD: "Kako popraviti avion", correctAnswer: "c" },
+      { questionText: "Koliko stranica ima ova knjiga?", optionA: "64", optionB: "96", optionC: "128", optionD: "150", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je preporučena ova knjiga?", optionA: "1-2 razred", optionB: "3-4 razred", optionC: "5-6 razred", optionD: "9+ razred", correctAnswer: "c" },
+      { questionText: "Šta je zajednička tema svih planeta koje Mali princ posjećuje?", optionA: "Sve su lijepe", optionB: "Sve su napuštene", optionC: "Svaka pokazuje ljudsku manu", optionD: "Sve imaju vodu", correctAnswer: "c" },
+    ],
+    "Derviš i smrt": [
+      { questionText: "Ko je glavni lik romana 'Derviš i smrt'?", optionA: "Hasan", optionB: "Ahmed Nurudin", optionC: "Mula Ibrahim", optionD: "Defterdar", correctAnswer: "b" },
+      { questionText: "Gdje se odvija radnja romana?", optionA: "U Istanbulu", optionB: "U Sarajevu", optionC: "U malom bosanskom gradu", optionD: "U Beogradu", correctAnswer: "c" },
+      { questionText: "Šta je Ahmed Nurudin po zanimanju?", optionA: "Vojnik", optionB: "Trgovac", optionC: "Šejh tekije", optionD: "Sudija", correctAnswer: "c" },
+      { questionText: "Šta pokreće Ahmedovu unutrašnju krizu?", optionA: "Gubitak novca", optionB: "Nestanak brata Haruna", optionC: "Bolest", optionD: "Rat", correctAnswer: "b" },
+      { questionText: "Ko je Harun u romanu?", optionA: "Ahmedov sin", optionB: "Ahmedov brat po mlijeku", optionC: "Ahmedov učenik", optionD: "Ahmedov neprijatelj", correctAnswer: "b" },
+      { questionText: "Šta znači riječ 'derviš' u kontekstu romana?", optionA: "Vojnik", optionB: "Trgovac", optionC: "Islamski mistik i asketa", optionD: "Učitelj", correctAnswer: "c" },
+      { questionText: "Koja je centralna tema romana?", optionA: "Ljubav i romantika", optionB: "Moć i korupcija", optionC: "Sukob između kontemplacije i akcije", optionD: "Putovanje", correctAnswer: "c" },
+      { questionText: "Šta autor želi reći o ljudskoj prirodi?", optionA: "Ljudi su savršeni", optionB: "Čovjek ne može ostati neutralan pred zlom", optionC: "Život je jednostavan", optionD: "Sreća je lako dostupna", correctAnswer: "b" },
+      { questionText: "Ko je napisao 'Derviš i smrt'?", optionA: "Ivo Andrić", optionB: "Meša Selimović", optionC: "Skender Kulenović", optionD: "Mak Dizdar", correctAnswer: "b" },
+      { questionText: "Kakav je narativni stil romana?", optionA: "Pripovijedanje u trećem licu", optionB: "Unutrašnji monolog i ispovijest", optionC: "Dnevnički zapisi", optionD: "Epistolarni roman", correctAnswer: "b" },
+      { questionText: "Šta se dešava sa Harunom?", optionA: "Odlazi u rat", optionB: "Biva uhapšen i nestaje", optionC: "Postaje šejh", optionD: "Odlazi u Istanbul", correctAnswer: "b" },
+      { questionText: "Zašto Ahmed odlučuje djelovati?", optionA: "Zbog ambicije", optionB: "Zbog pravde i istine o Harunu", optionC: "Zbog novca", optionD: "Zbog ljubavi", correctAnswer: "b" },
+      { questionText: "Koja je uloga kadije u romanu?", optionA: "Pomaže Ahmedu", optionB: "Predstavlja pravednost", optionC: "Predstavlja korumpiranu vlast", optionD: "Nema značajnu ulogu", correctAnswer: "c" },
+      { questionText: "Šta tekija simbolizira u romanu?", optionA: "Bogatstvo", optionB: "Mir i duhovnost", optionC: "Vojnu moć", optionD: "Trgovinu", correctAnswer: "b" },
+      { questionText: "Kako Ahmed doživljava svoju transformaciju?", optionA: "Kroz putovanje", optionB: "Kroz ljubav", optionC: "Kroz sukob sa vlašću i unutrašnju borbu", optionD: "Kroz obrazovanje", correctAnswer: "c" },
+      { questionText: "Šta predstavlja 'smrt' u naslovu?", optionA: "Samo fizičku smrt", optionB: "Duhovnu smrt i gubitak identiteta", optionC: "Kraj rata", optionD: "Smrt neprijatelja", correctAnswer: "b" },
+      { questionText: "U kojem vremenskom periodu se odvija radnja?", optionA: "Srednji vijek", optionB: "Osmansko doba u Bosni", optionC: "Moderno doba", optionD: "Antičko doba", correctAnswer: "b" },
+      { questionText: "Koji filozofski pravac je prisutan u romanu?", optionA: "Pozitivizam", optionB: "Egzistencijalizam", optionC: "Romantizam", optionD: "Naturalizam", correctAnswer: "b" },
+      { questionText: "Šta Ahmed žrtvuje u svojoj potrazi za istinom?", optionA: "Novac", optionB: "Porodicu", optionC: "Svoj mir i duhovni položaj", optionD: "Zdravlje", correctAnswer: "c" },
+      { questionText: "Kako se Roman završava?", optionA: "Sretan kraj", optionB: "Ahmed pronalazi Haruna", optionC: "Tragično, Ahmed gubi sve", optionD: "Ahmed postaje kadija", correctAnswer: "c" },
+      { questionText: "Koliko stranica ima ovaj roman?", optionA: "314", optionB: "414", optionC: "538", optionD: "256", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je preporučen ovaj roman?", optionA: "3-4 razred", optionB: "5-6 razred", optionC: "7-8 razred", optionD: "9+ razred", correctAnswer: "d" },
+      { questionText: "Šta Ahmed misli o pravdi?", optionA: "Da je nedostižna", optionB: "Da se mora boriti za nju", optionC: "Da nije važna", optionD: "Da je automatska", correctAnswer: "b" },
+      { questionText: "Koji lik predstavlja glas savjesti?", optionA: "Kadija", optionB: "Harun", optionC: "Ahmed sam", optionD: "Mula Ibrahim", correctAnswer: "c" },
+      { questionText: "Šta znači riječ 'tekija'?", optionA: "Škola", optionB: "Derviški samostan", optionC: "Tržnica", optionD: "Bolnica", correctAnswer: "b" },
+      { questionText: "Koja književna vrsta je ovaj roman?", optionA: "Ljubavni roman", optionB: "Psihološki roman", optionC: "Kriminalistički roman", optionD: "Fantastični roman", correctAnswer: "b" },
+      { questionText: "Kako se Ahmed osjeća prema vlasti?", optionA: "Podržava je", optionB: "Ravnodušan je", optionC: "Kritičan je i nesiguran", optionD: "Želi postati vladar", correctAnswer: "c" },
+      { questionText: "Šta motivira Ahmeda da napusti mir tekije?", optionA: "Želja za moći", optionB: "Nestanak brata i nepravda", optionC: "Ljubav prema ženi", optionD: "Novčani problemi", correctAnswer: "b" },
+      { questionText: "Koji je ton pripovijedanja u romanu?", optionA: "Veseo i optimističan", optionB: "Mračan i introspektivan", optionC: "Satiričan", optionD: "Komičan", correctAnswer: "b" },
+      { questionText: "Šta Ahmed na kraju shvata o životu?", optionA: "Da je život jednostavan", optionB: "Da neutralnost nije moguća pred zlom", optionC: "Da je bogatsvo najvažnije", optionD: "Da treba bježati od problema", correctAnswer: "b" },
+    ],
+    "Tvrđava": [
+      { questionText: "Ko je glavni lik romana 'Tvrđava'?", optionA: "Ahmet Šabo", optionB: "Šejh Junus", optionC: "Mula Jusuf", optionD: "Ibrahim", correctAnswer: "a" },
+      { questionText: "Šta simbolizira 'tvrđava' u naslovu?", optionA: "Vojnu utvrdu", optionB: "Unutrašnju snagu i identitet", optionC: "Grad", optionD: "Zatvor", correctAnswer: "b" },
+      { questionText: "Ko je autor romana 'Tvrđava'?", optionA: "Ivo Andrić", optionB: "Meša Selimović", optionC: "Derviš Sušić", optionD: "Branko Ćopić", correctAnswer: "b" },
+      { questionText: "Gdje se odvija radnja romana?", optionA: "U Sarajevu", optionB: "U Bosni, osmansko doba", optionC: "U Beogradu", optionD: "U Istanbulu", correctAnswer: "b" },
+      { questionText: "Šta Ahmet Šabo traži u životu?", optionA: "Bogatstvo", optionB: "Moć", optionC: "Smisao i identitet", optionD: "Osvetu", correctAnswer: "c" },
+      { questionText: "Kakav je odnos Ahmeta prema društvu?", optionA: "Potpuno se slaže", optionB: "Kritičan je i traži promjenu", optionC: "Ravnodušan", optionD: "Agresivan", correctAnswer: "b" },
+      { questionText: "Koja je centralna tema romana?", optionA: "Rat", optionB: "Potraga za identitetom", optionC: "Ljubavna priča", optionD: "Putopis", correctAnswer: "b" },
+      { questionText: "Šta znači riječ 'tvrđava' u prenesenom značenju?", optionA: "Zatvor", optionB: "Zaštita vlastitog ja", optionC: "Vojska", optionD: "Škola", correctAnswer: "b" },
+      { questionText: "Koji period historije je opisan?", optionA: "Rimsko doba", optionB: "Osmansko doba", optionC: "Austrougarska", optionD: "Moderno doba", correctAnswer: "b" },
+      { questionText: "Šta Ahmet osjeća prema svojoj okolini?", optionA: "Pripadnost", optionB: "Otuđenost i nesigurnost", optionC: "Potpunu sreću", optionD: "Ravnodušnost", correctAnswer: "b" },
+      { questionText: "Koji književni rod predstavlja ovo djelo?", optionA: "Drama", optionB: "Poezija", optionC: "Roman", optionD: "Novela", correctAnswer: "c" },
+      { questionText: "Koliko stranica ima ovaj roman?", optionA: "414", optionB: "314", optionC: "538", optionD: "256", correctAnswer: "c" },
+      { questionText: "Šta autor kritikuje kroz roman?", optionA: "Prirodu", optionB: "Društvene nepravde i licemerje", optionC: "Nauku", optionD: "Umjetnost", correctAnswer: "b" },
+      { questionText: "Kako Ahmet reaguje na životne izazove?", optionA: "Bježi od njih", optionB: "Filozofski ih preispituje", optionC: "Ignorira ih", optionD: "Agresivno reaguje", correctAnswer: "b" },
+      { questionText: "Šta predstavlja žena u Ahmetovom životu?", optionA: "Samo ljubav", optionB: "Simbol stabilnosti i gubitka", optionC: "Neprijatelja", optionD: "Učiteljicu", correctAnswer: "b" },
+      { questionText: "Koji stil pisanja koristi Selimović?", optionA: "Jednostavan i direktan", optionB: "Introspektivan i filozofski", optionC: "Satiričan", optionD: "Romantičan", correctAnswer: "b" },
+      { questionText: "Šta Ahmet traži u vjeri?", optionA: "Moć", optionB: "Bogatstvo", optionC: "Odgovore na egzistencijalna pitanja", optionD: "Zabavu", correctAnswer: "c" },
+      { questionText: "Kako se roman završava?", optionA: "Sretan kraj", optionB: "Ahmet pronalazi mir", optionC: "Ahmet nastavlja svoju potragu", optionD: "Ahmet postaje vladar", correctAnswer: "c" },
+      { questionText: "Šta znači biti 'tvrđava' prema Selimoviću?", optionA: "Biti fizički jak", optionB: "Čuvati svoj unutrašnji svijet", optionC: "Biti bogat", optionD: "Biti moćan", correctAnswer: "b" },
+      { questionText: "Koji likovi okružuju Ahmeta?", optionA: "Samo vojnici", optionB: "Razni društveni slojevi", optionC: "Samo porodica", optionD: "Samo prijatelji", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je preporučen ovaj roman?", optionA: "3-4 razred", optionB: "5-6 razred", optionC: "7-8 razred", optionD: "9+ razred", correctAnswer: "d" },
+      { questionText: "Šta Ahmet misli o slobodi?", optionA: "Da je nepotrebna", optionB: "Da je teško dostupna ali neophodna", optionC: "Da je opasna", optionD: "Da je bezznačajna", correctAnswer: "b" },
+      { questionText: "Koji je odnos Ahmeta prema tradiciji?", optionA: "Potpuno je prihvata", optionB: "Preispituje je", optionC: "Potpuno je odbacuje", optionD: "Nema stav", correctAnswer: "b" },
+      { questionText: "Šta autor želi poručiti čitaocu?", optionA: "Da bude bogat", optionB: "Da čuva svoj identitet u teškim vremenima", optionC: "Da se povuče iz društva", optionD: "Da bude poslušan", correctAnswer: "b" },
+      { questionText: "Kakav je Ahmetov karakter?", optionA: "Jednostavan i veseo", optionB: "Složen i introspektivan", optionC: "Agresivan", optionD: "Ravnodušan", correctAnswer: "b" },
+      { questionText: "Šta roman govori o čovjeku i društvu?", optionA: "Da su uvijek u harmoniji", optionB: "Da su često u sukobu", optionC: "Da društvo ne postoji", optionD: "Da čovjek ne treba društvo", correctAnswer: "b" },
+      { questionText: "Koji motiv se ponavlja kroz roman?", optionA: "Putovanje", optionB: "Samoća i traženje smisla", optionC: "Zabava", optionD: "Bogatstvo", correctAnswer: "b" },
+      { questionText: "Šta Ahmet uči iz svojih iskustava?", optionA: "Da je život lak", optionB: "Da je borba za identitet stalna", optionC: "Da treba odustati", optionD: "Da je novac najvažniji", correctAnswer: "b" },
+      { questionText: "Koji je žanr ovog romana?", optionA: "Avanturistički", optionB: "Psihološko-filozofski", optionC: "Kriminalistički", optionD: "Romantični", correctAnswer: "b" },
+      { questionText: "Šta čini ovaj roman važnim za bosansku književnost?", optionA: "Zabavan je", optionB: "Duboko istražuje bosanski identitet", optionC: "Kratak je", optionD: "Napisan je na engleskom", correctAnswer: "b" },
+    ],
+    "Na Drini ćuprija": [
+      { questionText: "Šta je 'ćuprija' u naslovu romana?", optionA: "Crkva", optionB: "Most", optionC: "Škola", optionD: "Tvrđava", correctAnswer: "b" },
+      { questionText: "Na kojoj rijeci se nalazi most?", optionA: "Neretva", optionB: "Sava", optionC: "Drina", optionD: "Una", correctAnswer: "c" },
+      { questionText: "Ko je naredio izgradnju mosta?", optionA: "Car Dušan", optionB: "Mehmed-paša Sokolović", optionC: "Sultan Sulejman", optionD: "Herceg Stjepan", correctAnswer: "b" },
+      { questionText: "U kojem gradu se nalazi most?", optionA: "Mostar", optionB: "Višegrad", optionC: "Sarajevo", optionD: "Foča", correctAnswer: "b" },
+      { questionText: "Ko je autor romana 'Na Drini ćuprija'?", optionA: "Meša Selimović", optionB: "Ivo Andrić", optionC: "Branko Ćopić", optionD: "Petar Kočić", correctAnswer: "b" },
+      { questionText: "Koji vremenski period pokriva roman?", optionA: "Jedan dan", optionB: "Jednu godinu", optionC: "Nekoliko stoljeća", optionD: "Deset godina", correctAnswer: "c" },
+      { questionText: "Šta most simbolizira u romanu?", optionA: "Samo građevinu", optionB: "Povezivanje i trajnost", optionC: "Rat", optionD: "Bogatstvo", correctAnswer: "b" },
+      { questionText: "Šta se dešava na kapiji mosta?", optionA: "Prodaje se roba", optionB: "Ljudi se druže, razgovaraju i trguju", optionC: "Vojnici stražare", optionD: "Djeca se igraju", correctAnswer: "b" },
+      { questionText: "Kako se roman završava?", optionA: "Most se obnavlja", optionB: "Most biva oštećen u ratu", optionC: "Most nestaje", optionD: "Most se prodaje", correctAnswer: "b" },
+      { questionText: "Koja je centralna tema romana?", optionA: "Ljubav", optionB: "Prolaznost vremena i trajnost ljudskog duha", optionC: "Rat", optionD: "Putovanje", correctAnswer: "b" },
+      { questionText: "Šta znači riječ 'ćuprija'?", optionA: "Kula", optionB: "Most (turska riječ)", optionC: "Vrata", optionD: "Zid", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je preporučen ovaj roman?", optionA: "1-2 razred", optionB: "3-4 razred", optionC: "5-6 razred", optionD: "8-9 razred", correctAnswer: "d" },
+      { questionText: "Koji narodi žive pored mosta?", optionA: "Samo Bošnjaci", optionB: "Razni narodi - Bošnjaci, Srbi, Jevreji", optionC: "Samo Srbi", optionD: "Samo Turci", correctAnswer: "b" },
+      { questionText: "Šta Andrić želi pokazati kroz različite likove?", optionA: "Da su svi isti", optionB: "Raznolikost i suživot naroda", optionC: "Da je rat neizbježan", optionD: "Da je jedan narod bolji", correctAnswer: "b" },
+      { questionText: "Kako je Mehmed-paša Sokolović odveden iz Bosne?", optionA: "Svojom voljom", optionB: "Kao dijete u okviru devširme", optionC: "Kao vojnik", optionD: "Kao trgovac", correctAnswer: "b" },
+      { questionText: "Šta znači 'devširma'?", optionA: "Trgovina", optionB: "Prikupljanje dječaka za osmansku vojsku", optionC: "Porez", optionD: "Školovanje", correctAnswer: "b" },
+      { questionText: "Koliko stranica ima ovaj roman?", optionA: "128", optionB: "256", optionC: "314", optionD: "414", correctAnswer: "c" },
+      { questionText: "Koji je Andrićev stil pisanja?", optionA: "Kratki rečenice", optionB: "Epski, detaljan i hroničarski", optionC: "Poetski", optionD: "Komičan", correctAnswer: "b" },
+      { questionText: "Šta se dešava sa mostom tokom Prvog svjetskog rata?", optionA: "Ništa", optionB: "Biva miniran i oštećen", optionC: "Obnavlja se", optionD: "Prodaje se", correctAnswer: "b" },
+      { questionText: "Ko je Alihodža u romanu?", optionA: "Vojnik", optionB: "Hodža koji brani tradiciju", optionC: "Graditelj", optionD: "Trgovac", correctAnswer: "b" },
+      { questionText: "Šta most predstavlja za stanovnike Višegrada?", optionA: "Prepreku", optionB: "Centar društvenog života", optionC: "Vojni objekat", optionD: "Samo prolaz", correctAnswer: "b" },
+      { questionText: "Kakav je ton romana?", optionA: "Komičan", optionB: "Epski i melanholičan", optionC: "Satiričan", optionD: "Veseo", correctAnswer: "b" },
+      { questionText: "Šta autor želi reći o historiji?", optionA: "Da se ne ponavlja", optionB: "Da se ciklički ponavlja", optionC: "Da nije važna", optionD: "Da je uvijek pozitivna", correctAnswer: "b" },
+      { questionText: "Koji lik simbolizira otpor promjenama?", optionA: "Mehmed-paša", optionB: "Alihodža", optionC: "Sultan", optionD: "Graditelj", correctAnswer: "b" },
+      { questionText: "Šta se na mostu slavi i obilježava?", optionA: "Samo praznici", optionB: "Različiti životni događaji zajednice", optionC: "Samo ratne pobjede", optionD: "Samo vjerski obredi", correctAnswer: "b" },
+      { questionText: "Koja nagrada je dodijeljena Ivi Andriću?", optionA: "Pulitzer", optionB: "Nobelova nagrada za književnost", optionC: "Booker", optionD: "Goncourt", correctAnswer: "b" },
+      { questionText: "Šta rijeka Drina simbolizira?", optionA: "Samo vodu", optionB: "Granicu i tok vremena", optionC: "Bogatstvo", optionD: "Opasnost", correctAnswer: "b" },
+      { questionText: "Kako Andrić opisuje suživot naroda?", optionA: "Kao nemoguć", optionB: "Kao složen ali moguć", optionC: "Kao jednostavan", optionD: "Kao nepotreban", correctAnswer: "b" },
+      { questionText: "Šta kapija mosta predstavlja?", optionA: "Ulaz u grad", optionB: "Mjesto susreta i razmjene", optionC: "Vojnu poziciju", optionD: "Zatvor", correctAnswer: "b" },
+      { questionText: "Koji je žanr ovog romana?", optionA: "Ljubavni", optionB: "Historijski roman-hronika", optionC: "Kriminalistički", optionD: "Fantastični", correctAnswer: "b" },
+    ],
+    "Priče iz davnine": [
+      { questionText: "Ko je napisao 'Priče iz davnine'?", optionA: "Ivana Brlić-Mažuranić", optionB: "Ivo Andrić", optionC: "Meša Selimović", optionD: "Branko Ćopić", correctAnswer: "a" },
+      { questionText: "Koji je žanr ove knjige?", optionA: "Roman", optionB: "Bajke i priče", optionC: "Drama", optionD: "Poezija", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je knjiga preporučena?", optionA: "1-2 razred", optionB: "3-4 razred", optionC: "5-6 razred", optionD: "7-8 razred", correctAnswer: "b" },
+      { questionText: "Koja priča govori o dječaku koji traži sunce?", optionA: "Šuma Striborova", optionB: "Regoč", optionC: "Sunce djever i Neva Nevičica", optionD: "Ribar Palunko", correctAnswer: "c" },
+      { questionText: "Ko je Stribor u 'Šumi Striborovoj'?", optionA: "Lovac", optionB: "Šumski gospodar", optionC: "Ribar", optionD: "Kralj", correctAnswer: "b" },
+      { questionText: "Šta se dešava u priči 'Ribar Palunko i njegova žena'?", optionA: "Palunko lovi kitove", optionB: "Palunko traži morskog kralja", optionC: "Palunko ide u rat", optionD: "Palunko gradi brod", correctAnswer: "b" },
+      { questionText: "Koji element je zajednički svim pričama?", optionA: "Moderni grad", optionB: "Slavenska mitologija i čarolija", optionC: "Naučna fantastika", optionD: "Historijski događaji", correctAnswer: "b" },
+      { questionText: "Šta znači 'davnina' u naslovu?", optionA: "Budućnost", optionB: "Dalelja prošlost", optionC: "Sadašnjost", optionD: "Svemir", correctAnswer: "b" },
+      { questionText: "Koliko priča sadrži ova zbirka?", optionA: "Tri", optionB: "Pet", optionC: "Osam", optionD: "Deset", correctAnswer: "c" },
+      { questionText: "Ko je Regoč?", optionA: "Patuljak", optionB: "Div", optionC: "Vila", optionD: "Zmaj", correctAnswer: "b" },
+      { questionText: "Šta autorica želi prenijeti djeci?", optionA: "Strah od šume", optionB: "Vrijednosti dobrote, hrabrosti i ljubavi", optionC: "Naučne činjenice", optionD: "Geografiju", correctAnswer: "b" },
+      { questionText: "Koji likovi se pojavljuju u pričama?", optionA: "Samo ljudi", optionB: "Vile, divovi, čarobnjaci i životinje", optionC: "Samo životinje", optionD: "Samo roboti", correctAnswer: "b" },
+      { questionText: "Šta predstavlja šuma u pričama?", optionA: "Samo drveće", optionB: "Čarobni i tajanstveni svijet", optionC: "Opasno mjesto", optionD: "Mjesto za odmor", correctAnswer: "b" },
+      { questionText: "Koliko stranica ima ova knjiga?", optionA: "96", optionB: "128", optionC: "158", optionD: "200", correctAnswer: "c" },
+      { questionText: "Koji narod je inspirisao ove priče?", optionA: "Grčki", optionB: "Slavenski", optionC: "Rimski", optionD: "Germanski", correctAnswer: "b" },
+      { questionText: "Šta je zajedničko pozitivnim likovima?", optionA: "Bogatstvo", optionB: "Dobrota i hrabrost", optionC: "Fizička snaga", optionD: "Ljepota", correctAnswer: "b" },
+      { questionText: "Koji je ton priča?", optionA: "Strašan", optionB: "Bajkovit i topao", optionC: "Hladan", optionD: "Satiričan", correctAnswer: "b" },
+      { questionText: "Šta se dešava na kraju većine priča?", optionA: "Tužan kraj", optionB: "Dobro pobjeđuje zlo", optionC: "Nema kraja", optionD: "Zlo pobjeđuje", correctAnswer: "b" },
+      { questionText: "Zašto su ove priče važne za dječju književnost?", optionA: "Jer su kratke", optionB: "Jer čuvaju slavensku kulturnu baštinu", optionC: "Jer su smiješne", optionD: "Jer su modernog stila", correctAnswer: "b" },
+      { questionText: "Ko je Neva Nevičica?", optionA: "Vila", optionB: "Djevojka koja traži sunce", optionC: "Kraljica", optionD: "Vještica", correctAnswer: "b" },
+      { questionText: "Šta simbolizira sunce u pričama?", optionA: "Toplotu", optionB: "Dobrotu, toplinu i nadu", optionC: "Opasnost", optionD: "Bogatstvo", correctAnswer: "b" },
+      { questionText: "Koji je stil pisanja autorice?", optionA: "Naučni", optionB: "Poetičan i bajkovit", optionC: "Novinarski", optionD: "Tehnički", correctAnswer: "b" },
+      { questionText: "Šta djeca mogu naučiti iz ovih priča?", optionA: "Matematiku", optionB: "Moralne vrijednosti i tradiciju", optionC: "Fiziku", optionD: "Geografiju", correctAnswer: "b" },
+      { questionText: "Ko su negativni likovi u pričama?", optionA: "Učitelji", optionB: "Zli čarobnjaci i bića", optionC: "Životinje", optionD: "Djeca", correctAnswer: "b" },
+      { questionText: "Šta znači riječ 'priče' u naslovu?", optionA: "Romani", optionB: "Kraće narativne forme - bajke", optionC: "Drame", optionD: "Pjesme", correctAnswer: "b" },
+      { questionText: "Kako su priče povezane?", optionA: "Istim likovima", optionB: "Slavenskom mitologijom i motivima", optionC: "Istim mjestom", optionD: "Istim vremenom", correctAnswer: "b" },
+      { questionText: "Šta autorica koristi da stvori čarobnu atmosferu?", optionA: "Naučne pojmove", optionB: "Poetičan jezik i fantastične elemente", optionC: "Humor", optionD: "Statističke podatke", correctAnswer: "b" },
+      { questionText: "Koji je najpoznatiji lik iz zbirke?", optionA: "Regoč", optionB: "Stribor", optionC: "Palunko", optionD: "Svi su poznati", correctAnswer: "d" },
+      { questionText: "Gdje se odvijaju radnje priča?", optionA: "U gradu", optionB: "U šumama, morima i fantastičnim krajevima", optionC: "U školi", optionD: "U fabrici", correctAnswer: "b" },
+      { questionText: "Zašto se ova knjiga i danas čita?", optionA: "Jer je kratka", optionB: "Jer su priče univerzalne i poučne", optionC: "Jer je jeftina", optionD: "Jer je obavezna lektira", correctAnswer: "b" },
+    ],
+    "Vlak u snijegu": [
+      { questionText: "Ko je autor knjige 'Vlak u snijegu'?", optionA: "Ivana Brlić-Mažuranić", optionB: "Mato Lovrak", optionC: "Ivo Andrić", optionD: "Branko Ćopić", correctAnswer: "b" },
+      { questionText: "Šta se dešava sa vlakom u priči?", optionA: "Vlak kasni", optionB: "Vlak zapne u snijegu", optionC: "Vlak se pokvari", optionD: "Vlak nestane", correctAnswer: "b" },
+      { questionText: "Ko su glavni likovi?", optionA: "Odrasli putnici", optionB: "Grupa školske djece", optionC: "Vojnici", optionD: "Životinje", correctAnswer: "b" },
+      { questionText: "Gdje djeca putuju vlakom?", optionA: "Na more", optionB: "Na izlet", optionC: "U školu", optionD: "Kući", correctAnswer: "b" },
+      { questionText: "Šta djeca rade kada vlak zapne?", optionA: "Plaču", optionB: "Organiziraju se i pomažu jedni drugima", optionC: "Bježe", optionD: "Spavaju", correctAnswer: "b" },
+      { questionText: "Koja je glavna tema knjige?", optionA: "Strah od snijega", optionB: "Solidarnost i zajedništvo djece", optionC: "Ljubav", optionD: "Rat", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je preporučena ova knjiga?", optionA: "1-2 razred", optionB: "3-4 razred", optionC: "5-6 razred", optionD: "7-8 razred", correctAnswer: "b" },
+      { questionText: "Ko je vođa dječje grupe?", optionA: "Učitelj", optionB: "Pero", optionC: "Marko", optionD: "Ivica", correctAnswer: "b" },
+      { questionText: "Šta znači riječ 'vlak'?", optionA: "Autobus", optionB: "Voz/željeznica", optionC: "Brod", optionD: "Avion", correctAnswer: "b" },
+      { questionText: "Kako djeca pokazuju hrabrost?", optionA: "Bore se sa vukovima", optionB: "Organiziraju se i traže pomoć", optionC: "Skaču iz vlaka", optionD: "Pjevaju", correctAnswer: "b" },
+      { questionText: "Koliko stranica ima ova knjiga?", optionA: "64", optionB: "96", optionC: "112", optionD: "158", correctAnswer: "c" },
+      { questionText: "Šta djeca nauče iz ovog iskustva?", optionA: "Da ne putuju vlakom", optionB: "Važnost zajedništva i solidarnosti", optionC: "Da izbjegavaju snijeg", optionD: "Da slušaju odrasle", correctAnswer: "b" },
+      { questionText: "Koji godišnje doba je prisutno u priči?", optionA: "Ljeto", optionB: "Zima", optionC: "Proljeće", optionD: "Jesen", correctAnswer: "b" },
+      { questionText: "Šta autor želi poručiti mladim čitaocima?", optionA: "Da budu poslušni", optionB: "Da zajedno mogu savladati svaku prepreku", optionC: "Da ne idu na izlete", optionD: "Da se boje snijega", correctAnswer: "b" },
+      { questionText: "Kakav je Pero kao lik?", optionA: "Plašljiv i nesiguran", optionB: "Hrabar i odgovoran vođa", optionC: "Zločest", optionD: "Lijen", correctAnswer: "b" },
+      { questionText: "Šta se dešava na kraju priče?", optionA: "Djeca ostaju zarobljena", optionB: "Djeca budu spašena", optionC: "Vlak se razbije", optionD: "Djeca se izgube", correctAnswer: "b" },
+      { questionText: "Koji je stil pisanja ovog romana?", optionA: "Kompleksan i filozofski", optionB: "Jednostavan i pristupačan djeci", optionC: "Poetski", optionD: "Satiričan", correctAnswer: "b" },
+      { questionText: "Šta simbolizira snijeg u priči?", optionA: "Ljepotu", optionB: "Izazov i prepreku", optionC: "Zabavu", optionD: "Toplinu", correctAnswer: "b" },
+      { questionText: "Kako se djeca odnose jedni prema drugima?", optionA: "Svađaju se", optionB: "Pomažu i podržavaju jedni druge", optionC: "Ignoriraju se", optionD: "Natječu se", correctAnswer: "b" },
+      { questionText: "Koji je žanr ove knjige?", optionA: "Bajka", optionB: "Dječji roman", optionC: "Drama", optionD: "Poezija", correctAnswer: "b" },
+      { questionText: "Šta djeca dijele dok čekaju pomoć?", optionA: "Igračke", optionB: "Hranu i toplu odjeću", optionC: "Knjige", optionD: "Novac", correctAnswer: "b" },
+      { questionText: "Ko dolazi u pomoć djeci?", optionA: "Policija", optionB: "Seljaci iz okolnog sela", optionC: "Vojska", optionD: "Roditelji", correctAnswer: "b" },
+      { questionText: "Šta knjiga govori o dječjoj snalažljivosti?", optionA: "Da djeca ne mogu ništa sama", optionB: "Da djeca mogu biti organizirana i hrabra", optionC: "Da djeca trebaju samo slušati", optionD: "Da djeca ne smiju putovati", correctAnswer: "b" },
+      { questionText: "Koji osjećaj prevladava među djecom u vlaku?", optionA: "Panika", optionB: "Solidarnost uprkos strahu", optionC: "Ravnodušnost", optionD: "Ljutnja", correctAnswer: "b" },
+      { questionText: "Zašto je ova knjiga klasik dječje književnosti?", optionA: "Jer je duga", optionB: "Jer uči djecu o zajedništvu", optionC: "Jer je smiješna", optionD: "Jer govori o vlakovima", correctAnswer: "b" },
+      { questionText: "Šta djeca koriste za grijanje u vlaku?", optionA: "Vatru", optionB: "Deke i odjeću", optionC: "Peć", optionD: "Struju", correctAnswer: "b" },
+      { questionText: "Kako Lovrak opisuje prirodu?", optionA: "Kratko i hladno", optionB: "Slikovito i detaljno", optionC: "Ne opisuje je", optionD: "Naučno", correctAnswer: "b" },
+      { questionText: "Šta djeca planiraju dok su zarobljena?", optionA: "Bijeg", optionB: "Kako doći do najbližeg sela", optionC: "Kako popraviti vlak", optionD: "Kako se zabaviti", correctAnswer: "b" },
+      { questionText: "Koji lik je najplašljiviji?", optionA: "Pero", optionB: "Dragutin", optionC: "Učitelj", optionD: "Kondukter", correctAnswer: "b" },
+      { questionText: "Šta je poruka knjige za savremenu djecu?", optionA: "Da ne putuju", optionB: "Da zajedništvo i hrabrost pobjeđuju sve prepreke", optionC: "Da slušaju roditelje", optionD: "Da uče geografiju", correctAnswer: "b" },
+    ],
+    "Hasanaginica": [
+      { questionText: "Koji je žanr djela 'Hasanaginica'?", optionA: "Roman", optionB: "Narodna balada", optionC: "Drama", optionD: "Novela", correctAnswer: "b" },
+      { questionText: "Ko je Hasanaginica?", optionA: "Hasanagina majka", optionB: "Hasanagina žena", optionC: "Hasanagina sestra", optionD: "Hasanagina kći", correctAnswer: "b" },
+      { questionText: "Zašto Hasanaga tjera svoju ženu?", optionA: "Jer ga je prevarila", optionB: "Jer ga nije posjetila dok je bio ranjen", optionC: "Jer nije kuhala", optionD: "Jer je bila lijena", correctAnswer: "b" },
+      { questionText: "Zašto Hasanaginica nije posjetila ranjenog muža?", optionA: "Nije znala da je ranjen", optionB: "Iz stida i poštovanja tradicije", optionC: "Bila je bolesna", optionD: "Nije imala prevoz", correctAnswer: "b" },
+      { questionText: "Šta se dešava sa Hasanaginicom na kraju?", optionA: "Vraća se mužu", optionB: "Umire od tuge", optionC: "Odlazi u drugi grad", optionD: "Postaje bogata", correctAnswer: "b" },
+      { questionText: "Koliko djece ima Hasanaginica?", optionA: "Dvoje", optionB: "Troje", optionC: "Petoro", optionD: "Sedmero", correctAnswer: "c" },
+      { questionText: "Ko preuzima Hasanaginicu nakon razvoda?", optionA: "Njeni roditelji", optionB: "Njen brat", optionC: "Njena prijateljica", optionD: "Ostaje sama", correctAnswer: "b" },
+      { questionText: "Šta Hasanaginičin brat radi?", optionA: "Brani sestru", optionB: "Ponovo je udaje", optionC: "Vraća je mužu", optionD: "Ignoriše situaciju", correctAnswer: "b" },
+      { questionText: "Šta je centralna tema balade?", optionA: "Rat", optionB: "Tragična sudbina žene u patrijarhalnom društvu", optionC: "Ljubavna priča", optionD: "Avantura", correctAnswer: "b" },
+      { questionText: "Koliko stranica ima ovo djelo?", optionA: "24", optionB: "64", optionC: "96", optionD: "128", correctAnswer: "a" },
+      { questionText: "Za koji uzrast je preporučeno ovo djelo?", optionA: "1-2 razred", optionB: "3-4 razred", optionC: "5-6 razred", optionD: "7-8 razred", correctAnswer: "d" },
+      { questionText: "Ko je prvi preveo 'Hasanaginicu' na strani jezik?", optionA: "Shakespeare", optionB: "Alberto Fortis", optionC: "Goethe", optionD: "Victor Hugo", correctAnswer: "b" },
+      { questionText: "Na koji jezik je Goethe preveo baladu?", optionA: "Engleski", optionB: "Francuski", optionC: "Njemački", optionD: "Italijanski", correctAnswer: "c" },
+      { questionText: "Šta simbolizira Hasanaginičina smrt?", optionA: "Slabost", optionB: "Neizmjernu ljubav i patnju", optionC: "Osvetu", optionD: "Slobodu", correctAnswer: "b" },
+      { questionText: "Kakav je Hasanaga kao lik?", optionA: "Blag i razumijevajući", optionB: "Ponosan i tvrdoglav", optionC: "Veseo", optionD: "Kukavica", correctAnswer: "b" },
+      { questionText: "Šta Hasanaginica traži prije odlaska?", optionA: "Novac", optionB: "Da se oprosti od djece", optionC: "Kuću", optionD: "Konja", correctAnswer: "b" },
+      { questionText: "Koji je ton balade?", optionA: "Veseo", optionB: "Tragičan i tužan", optionC: "Satiričan", optionD: "Komičan", correctAnswer: "b" },
+      { questionText: "Šta balada govori o položaju žene?", optionA: "Da je žena slobodna", optionB: "Da je žena podređena muškim odlukama", optionC: "Da je žena vladarica", optionD: "Da žena nema osjećaja", correctAnswer: "b" },
+      { questionText: "Koji osjećaj dominira u baladi?", optionA: "Radost", optionB: "Tuga i nepravda", optionC: "Ljutnja", optionD: "Strah", correctAnswer: "b" },
+      { questionText: "Šta znači riječ 'balada'?", optionA: "Duga priča", optionB: "Lirsko-epska pjesma s tragičnim sadržajem", optionC: "Vesela pjesma", optionD: "Pismo", correctAnswer: "b" },
+      { questionText: "Kako se Hasanaginica osjeća prema djeci?", optionA: "Ravnodušno", optionB: "Beskrajno ih voli", optionC: "Ne mari za njih", optionD: "Boji ih se", correctAnswer: "b" },
+      { questionText: "Zašto je ova balada važna za svjetsku književnost?", optionA: "Jer je duga", optionB: "Jer je prevedena na mnoge jezike i cijenjena", optionC: "Jer je smiješna", optionD: "Jer govori o ratu", correctAnswer: "b" },
+      { questionText: "Šta Hasanaginica čini kad vidi djecu na putu?", optionA: "Prolazi pokraj njih", optionB: "Umire od tuge", optionC: "Pozdravlja ih", optionD: "Uzima ih sa sobom", correctAnswer: "b" },
+      { questionText: "Koji je nesporazum u centru priče?", optionA: "Oko novca", optionB: "Hasanaga misli da ga žena ne voli jer ga nije posjetila", optionC: "Oko djece", optionD: "Oko kuće", correctAnswer: "b" },
+      { questionText: "Šta autor želi reći o komunikaciji?", optionA: "Da je nepotrebna", optionB: "Da nedostatak komunikacije vodi u tragediju", optionC: "Da je laka", optionD: "Da nije važna", correctAnswer: "b" },
+      { questionText: "Koji element čini ovu baladu univerzalnom?", optionA: "Humor", optionB: "Tema ljudske patnje i nesporazuma", optionC: "Akcija", optionD: "Fantastika", correctAnswer: "b" },
+      { questionText: "Kako se balada prenosi kroz generacije?", optionA: "Pisanim putem", optionB: "Usmenim predanjem", optionC: "Elektronski", optionD: "Kroz slike", correctAnswer: "b" },
+      { questionText: "Šta nas ova balada uči?", optionA: "Da je ponos važniji od ljubavi", optionB: "Da nesporazumi mogu imati tragične posljedice", optionC: "Da se žene ne smiju žaliti", optionD: "Da muškarci uvijek griješe", correctAnswer: "b" },
+      { questionText: "Gdje se odvija radnja balade?", optionA: "U Sarajevu", optionB: "U Bosni i Hercegovini", optionC: "U Istanbulu", optionD: "U Beogradu", correctAnswer: "b" },
+      { questionText: "Koji je historijski kontekst balade?", optionA: "Rimsko doba", optionB: "Osmansko doba u Bosni", optionC: "Moderno doba", optionD: "Prahistorija", correctAnswer: "b" },
+    ],
+    "Prokleta avlija": [
+      { questionText: "Ko je autor 'Prokleta avlija'?", optionA: "Meša Selimović", optionB: "Ivo Andrić", optionC: "Branko Ćopić", optionD: "Petar Kočić", correctAnswer: "b" },
+      { questionText: "Šta je 'avlija' u naslovu?", optionA: "Vrt", optionB: "Zatvor u Istanbulu", optionC: "Škola", optionD: "Tržnica", correctAnswer: "b" },
+      { questionText: "Ko je fra Petar?", optionA: "Vojnik", optionB: "Bosanski fratar koji dospijeva u zatvor", optionC: "Sudija", optionD: "Trgovac", correctAnswer: "b" },
+      { questionText: "Zašto fra Petar dospijeva u zatvor?", optionA: "Počinio je zločin", optionB: "Greškom, zbog nesporazuma", optionC: "Bio je špijun", optionD: "Krao je", correctAnswer: "b" },
+      { questionText: "Ko je Ćamil u romanu?", optionA: "Stražar", optionB: "Mladi čovjek koji vjeruje da je princ Džem", optionC: "Sudija", optionD: "Ljekar", correctAnswer: "b" },
+      { questionText: "Šta je 'prokleta avlija' simbolički?", optionA: "Samo zatvor", optionB: "Simbolizira ljudsku patnju i nepravdu", optionC: "Lijep vrt", optionD: "Škola", correctAnswer: "b" },
+      { questionText: "Gdje se odvija radnja?", optionA: "U Sarajevu", optionB: "U Istanbulu", optionC: "U Beogradu", optionD: "U Rimu", correctAnswer: "b" },
+      { questionText: "Koji je narativni stil romana?", optionA: "Jednostavan", optionB: "Priča u priči (ramska priča)", optionC: "Dnevnik", optionD: "Pismo", correctAnswer: "b" },
+      { questionText: "Ko priča priču o fra Petru?", optionA: "Fra Petar sam", optionB: "Mladi fratar nakon fra Petrove smrti", optionC: "Ćamil", optionD: "Sudija", correctAnswer: "b" },
+      { questionText: "Šta Andrić želi reći o zatvoru?", optionA: "Da je zabavan", optionB: "Da je mikrokozmos ljudskog društva", optionC: "Da je čist", optionD: "Da je nepotreban", correctAnswer: "b" },
+      { questionText: "Koliko stranica ima ovo djelo?", optionA: "64", optionB: "96", optionC: "128", optionD: "314", correctAnswer: "c" },
+      { questionText: "Za koji uzrast je preporučeno?", optionA: "3-4 razred", optionB: "5-6 razred", optionC: "7-8 razred", optionD: "8-9 razred", correctAnswer: "d" },
+      { questionText: "Ko je Karađoz?", optionA: "Zatvorenik", optionB: "Upravnik zatvora", optionC: "Fratar", optionD: "Princ", correctAnswer: "b" },
+      { questionText: "Šta Ćamil traži u zatvoru?", optionA: "Slobodu", optionB: "Istinu o svom identitetu", optionC: "Novac", optionD: "Prijatelje", correctAnswer: "b" },
+      { questionText: "Šta se dešava sa Ćamilom?", optionA: "Biva oslobođen", optionB: "Umire u zatvoru", optionC: "Postaje upravnik", optionD: "Bježi", correctAnswer: "b" },
+      { questionText: "Šta fra Petar doživljava u zatvoru?", optionA: "Zabavu", optionB: "Patnju i spoznaju o ljudskoj prirodi", optionC: "Bogatstvo", optionD: "Prijateljstvo sa svima", correctAnswer: "b" },
+      { questionText: "Koji je žanr ovog djela?", optionA: "Bajka", optionB: "Novela/kratki roman", optionC: "Drama", optionD: "Poezija", correctAnswer: "b" },
+      { questionText: "Šta avlija predstavlja za zatvorenike?", optionA: "Dom", optionB: "Zatočeništvo i dehumanizaciju", optionC: "Slobodu", optionD: "Školu", correctAnswer: "b" },
+      { questionText: "Kako Andrić opisuje zatvorenike?", optionA: "Kao zločince", optionB: "Kao ljude sa svojim pričama i sudbinama", optionC: "Kao heroje", optionD: "Kao životinje", correctAnswer: "b" },
+      { questionText: "Šta roman govori o pravdi?", optionA: "Da uvijek pobjeđuje", optionB: "Da je često odsutna i nepravedna", optionC: "Da je lako dostupna", optionD: "Da je nevažna", correctAnswer: "b" },
+      { questionText: "Ko je princ Džem u priči?", optionA: "Stvarna osoba u zatvoru", optionB: "Historijska ličnost za koju Ćamil misli da je on", optionC: "Izmišljen lik", optionD: "Stražar", correctAnswer: "b" },
+      { questionText: "Šta simbolizira Ćamilova sudbina?", optionA: "Sreću", optionB: "Tragičnu potragu za identitetom", optionC: "Moć", optionD: "Bogatstvo", correctAnswer: "b" },
+      { questionText: "Kako se fra Petar odnosi prema Ćamilu?", optionA: "Neprijateljski", optionB: "Sa suosjećanjem", optionC: "Ravnodušno", optionD: "Sa ljutnjom", correctAnswer: "b" },
+      { questionText: "Šta Karađoz predstavlja?", optionA: "Pravdu", optionB: "Moć i okrutnost sistema", optionC: "Dobrotu", optionD: "Mudrost", correctAnswer: "b" },
+      { questionText: "Koji motivi se ponavljaju u djelu?", optionA: "Sreća i zabava", optionB: "Zatočeništvo, identitet i pripovijedanje", optionC: "Putovanje", optionD: "Ljubav", correctAnswer: "b" },
+      { questionText: "Šta djelo govori o pripovijedanju?", optionA: "Da je dosadno", optionB: "Da priče čuvaju ljudsko iskustvo i pamćenje", optionC: "Da je nepotrebno", optionD: "Da je opasno", correctAnswer: "b" },
+      { questionText: "Kako fra Petar izlazi iz zatvora?", optionA: "Bježi", optionB: "Biva oslobođen nakon intervencije", optionC: "Ne izlazi nikada", optionD: "Plaća otkup", correctAnswer: "b" },
+      { questionText: "Šta fra Petar nosi sa sobom iz zatvora?", optionA: "Zlato", optionB: "Priče i sjećanja", optionC: "Oružje", optionD: "Knjige", correctAnswer: "b" },
+      { questionText: "Koji je ton pripovijedanja?", optionA: "Veseo", optionB: "Melanholičan i filozofski", optionC: "Satiričan", optionD: "Komičan", correctAnswer: "b" },
+      { questionText: "Zašto je 'Prokleta avlija' važno djelo?", optionA: "Jer je kratko", optionB: "Jer duboko istražuje ljudsku patnju i pravdu", optionC: "Jer je zabavno", optionD: "Jer govori o putovanju", correctAnswer: "b" },
+    ],
+    "Priča o sretnim medvjedima": [
+      { questionText: "Ko je autor knjige 'Priča o sretnim medvjedima'?", optionA: "Enes Kišević", optionB: "Sead Muhamedagić", optionC: "Branko Ćopić", optionD: "Mato Lovrak", correctAnswer: "b" },
+      { questionText: "Ko su glavni likovi u priči?", optionA: "Djeca", optionB: "Medvjedi", optionC: "Ptice", optionD: "Ribice", correctAnswer: "b" },
+      { questionText: "Šta medvjedi traže u priči?", optionA: "Hranu", optionB: "Sreću", optionC: "Kuću", optionD: "Prijatelje", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je preporučena ova knjiga?", optionA: "1-2 razred", optionB: "3-4 razred", optionC: "5-6 razred", optionD: "7-8 razred", correctAnswer: "a" },
+      { questionText: "Koliko stranica ima ova knjiga?", optionA: "24", optionB: "48", optionC: "64", optionD: "96", correctAnswer: "c" },
+      { questionText: "Gdje žive medvjedi u priči?", optionA: "U gradu", optionB: "U šumi", optionC: "Na moru", optionD: "U pustinji", correctAnswer: "b" },
+      { questionText: "Šta je glavna tema priče?", optionA: "Strah", optionB: "Sreća i prijateljstvo", optionC: "Rat", optionD: "Putovanje", correctAnswer: "b" },
+      { questionText: "Šta medvjedi nauče na kraju?", optionA: "Da je novac važan", optionB: "Da je sreća u malim stvarima", optionC: "Da je snaga najvažnija", optionD: "Da je šuma opasna", correctAnswer: "b" },
+      { questionText: "Koji je ton priče?", optionA: "Strašan", optionB: "Veseo i topao", optionC: "Tužan", optionD: "Ozbiljan", correctAnswer: "b" },
+      { questionText: "Šta djeca mogu naučiti iz ove priče?", optionA: "Matematiku", optionB: "Vrijednost prijateljstva i dobrote", optionC: "Geografiju", optionD: "Historiju", correctAnswer: "b" },
+      { questionText: "Koji je žanr ove knjige?", optionA: "Roman", optionB: "Dječja priča/bajka", optionC: "Drama", optionD: "Poezija", correctAnswer: "b" },
+      { questionText: "Koliko medvjeda ima u priči?", optionA: "Jedan", optionB: "Dva", optionC: "Tri", optionD: "Više medvjeda", correctAnswer: "d" },
+      { questionText: "Šta simbolizira šuma u priči?", optionA: "Opasnost", optionB: "Dom i sigurnost", optionC: "Dosadu", optionD: "Tužno mjesto", correctAnswer: "b" },
+      { questionText: "Kako se medvjedi odnose jedni prema drugima?", optionA: "Svađaju se", optionB: "Pomažu i vole jedni druge", optionC: "Ignoriraju se", optionD: "Natječu se", correctAnswer: "b" },
+      { questionText: "Šta čini medvjede sretnima?", optionA: "Novac", optionB: "Zajedništvo i ljubav", optionC: "Moć", optionD: "Hrana", correctAnswer: "b" },
+      { questionText: "Koji je stil ilustracija u knjizi?", optionA: "Realistični", optionB: "Šareni i veseli", optionC: "Crno-bijeli", optionD: "Apstraktni", correctAnswer: "b" },
+      { questionText: "Šta autor želi poručiti?", optionA: "Da su životinje opasne", optionB: "Da je sreća u odnosima s drugima", optionC: "Da treba bježati od kuće", optionD: "Da je šuma dosadna", correctAnswer: "b" },
+      { questionText: "Kakav je jezik u knjizi?", optionA: "Složen", optionB: "Jednostavan i razumljiv za malu djecu", optionC: "Stručni", optionD: "Staromodan", correctAnswer: "b" },
+      { questionText: "Šta medvjedi rade zajedno?", optionA: "Rade u fabrici", optionB: "Igraju se, pomažu i dijele", optionC: "Spavaju", optionD: "Putuju svijetom", correctAnswer: "b" },
+      { questionText: "Koji osjećaj prevladava u knjizi?", optionA: "Strah", optionB: "Toplina i radost", optionC: "Tuga", optionD: "Ljutnja", correctAnswer: "b" },
+      { questionText: "Šta je posebno kod ove knjige?", optionA: "Duga je", optionB: "Prilagođena je najmlađim čitaocima", optionC: "Napisana je na engleskom", optionD: "Nema slika", correctAnswer: "b" },
+      { questionText: "Kako priča počinje?", optionA: "Sa ratom", optionB: "Upoznavanjem medvjeda u šumi", optionC: "Sa školom", optionD: "Sa gradom", correctAnswer: "b" },
+      { questionText: "Šta je poruka priče za roditelje?", optionA: "Da kupuju igračke", optionB: "Da čitaju djeci i grade odnose", optionC: "Da šalju djecu u šumu", optionD: "Da kupuju medvjede", correctAnswer: "b" },
+      { questionText: "Koji problem medvjedi rješavaju?", optionA: "Finansijski problem", optionB: "Kako pronaći pravu sreću", optionC: "Kako pobjeći iz šume", optionD: "Kako izgraditi kuću", correctAnswer: "b" },
+      { questionText: "Šta znači biti 'sretan' prema priči?", optionA: "Imati mnogo novca", optionB: "Imati ljude (medvjede) koji te vole", optionC: "Biti najjači", optionD: "Biti najljepši", correctAnswer: "b" },
+      { questionText: "Kako priča završava?", optionA: "Tužno", optionB: "Sretno, medvjedi su zajedno", optionC: "Neizvjesno", optionD: "Tragično", correctAnswer: "b" },
+      { questionText: "Šta čini ovu knjigu posebnom za bosansku dječju književnost?", optionA: "Napisana je na stranom jeziku", optionB: "Domaći autor piše za najmlađe", optionC: "Nema priču", optionD: "Samo ima slike", correctAnswer: "b" },
+      { questionText: "Koji životni nauk nudi priča?", optionA: "Da treba biti sebičan", optionB: "Da dijeljenje i ljubav donose sreću", optionC: "Da treba biti sam", optionD: "Da je snaga najvažnija", correctAnswer: "b" },
+      { questionText: "Šta bi dijete trebalo osjećati čitajući ovu priču?", optionA: "Strah", optionB: "Radost i toplinu", optionC: "Dosadu", optionD: "Ljutnju", correctAnswer: "b" },
+      { questionText: "Zašto je čitanje ovakvih priča važno za djecu?", optionA: "Nije važno", optionB: "Razvija empatiju i ljubav prema čitanju", optionC: "Gubi se vrijeme", optionD: "Samo je zabava", correctAnswer: "b" },
+    ],
+    "Bajke bosanskog lonca": [
+      { questionText: "Ko je autor knjige 'Bajke bosanskog lonca'?", optionA: "Sead Muhamedagić", optionB: "Enes Kišević", optionC: "Branko Ćopić", optionD: "Mato Lovrak", correctAnswer: "b" },
+      { questionText: "Šta je 'bosanski lonac' u naslovu?", optionA: "Samo posuda za kuhanje", optionB: "Simbol bosanske kulturne raznolikosti", optionC: "Oblik knjige", optionD: "Ime grada", correctAnswer: "b" },
+      { questionText: "Za koji uzrast je preporučena ova knjiga?", optionA: "1-2 razred", optionB: "3-4 razred", optionC: "5-6 razred", optionD: "7-8 razred", correctAnswer: "b" },
+      { questionText: "Koliko stranica ima ova knjiga?", optionA: "64", optionB: "96", optionC: "128", optionD: "158", correctAnswer: "b" },
+      { questionText: "Koji je žanr ove knjige?", optionA: "Roman", optionB: "Zbirka bajki", optionC: "Drama", optionD: "Poezija", correctAnswer: "b" },
+      { questionText: "Šta je zajedničko svim bajkama u zbirci?", optionA: "Isti likovi", optionB: "Bosanski kulturni kontekst", optionC: "Isti završetak", optionD: "Ista dužina", correctAnswer: "b" },
+      { questionText: "Šta djeca mogu naučiti iz ovih bajki?", optionA: "Matematiku", optionB: "Moralne vrijednosti i bosansku tradiciju", optionC: "Fiziku", optionD: "Hemiju", correctAnswer: "b" },
+      { questionText: "Koji likovi se pojavljuju u bajkama?", optionA: "Samo ljudi", optionB: "Životinje, čarobni likovi i djeca", optionC: "Samo roboti", optionD: "Samo odrasli", correctAnswer: "b" },
+      { questionText: "Šta simbolizira lonac u bosanskoj kulturi?", optionA: "Bogatstvo", optionB: "Mješavinu različitih okusa i kultura", optionC: "Siromaštvo", optionD: "Rat", correctAnswer: "b" },
+      { questionText: "Kako završavaju bajke u ovoj zbirci?", optionA: "Tužno", optionB: "Uglavnom sretno sa poukom", optionC: "Neizvjesno", optionD: "Tragično", correctAnswer: "b" },
+      { questionText: "Šta autor želi postići ovom knjigom?", optionA: "Zabaviti odrasle", optionB: "Sačuvati bosansku kulturnu baštinu kroz priče", optionC: "Prodati mnogo primjeraka", optionD: "Napisati udžbenik", correctAnswer: "b" },
+      { questionText: "Koji je stil pisanja?", optionA: "Naučni", optionB: "Bajkovit i pristupačan", optionC: "Novinarski", optionD: "Tehnički", correctAnswer: "b" },
+      { questionText: "Šta čini ovu zbirku posebnom?", optionA: "Napisana je na engleskom", optionB: "Kombinira bosansku tradiciju sa univerzalnim porukama", optionC: "Nema priča", optionD: "Samo ima slike", correctAnswer: "b" },
+      { questionText: "Koji osjećaj prevladava u bajkama?", optionA: "Strah", optionB: "Toplina, humor i mudrost", optionC: "Tuga", optionD: "Ljutnja", correctAnswer: "b" },
+      { questionText: "Šta je 'pouka' u bajkama?", optionA: "Matematički zadatak", optionB: "Moralna lekcija na kraju priče", optionC: "Pitanje za čitaoca", optionD: "Naslov sljedeće bajke", correctAnswer: "b" },
+      { questionText: "Kako su bajke povezane sa bosanskim identitetom?", optionA: "Nisu povezane", optionB: "Koriste bosanske motive, tradiciju i jezik", optionC: "Govore o stranim zemljama", optionD: "Koriste strane likove", correctAnswer: "b" },
+      { questionText: "Šta djeca osjećaju čitajući ove bajke?", optionA: "Dosadu", optionB: "Radost i znatiželju", optionC: "Strah", optionD: "Ljutnju", correctAnswer: "b" },
+      { questionText: "Koji element je ključan u bajkama?", optionA: "Nauka", optionB: "Mašta i fantastika", optionC: "Statistika", optionD: "Tehnologija", correctAnswer: "b" },
+      { questionText: "Šta 'bosanski lonac' jelo simbolizira?", optionA: "Fast food", optionB: "Raznolikost sastojaka koji zajedno tvore nešto ukusno", optionC: "Dietu", optionD: "Samo povrće", correctAnswer: "b" },
+      { questionText: "Zašto je čitanje bajki važno za djecu?", optionA: "Nije važno", optionB: "Razvija maštu, empatiju i ljubav prema kulturi", optionC: "Gubi se vrijeme", optionD: "Samo za zabavu", correctAnswer: "b" },
+      { questionText: "Koji je ton priča u zbirci?", optionA: "Ozbiljan i hladan", optionB: "Veseo, topao i poučan", optionC: "Satiričan", optionD: "Mračan", correctAnswer: "b" },
+      { questionText: "Šta autor koristi da zadrži pažnju djece?", optionA: "Dugačke opise", optionB: "Čarobne elemente i zanimljive likove", optionC: "Naučne pojmove", optionD: "Dugačke rečenice", correctAnswer: "b" },
+      { questionText: "Kako se dobro i zlo prikazuju u bajkama?", optionA: "Nema razlike", optionB: "Dobro uvijek pobijedi na kraju", optionC: "Zlo uvijek pobijedi", optionD: "Ne govori se o tome", correctAnswer: "b" },
+      { questionText: "Šta čini bajku različitom od romana?", optionA: "Ništa", optionB: "Kraća je, ima čarobne elemente i pouku", optionC: "Duža je", optionD: "Nema likove", correctAnswer: "b" },
+      { questionText: "Koji bosanski elementi se nalaze u bajkama?", optionA: "Samo priroda", optionB: "Jezik, običaji, hrana i tradicija", optionC: "Samo politika", optionD: "Samo historija", correctAnswer: "b" },
+      { questionText: "Šta učimo o dobroti iz ovih bajki?", optionA: "Da je nepotrebna", optionB: "Da se dobrota uvijek isplati", optionC: "Da je slabost", optionD: "Da je rijetka", correctAnswer: "b" },
+      { questionText: "Kako autor opisuje prirodu u bajkama?", optionA: "Ne opisuje je", optionB: "Slikovito i sa ljubavlju", optionC: "Hladno", optionD: "Naučno", correctAnswer: "b" },
+      { questionText: "Šta je zajednička poruka svih bajki?", optionA: "Da je život težak", optionB: "Da dobrota, ljubav i mudrost pobjeđuju", optionC: "Da je sve besmisleno", optionD: "Da treba biti sebičan", correctAnswer: "b" },
+      { questionText: "Zašto se ova knjiga i danas čita?", optionA: "Jer je obavezna", optionB: "Jer su poruke univerzalne i trajne", optionC: "Jer je kratka", optionD: "Jer je jeftina", correctAnswer: "b" },
+      { questionText: "Šta bi djeca trebala ponijeti iz ove zbirke?", optionA: "Ništa", optionB: "Ljubav prema čitanju i bosanskoj tradiciji", optionC: "Strah od bajki", optionD: "Dosadu", correctAnswer: "b" },
+    ],
+  };
+
+  const questionsForBook = questionSets[bookTitle];
+  if (!questionsForBook) return [];
+
+  return questionsForBook.map(q => ({
+    quizId,
+    questionText: q.questionText,
+    optionA: q.optionA,
+    optionB: q.optionB,
+    optionC: q.optionC,
+    optionD: q.optionD,
+    correctAnswer: q.correctAnswer,
+    points: 1,
+  }));
+}
+
+export async function seedDatabase() {
+  const existingBooks = await db.select().from(books).limit(1);
+  if (existingBooks.length > 0) {
+    console.log("Database already seeded, skipping...");
+    return;
+  }
+
+  console.log("Seeding database...");
+
+  const adminPassword = await hashPassword("admin123");
+  const teacherPassword = await hashPassword("ucitelj123");
+  const parentPassword = await hashPassword("roditelj123");
+  const studentPassword = await hashPassword("ucenik123");
+
+  await db.insert(users).values({
+    username: "admin",
+    email: "admin@citaj.ba",
+    password: adminPassword,
+    role: "admin",
+    fullName: "Admin Korisnik",
+  });
+
+  await db.insert(users).values({
+    username: "ucitelj1",
+    email: "ucitelj@citaj.ba",
+    password: teacherPassword,
+    role: "teacher",
+    fullName: "Amra Hodžić",
+    schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+    className: "5a",
+  });
+
+  const [parent] = await db.insert(users).values({
+    username: "roditelj1",
+    email: "roditelj@citaj.ba",
+    password: parentPassword,
+    role: "parent",
+    fullName: "Kemal Begović",
+  }).returning();
+
+  await db.insert(users).values([
+    {
+      username: "ucenik1",
+      email: "ucenik1@citaj.ba",
+      password: studentPassword,
+      role: "student",
+      fullName: "Haris Begović",
+      schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+      className: "5a",
+      parentId: parent.id,
+    },
+    {
+      username: "ucenik2",
+      email: "ucenik2@citaj.ba",
+      password: studentPassword,
+      role: "student",
+      fullName: "Lejla Begović",
+      schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+      className: "5a",
+      parentId: parent.id,
+    },
+  ]);
+
+  console.log("Users seeded.");
+
+  const bookContent = "Ovo je primjer sadržaja knjige koji služi kao početni tekst za platformu Čitaj!. Knjiga sadrži mnogo zanimljivih poglavlja koja čitaoca vode kroz uzbudljivu priču punu neočekivanih obrata i pouka.\n\nLikovi u knjizi su pažljivo osmišljeni i svaki od njih nosi posebnu poruku. Kroz njihove avanture i iskustva, čitaoci uče o važnosti prijateljstva, hrabrosti i upornosti u životu.\n\nRadnja se odvija u fascinantnom okruženju koje oživljava kroz živopisne opise prirode, gradova i ljudi. Autor majstorski koristi jezik kako bi stvorio atmosferu koja čitaoca potpuno uvlači u priču.\n\nOva knjiga je odličan izbor za sve koji žele uživati u kvalitetnoj književnosti i istovremeno naučiti nešto novo o sebi i svijetu oko sebe.";
+
+  const booksData = [
+    { title: "Mali princ", author: "Antoine de Saint-Exupéry", gradeLevel: "5-6", pageCount: 96, description: "Poetična priča o malom princu koji putuje s planeta na planet i uči o životu, ljubavi i prijateljstvu. Jedno od najčitanijih djela svjetske književnosti koje oduševljava i djecu i odrasle." },
+    { title: "Derviš i smrt", author: "Meša Selimović", gradeLevel: "9+", pageCount: 414, description: "Monumentalni roman o dervišu Ahmedu Nurudinu koji se suočava s nepravdom i vlastitom savješću. Djelo duboko istražuje ljudsku prirodu, moral i borbu pojedinca protiv sistema." },
+    { title: "Tvrđava", author: "Meša Selimović", gradeLevel: "9+", pageCount: 538, description: "Filozofski roman o potrazi za identitetom i smislom u turbulentnom svijetu. Selimović kroz lik Ahmeta Šabe istražuje teme slobode, vjere i pripadnosti." },
+    { title: "Na Drini ćuprija", author: "Ivo Andrić", gradeLevel: "8-9", pageCount: 314, description: "Epski roman-hronika o mostu na Drini u Višegradu koji prati sudbine naroda kroz stoljeća. Nobelovac Andrić majstorski prikazuje suživot i sukobe različitih kultura." },
+    { title: "Priče iz davnine", author: "Ivana Brlić-Mažuranić", gradeLevel: "3-4", pageCount: 158, description: "Zbirka čarobnih priča inspirisanih slavenskom mitologijom. Bajkoviti svijet vila, divova i čarobnih bića koji oduševljava generacije mladih čitalaca." },
+    { title: "Vlak u snijegu", author: "Mato Lovrak", gradeLevel: "3-4", pageCount: 112, description: "Uzbudljiva priča o grupi djece čiji vlak zapne u snijegu. Djeca pokazuju nevjerovatnu hrabrost i solidarnost dok čekaju pomoć." },
+    { title: "Hasanaginica", author: "Narodna balada", gradeLevel: "7-8", pageCount: 24, description: "Jedna od najpoznatijih južnoslavenskih balada o tragičnoj sudbini Hasanagine žene. Djelo univerzalne vrijednosti koje je prevedeno na mnoge svjetske jezike." },
+    { title: "Prokleta avlija", author: "Ivo Andrić", gradeLevel: "8-9", pageCount: 128, description: "Kratki roman o bosanskom fratru fra Petru koji dospijeva u istanbulski zatvor. Andrić kroz tehniku priče u priči istražuje teme slobode, identiteta i ljudske patnje." },
+    { title: "Priča o sretnim medvjedima", author: "Sead Muhamedagić", gradeLevel: "1-2", pageCount: 64, description: "Topla i nježna priča o porodici medvjeda koji uče o sreći i prijateljstvu. Idealna knjiga za najmlađe čitaoce koja razvija ljubav prema čitanju." },
+    { title: "Bajke bosanskog lonca", author: "Enes Kišević", gradeLevel: "3-4", pageCount: 96, description: "Zbirka bajki inspirisanih bosanskom tradicijom i kulturom. Poučne priče pune mašte, humora i mudrosti koje čuvaju bosansku kulturnu baštinu." },
+  ];
+
+  const insertedBooks = await db.insert(books).values(
+    booksData.map(b => ({
+      title: b.title,
+      author: b.author,
+      description: b.description,
+      coverImage: "/images/book-placeholder.svg",
+      content: bookContent,
+      gradeLevel: b.gradeLevel,
+      pageCount: b.pageCount,
+    }))
+  ).returning();
+
+  console.log(`${insertedBooks.length} books seeded.`);
+
+  for (const book of insertedBooks) {
+    const [quiz] = await db.insert(quizzes).values({
+      bookId: book.id,
+      title: `Kviz: ${book.title}`,
+    }).returning();
+
+    const questionsData = generateQuestionsForBook(book.title, quiz.id);
+    if (questionsData.length > 0) {
+      await db.insert(questions).values(questionsData);
+    }
+    console.log(`Quiz with ${questionsData.length} questions seeded for "${book.title}".`);
+  }
+
+  await db.insert(blogPosts).values([
+    {
+      title: "Kako motivirati dijete da čita",
+      excerpt: "Otkrijte provjerene metode kojima možete potaknuti ljubav prema čitanju kod vašeg djeteta. Mali koraci mogu napraviti veliku razliku.",
+      content: "Motivirati dijete da čita može biti izazov u doba ekrana i digitalnih medija, ali postoje provjerene strategije koje mogu pomoći. Ključ je u tome da čitanje učinite ugodnim iskustvom, a ne obavezom. Počnite tako što ćete sami čitati pred djecom - djeca uče po modelu i ako vide da vi uživate u knjigama, prirodno će razviti znatiželju.\n\nVažno je dati djeci slobodu izbora. Neka sami biraju knjige koje ih zanimaju, čak i ako to nisu klasici koje biste vi odabrali. Strip, enciklopedija o dinosaurusima ili knjiga o omiljenom sportu - sve je to čitanje koje gradi naviku. Postepeno ćete moći uvoditi raznovrsniji sadržaj.\n\nStvorite rutinu čitanja u vašem domu. To može biti čitanje prije spavanja, tihi sat čitanja nedjeljom popodne ili zajedničko čitanje naglas. Redovnost je ključna za izgradnju navike. Također, razgovarajte o pročitanom - pitajte dijete šta misli o likovima, šta bi ono uradilo na njihovom mjestu.\n\nNe zaboravite pohvaliti trud, ne samo rezultat. Svaka pročitana stranica je uspjeh. Naša platforma Čitaj! pomaže u praćenju napretka i motiviranju kroz kvizove i bodovni sistem koji čitanje pretvara u zabavno iskustvo.",
+      author: "Redakcija Čitaj!",
+      coverImage: "/images/blog-placeholder.svg",
+    },
+    {
+      title: "5 koristi čitanja za razvoj djeteta",
+      excerpt: "Čitanje nije samo zabava - ono aktivno doprinosi kognitivnom, emocionalnom i socijalnom razvoju vašeg djeteta. Saznajte pet ključnih koristi.",
+      content: "Čitanje je jedna od najvažnijih aktivnosti za cjelokupni razvoj djeteta. Istraživanja pokazuju da djeca koja redovno čitaju imaju bolji vokabular, jače analitičke sposobnosti i veću empatiju. Evo pet ključnih koristi koje čitanje donosi vašem djetetu.\n\nPrva korist je razvoj jezičkih sposobnosti. Djeca koja čitaju imaju znatno bogatiji rječnik od svojih vršnjaka koji ne čitaju. Druga korist je poboljšanje koncentracije i pažnje - u svijetu kratkih video sadržaja, čitanje uči mozak da se fokusira na jednu aktivnost duži period. Treća korist je razvoj kritičkog mišljenja - čitajući priče, djeca uče analizirati situacije, predviđati ishode i donositi zaključke.\n\nČetvrta korist je emocionalni razvoj. Kroz priče, djeca uče prepoznavati i razumijevati različite emocije. Identifikacija s likovima pomaže im da razviju empatiju i razumijevanje za druge. Peta korist je akademski uspjeh - istraživanja dosljedno pokazuju da djeca koja čitaju za zabavu postižu bolje rezultate u svim školskim predmetima, ne samo u jeziku.\n\nOhrabrite vaše dijete da čita svaki dan, makar i samo 15 minuta. Platforma Čitaj! nudi širok izbor kvalitetnih knjiga prilagođenih različitim uzrastima, uz kvizove koji provjeravaju razumijevanje i motiviraju nastavak čitanja.",
+      author: "Redakcija Čitaj!",
+      coverImage: "/images/blog-placeholder.svg",
+    },
+    {
+      title: "Digitalno čitanje vs. tradicionalne knjige",
+      excerpt: "U eri tehnologije, mnogi se pitaju da li je digitalno čitanje jednako vrijedno kao čitanje tradicionalnih knjiga. Istražujemo prednosti i nedostatke oba pristupa.",
+      content: "Debate između digitalnog i tradicionalnog čitanja postaje sve aktualnija kako tehnologija napreduje. Obje forme imaju svoje prednosti i nedostatke, a idealan pristup često kombinira obje. Tradicionalne knjige nude taktilno iskustvo - osjećaj papira, miris knjige, fizičko listanje stranica koje mnogi čitaoci smatraju nezamjenjivim.\n\nS druge strane, digitalno čitanje donosi pristupačnost i praktičnost. Na jednom uređaju možete nositi stotine knjiga, prilagoditi veličinu teksta i čitati u mraku. Za djecu, digitalne platforme poput Čitaj! nude interaktivne elemente - kvizove, praćenje napretka i gamifikaciju koja može dodatno motivirati mlade čitaoce.\n\nIstraživanja pokazuju da za duboko čitanje i pamćenje, tradicionalne knjige imaju blagu prednost. Međutim, za kratke tekstove, vijesti i informativno čitanje, digitalni format je jednako efikasan. Ključno je da dijete čita - format je manje važan od same navike čitanja.\n\nNaš savjet je da kombinirate oba pristupa. Neka dijete uživa u fizičkim knjigama kod kuće, a digitalnu platformu koristi za praćenje napretka, rješavanje kvizova i otkrivanje novih naslova. Najvažnije je da čitanje ostane ugodno iskustvo, bez obzira na format.",
+      author: "Redakcija Čitaj!",
+      coverImage: "/images/blog-placeholder.svg",
+    },
+  ]);
+
+  console.log("Blog posts seeded.");
+  console.log("Database seeded successfully!");
+}
