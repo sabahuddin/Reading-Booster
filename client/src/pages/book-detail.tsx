@@ -256,16 +256,17 @@ export default function BookDetail() {
                       <strong>Izdavač:</strong> {book.publisher}
                     </div>
                   )}
-                  {book.publicationYear && (
-                    <div>
-                      <strong>Godina izdanja:</strong> {book.publicationYear}
-                    </div>
-                  )}
+                  <div>
+                    <strong>Godina i mjesto:</strong> {book.publicationYear || "/"} {book.publicationCity ? `, ${book.publicationCity}` : ""}
+                  </div>
                   {book.isbn && (
                     <div>
                       <strong>ISBN:</strong> {book.isbn}
                     </div>
                   )}
+                  <div>
+                    <strong>COBISS.BH-ID:</strong> {book.cobissId || "/"}
+                  </div>
                   {book.readingDifficulty && (
                     <div>
                       <strong>Težina čitanja:</strong> {DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}

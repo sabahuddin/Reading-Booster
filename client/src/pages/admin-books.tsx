@@ -68,6 +68,11 @@ const bookFormSchema = z.object({
   pdfUrl: z.string().optional(),
   purchaseUrl: z.string().optional(),
   weeklyPick: z.boolean().optional(),
+  publisher: z.string().optional(),
+  publicationYear: z.coerce.number().optional(),
+  publicationCity: z.string().optional(),
+  isbn: z.string().optional(),
+  cobissId: z.string().optional(),
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -94,6 +99,8 @@ export default function AdminBooks() {
       title: "", author: "", description: "", coverImage: "", content: "",
       ageGroup: "", genre: "lektira", readingDifficulty: "srednje",
       pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
+      publisher: "", publicationYear: new Date().getFullYear(),
+      publicationCity: "", isbn: "", cobissId: "",
     },
   });
 
@@ -265,6 +272,11 @@ export default function AdminBooks() {
       pdfUrl: book.pdfUrl ?? "",
       purchaseUrl: book.purchaseUrl ?? "",
       weeklyPick: book.weeklyPick,
+      publisher: book.publisher ?? "",
+      publicationYear: book.publicationYear ?? new Date().getFullYear(),
+      publicationCity: book.publicationCity ?? "",
+      isbn: book.isbn ?? "",
+      cobissId: book.cobissId ?? "",
     });
     setDialogOpen(true);
   }
@@ -524,6 +536,47 @@ export default function AdminBooks() {
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="publisher" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Izdavač</FormLabel>
+                      <FormControl><Input {...field} data-testid="input-book-publisher" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="publicationCity" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mjesto izdavanja</FormLabel>
+                      <FormControl><Input {...field} data-testid="input-book-publicationCity" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FormField control={form.control} name="publicationYear" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Godina izdavanja</FormLabel>
+                      <FormControl><Input type="number" {...field} data-testid="input-book-publicationYear" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="isbn" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ISBN</FormLabel>
+                      <FormControl><Input {...field} data-testid="input-book-isbn" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="cobissId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>COBISS.BH-ID</FormLabel>
+                      <FormControl><Input {...field} data-testid="input-book-cobissId" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
 
                 <FormField control={form.control} name="pdfUrl" render={({ field }) => (
                   <FormItem>

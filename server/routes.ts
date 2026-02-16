@@ -987,8 +987,8 @@ export async function registerRoutes(
   // ==================== CSV TEMPLATE & IMPORT ROUTES ====================
 
   app.get("/api/admin/templates/books", requireAdmin, (_req, res) => {
-    const headers = "title;author;description;coverImage;content;ageGroup;genre;readingDifficulty;pageCount;pdfUrl;purchaseUrl;weeklyPick";
-    const example = '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"D";"avantura_fantasy";"lako";"96";"";"";""';
+    const headers = "title;author;description;coverImage;content;ageGroup;genre;readingDifficulty;pageCount;pdfUrl;purchaseUrl;weeklyPick;publisher;publicationYear;publicationCity;isbn;cobissId";
+    const example = '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"D";"avantura_fantasy";"lako";"96";"";"";"";"Izdavač";"2023";"Sarajevo";"1234567890123";"123456"';
     const csv = headers + "\n" + example;
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=knjige_template.csv");
