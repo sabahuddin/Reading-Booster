@@ -1,4 +1,4 @@
-# Čitaj! - Platforma za unapređenje čitanja
+# Čitanje - Platforma za unapređenje čitanja
 
 ## Overview
 A full-stack reading improvement platform inspired by antolin.de. Users read books, take quizzes, earn points, and track progress. Supports multiple user roles: students, teachers, parents, and admins.

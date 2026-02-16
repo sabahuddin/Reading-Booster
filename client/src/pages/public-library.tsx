@@ -170,7 +170,7 @@ export default function PublicLibrary() {
                   )}
 
                   {mostRead && (
-                    <Card className="border-2 border-primary/30 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20" data-testid="card-most-read">
+                    <Card className="border-2 border-primary/30 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20" data-testid="card-most-read">
                       <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-lg">
                           <TrendingUp className="h-5 w-5 text-primary" />

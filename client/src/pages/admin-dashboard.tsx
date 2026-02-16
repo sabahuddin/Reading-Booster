@@ -20,7 +20,7 @@ export default function AdminDashboard() {
   const statCards = [
     { label: "Ukupno korisnika", value: stats?.totalUsers, icon: Users, color: "text-blue-600" },
     { label: "Ukupno knjiga", value: stats?.totalBooks, icon: BookOpen, color: "text-green-600" },
-    { label: "Ukupno kvizova", value: stats?.totalQuizzes, icon: FileQuestion, color: "text-purple-600" },
+    { label: "Ukupno kvizova", value: stats?.totalQuizzes, icon: FileQuestion, color: "text-orange-600" },
     { label: "Ukupno poruka", value: stats?.totalMessages, icon: Mail, color: "text-orange-600" },
   ];
 
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-admin-title">Administratorska ploča</h1>
-          <p className="text-muted-foreground">Pregled i upravljanje platformom Čitaj!</p>
+          <p className="text-muted-foreground">Pregled i upravljanje platformom Čitanje</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import type { Partner, Challenge } from "@shared/schema";
+import heroBg from "@assets/background_1771243573729.png";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -203,7 +204,7 @@ function ChallengesSection() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Award className="h-8 w-8 text-purple-500" />
+            <Award className="h-8 w-8 text-orange-500" />
           </div>
           <h2 className="text-3xl font-bold sm:text-4xl" data-testid="text-challenges-title">
             Izazovi i nagrade
@@ -223,7 +224,7 @@ function ChallengesSection() {
               variants={fadeIn}
               transition={{ duration: 0.5 }}
             >
-              <Card className="h-full border-2 border-purple-200 dark:border-purple-900" data-testid={`card-challenge-${challenge.id}`}>
+              <Card className="h-full border-2 border-orange-200 dark:border-orange-900" data-testid={`card-challenge-${challenge.id}`}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-amber-500" />
@@ -334,8 +335,9 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-[hsl(262,80%,55%)] via-[hsl(280,70%,45%)] to-[hsl(310,65%,40%)]">
-        <div className="absolute inset-0 bg-black/20" />
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBg})` }} />
+        <div className="absolute inset-0 bg-[rgba(255,134,28,0.75)]" />
         <div className="relative mx-auto max-w-7xl px-4 py-24 sm:py-32 lg:py-40">
           <motion.div
             className="mx-auto max-w-3xl text-center"
@@ -362,7 +364,7 @@ export default function LandingPage() {
               <Link href="/registracija">
                 <Button
                   size="lg"
-                  className="bg-white text-[hsl(262,80%,55%)] border-white/80"
+                  className="bg-white text-[rgb(255,134,28)] border-white/80"
                   data-testid="button-cta-register"
                 >
                   Kreni u avanturu!
@@ -397,7 +399,7 @@ export default function LandingPage() {
               className="text-3xl font-bold sm:text-4xl"
               data-testid="text-features-title"
             >
-              Zašto je Čitanje! super?
+              Zašto je Čitanje super?
             </h2>
             <p className="mt-4 text-muted-foreground text-lg">
               Pogledaj šta te sve čeka!
@@ -513,8 +515,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-gradient-to-r from-[hsl(262,80%,55%)] to-[hsl(310,65%,40%)]">
-        <div className="absolute inset-0 bg-black/10" />
+      <section className="relative bg-[rgb(255,134,28)]">
         <div className="relative mx-auto max-w-7xl px-4 py-16">
           <motion.div
             className="text-center"
@@ -538,7 +539,7 @@ export default function LandingPage() {
               <Link href="/registracija">
                 <Button
                   size="lg"
-                  className="bg-white text-[hsl(262,80%,55%)] border-white/80"
+                  className="bg-white text-[rgb(255,134,28)] border-white/80"
                   data-testid="button-cta-bottom-register"
                 >
                   Započni besplatno
