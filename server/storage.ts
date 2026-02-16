@@ -41,6 +41,7 @@ export interface IStorage {
   createBook(book: InsertBook): Promise<Book>;
   updateBook(id: string, data: Partial<InsertBook>): Promise<Book | undefined>;
   deleteBook(id: string): Promise<void>;
+  incrementTimesRead(id: string): Promise<void>;
 
   getQuizzesByBookId(bookId: string): Promise<Quiz[]>;
   getQuiz(id: string): Promise<Quiz | undefined>;
@@ -137,6 +138,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBook(id: string): Promise<void> {
     await db.delete(books).where(eq(books.id, id));
+  }
+
+  async incrementTimesRead(id: string): Promise<void> {
+    const book = await this.getBook(id);
+    if (book) {
+      await db.update(books).set({ timesRead: book.timesRead + 1 }).where(eq(books.id, id));
+    }
   }
 
   async getQuizzesByBookId(bookId: string): Promise<Quiz[]> {

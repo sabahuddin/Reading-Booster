@@ -6,9 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, BookOpen, FileText, GraduationCap, CheckCircle, ShoppingCart, Download } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, CheckCircle, ShoppingCart, Download, Users, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { Book, Quiz, QuizResult } from "@shared/schema";
+
+const GENRES: Record<string, string> = {
+  bajke: "Bajke i priče", avantura: "Avantura", fantazija: "Fantazija",
+  roman: "Roman", poezija: "Poezija", nauka: "Nauka i znanje",
+  historija: "Historija", biografija: "Biografija", humor: "Humor",
+  misterija: "Misterija", drama: "Drama", ostalo: "Ostalo",
+};
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  lako: "Lako", srednje: "Srednje", tesko: "Teško",
+};
 
 export default function PublicBookDetail() {
   const [, params] = useRoute("/knjiga/:id");
@@ -85,13 +96,23 @@ export default function PublicBookDetail() {
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary">
-                      <GraduationCap className="mr-1" />
-                      {book.gradeLevel}
+                      <Users className="mr-1 h-3 w-3" />
+                      {book.ageGroup} god.
+                    </Badge>
+                    <Badge variant="secondary">
+                      {GENRES[book.genre] ?? book.genre}
                     </Badge>
                     <Badge variant="outline">
-                      <FileText className="mr-1" />
+                      <BarChart3 className="mr-1 h-3 w-3" />
+                      {DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}
+                    </Badge>
+                    <Badge variant="outline">
+                      <FileText className="mr-1 h-3 w-3" />
                       {book.pageCount} stranica
                     </Badge>
+                    {book.timesRead > 0 && (
+                      <Badge variant="outline">{book.timesRead}x pročitano</Badge>
+                    )}
                   </div>
                   <p className="text-muted-foreground leading-relaxed" data-testid="text-book-description">
                     {book.description}

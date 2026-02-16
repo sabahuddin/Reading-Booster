@@ -418,16 +418,16 @@ export async function seedDatabase() {
   const bookContent = "Ovo je primjer sadržaja knjige koji služi kao početni tekst za platformu Čitaj!. Knjiga sadrži mnogo zanimljivih poglavlja koja čitaoca vode kroz uzbudljivu priču punu neočekivanih obrata i pouka.\n\nLikovi u knjizi su pažljivo osmišljeni i svaki od njih nosi posebnu poruku. Kroz njihove avanture i iskustva, čitaoci uče o važnosti prijateljstva, hrabrosti i upornosti u životu.\n\nRadnja se odvija u fascinantnom okruženju koje oživljava kroz živopisne opise prirode, gradova i ljudi. Autor majstorski koristi jezik kako bi stvorio atmosferu koja čitaoca potpuno uvlači u priču.\n\nOva knjiga je odličan izbor za sve koji žele uživati u kvalitetnoj književnosti i istovremeno naučiti nešto novo o sebi i svijetu oko sebe.";
 
   const booksData = [
-    { title: "Mali princ", author: "Antoine de Saint-Exupéry", gradeLevel: "5-6", pageCount: 96, description: "Poetična priča o malom princu koji putuje s planeta na planet i uči o životu, ljubavi i prijateljstvu. Jedno od najčitanijih djela svjetske književnosti koje oduševljava i djecu i odrasle." },
-    { title: "Derviš i smrt", author: "Meša Selimović", gradeLevel: "9+", pageCount: 414, description: "Monumentalni roman o dervišu Ahmedu Nurudinu koji se suočava s nepravdom i vlastitom savješću. Djelo duboko istražuje ljudsku prirodu, moral i borbu pojedinca protiv sistema." },
-    { title: "Tvrđava", author: "Meša Selimović", gradeLevel: "9+", pageCount: 538, description: "Filozofski roman o potrazi za identitetom i smislom u turbulentnom svijetu. Selimović kroz lik Ahmeta Šabe istražuje teme slobode, vjere i pripadnosti." },
-    { title: "Na Drini ćuprija", author: "Ivo Andrić", gradeLevel: "8-9", pageCount: 314, description: "Epski roman-hronika o mostu na Drini u Višegradu koji prati sudbine naroda kroz stoljeća. Nobelovac Andrić majstorski prikazuje suživot i sukobe različitih kultura." },
-    { title: "Priče iz davnine", author: "Ivana Brlić-Mažuranić", gradeLevel: "3-4", pageCount: 158, description: "Zbirka čarobnih priča inspirisanih slavenskom mitologijom. Bajkoviti svijet vila, divova i čarobnih bića koji oduševljava generacije mladih čitalaca." },
-    { title: "Vlak u snijegu", author: "Mato Lovrak", gradeLevel: "3-4", pageCount: 112, description: "Uzbudljiva priča o grupi djece čiji vlak zapne u snijegu. Djeca pokazuju nevjerovatnu hrabrost i solidarnost dok čekaju pomoć." },
-    { title: "Hasanaginica", author: "Narodna balada", gradeLevel: "7-8", pageCount: 24, description: "Jedna od najpoznatijih južnoslavenskih balada o tragičnoj sudbini Hasanagine žene. Djelo univerzalne vrijednosti koje je prevedeno na mnoge svjetske jezike." },
-    { title: "Prokleta avlija", author: "Ivo Andrić", gradeLevel: "8-9", pageCount: 128, description: "Kratki roman o bosanskom fratru fra Petru koji dospijeva u istanbulski zatvor. Andrić kroz tehniku priče u priči istražuje teme slobode, identiteta i ljudske patnje." },
-    { title: "Priča o sretnim medvjedima", author: "Sead Muhamedagić", gradeLevel: "1-2", pageCount: 64, description: "Topla i nježna priča o porodici medvjeda koji uče o sreći i prijateljstvu. Idealna knjiga za najmlađe čitaoce koja razvija ljubav prema čitanju." },
-    { title: "Bajke bosanskog lonca", author: "Enes Kišević", gradeLevel: "3-4", pageCount: 96, description: "Zbirka bajki inspirisanih bosanskom tradicijom i kulturom. Poučne priče pune mašte, humora i mudrosti koje čuvaju bosansku kulturnu baštinu." },
+    { title: "Mali princ", author: "Antoine de Saint-Exupéry", ageGroup: "10-11", genre: "fantazija", readingDifficulty: "srednje" as const, pageCount: 96, description: "Poetična priča o malom princu koji putuje s planeta na planet i uči o životu, ljubavi i prijateljstvu. Jedno od najčitanijih djela svjetske književnosti koje oduševljava i djecu i odrasle.", timesRead: 45, weeklyPick: true },
+    { title: "Derviš i smrt", author: "Meša Selimović", ageGroup: "16+", genre: "roman", readingDifficulty: "tesko" as const, pageCount: 414, description: "Monumentalni roman o dervišu Ahmedu Nurudinu koji se suočava s nepravdom i vlastitom savješću. Djelo duboko istražuje ljudsku prirodu, moral i borbu pojedinca protiv sistema.", timesRead: 12 },
+    { title: "Tvrđava", author: "Meša Selimović", ageGroup: "16+", genre: "roman", readingDifficulty: "tesko" as const, pageCount: 538, description: "Filozofski roman o potrazi za identitetom i smislom u turbulentnom svijetu. Selimović kroz lik Ahmeta Šabe istražuje teme slobode, vjere i pripadnosti.", timesRead: 8 },
+    { title: "Na Drini ćuprija", author: "Ivo Andrić", ageGroup: "14-15", genre: "historija", readingDifficulty: "tesko" as const, pageCount: 314, description: "Epski roman-hronika o mostu na Drini u Višegradu koji prati sudbine naroda kroz stoljeća. Nobelovac Andrić majstorski prikazuje suživot i sukobe različitih kultura.", timesRead: 22 },
+    { title: "Priče iz davnine", author: "Ivana Brlić-Mažuranić", ageGroup: "8-9", genre: "bajke", readingDifficulty: "lako" as const, pageCount: 158, description: "Zbirka čarobnih priča inspirisanih slavenskom mitologijom. Bajkoviti svijet vila, divova i čarobnih bića koji oduševljava generacije mladih čitalaca.", timesRead: 38 },
+    { title: "Vlak u snijegu", author: "Mato Lovrak", ageGroup: "8-9", genre: "avantura", readingDifficulty: "lako" as const, pageCount: 112, description: "Uzbudljiva priča o grupi djece čiji vlak zapne u snijegu. Djeca pokazuju nevjerovatnu hrabrost i solidarnost dok čekaju pomoć.", timesRead: 30 },
+    { title: "Hasanaginica", author: "Narodna balada", ageGroup: "12-13", genre: "drama", readingDifficulty: "srednje" as const, pageCount: 24, description: "Jedna od najpoznatijih južnoslavenskih balada o tragičnoj sudbini Hasanagine žene. Djelo univerzalne vrijednosti koje je prevedeno na mnoge svjetske jezike.", timesRead: 15 },
+    { title: "Prokleta avlija", author: "Ivo Andrić", ageGroup: "14-15", genre: "roman", readingDifficulty: "tesko" as const, pageCount: 128, description: "Kratki roman o bosanskom fratru fra Petru koji dospijeva u istanbulski zatvor. Andrić kroz tehniku priče u priči istražuje teme slobode, identiteta i ljudske patnje.", timesRead: 18 },
+    { title: "Priča o sretnim medvjedima", author: "Sead Muhamedagić", ageGroup: "6-7", genre: "bajke", readingDifficulty: "lako" as const, pageCount: 64, description: "Topla i nježna priča o porodici medvjeda koji uče o sreći i prijateljstvu. Idealna knjiga za najmlađe čitaoce koja razvija ljubav prema čitanju.", timesRead: 25 },
+    { title: "Bajke bosanskog lonca", author: "Enes Kišević", ageGroup: "8-9", genre: "bajke", readingDifficulty: "lako" as const, pageCount: 96, description: "Zbirka bajki inspirisanih bosanskom tradicijom i kulturom. Poučne priče pune mašte, humora i mudrosti koje čuvaju bosansku kulturnu baštinu.", timesRead: 20 },
   ];
 
   const insertedBooks = await db.insert(books).values(
@@ -437,8 +437,12 @@ export async function seedDatabase() {
       description: b.description,
       coverImage: "/images/book-placeholder.svg",
       content: bookContent,
-      gradeLevel: b.gradeLevel,
+      ageGroup: b.ageGroup,
+      genre: b.genre,
+      readingDifficulty: b.readingDifficulty,
       pageCount: b.pageCount,
+      timesRead: b.timesRead ?? 0,
+      weeklyPick: b.weeklyPick ?? false,
     }))
   ).returning();
 
@@ -484,3 +488,5 @@ export async function seedDatabase() {
   console.log("Blog posts seeded.");
   console.log("Database seeded successfully!");
 }
+
+seedDatabase().catch(console.error);

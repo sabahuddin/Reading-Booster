@@ -2,6 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
+import express from "express";
 import { storage } from "./storage";
 import { requireAuth, requireAdmin, requireTeacher } from "./index";
 import {
@@ -13,6 +17,33 @@ import {
   insertBlogPostSchema,
   insertContactMessageSchema,
 } from "@shared/schema";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+fs.mkdirSync(path.join(uploadsDir, "covers"), { recursive: true });
+fs.mkdirSync(path.join(uploadsDir, "books"), { recursive: true });
+
+const coverStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, path.join(uploadsDir, "covers")),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`);
+  },
+});
+
+const bookFileStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, path.join(uploadsDir, "books")),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`);
+  },
+});
+
+const uploadCover = multer({ storage: coverStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) cb(null, true);
+  else cb(new Error("Samo slike su dozvoljene"));
+}});
+
+const uploadBookFile = multer({ storage: bookFileStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 const scryptAsync = promisify(scrypt);
 
@@ -32,6 +63,26 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  app.use("/uploads", express.static(uploadsDir));
+
+  // ==================== UPLOAD ROUTES ====================
+
+  app.post("/api/upload/cover", requireAdmin, uploadCover.single("cover"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "Datoteka nije poslana" });
+    }
+    const url = `/uploads/covers/${req.file.filename}`;
+    return res.json({ url });
+  });
+
+  app.post("/api/upload/book", requireAdmin, uploadBookFile.single("book"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "Datoteka nije poslana" });
+    }
+    const url = `/uploads/books/${req.file.filename}`;
+    return res.json({ url });
+  });
 
   // ==================== AUTH ROUTES ====================
 
@@ -323,6 +374,11 @@ export async function registerRoutes(
       const user = await storage.getUser(userId);
       if (user) {
         await storage.updateUserPoints(userId, user.points + score);
+      }
+
+      const quiz = await storage.getQuiz(quizId);
+      if (quiz) {
+        await storage.incrementTimesRead(quiz.bookId);
       }
 
       return res.status(201).json(result);

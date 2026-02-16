@@ -30,16 +30,21 @@ export const books = pgTable("books", {
   description: text("description").notNull(),
   coverImage: text("cover_image").notNull(),
   content: text("content").notNull(),
-  gradeLevel: text("grade_level").notNull(),
+  ageGroup: text("age_group").notNull(),
+  genre: text("genre").notNull().default("ostalo"),
+  readingDifficulty: text("reading_difficulty", { enum: ["lako", "srednje", "tesko"] }).notNull().default("srednje"),
   pageCount: integer("page_count").notNull(),
   pdfUrl: text("pdf_url"),
   purchaseUrl: text("purchase_url"),
+  timesRead: integer("times_read").notNull().default(0),
+  weeklyPick: boolean("weekly_pick").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertBookSchema = createInsertSchema(books).omit({
   id: true,
   createdAt: true,
+  timesRead: true,
 });
 export type InsertBook = z.infer<typeof insertBookSchema>;
 export type Book = typeof books.$inferSelect;
