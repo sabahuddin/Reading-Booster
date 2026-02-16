@@ -32,6 +32,8 @@ export const books = pgTable("books", {
   content: text("content").notNull(),
   gradeLevel: text("grade_level").notNull(),
   pageCount: integer("page_count").notNull(),
+  pdfUrl: text("pdf_url"),
+  purchaseUrl: text("purchase_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
