@@ -205,7 +205,7 @@ export async function registerRoutes(
         ...parsed.data,
         password: hashedPassword,
         role: isInstitutional ? "teacher" : parsed.data.role,
-        ageGroup: parsed.data.ageGroup || "child",
+        ageGroup: parsed.data.ageGroup || "M",
         approved: isInstitutional ? false : undefined,
       };
 
@@ -583,6 +583,11 @@ export async function registerRoutes(
         since.setHours(0, 0, 0, 0);
       }
 
+      const ageGroupFilter = req.query.ageGroup as string | undefined;
+      if (ageGroupFilter) {
+        const leaderboard = await storage.getLeaderboard(since, ageGroupFilter);
+        return res.json(leaderboard);
+      }
       const topReaders = await storage.getTopReadersSince(since, 10);
       return res.json(topReaders);
     } catch (error: any) {
@@ -1022,8 +1027,8 @@ export async function registerRoutes(
             description: row.description || "",
             coverImage: row.coverImage || "https://via.placeholder.com/200x300?text=Knjiga",
             content: row.content || row.description || "",
-            ageGroup: row.ageGroup || "8-9",
-            genre: row.genre || "ostalo",
+            ageGroup: row.ageGroup || "M",
+            genre: row.genre || "lektira",
             readingDifficulty: (row.readingDifficulty as "lako" | "srednje" | "tesko") || "srednje",
             pageCount: parseInt(row.pageCount) || 100,
             pdfUrl: row.pdfUrl || null,
@@ -1283,7 +1288,7 @@ export async function registerRoutes(
         startDate = new Date(now.getFullYear(), 0, 1);
       }
 
-      const leaderboard = await storage.getLeaderboard(startDate, "adult");
+      const leaderboard = await storage.getLeaderboard(startDate, "A");
       res.json(leaderboard);
     } catch (error) {
       console.error("Error fetching adult leaderboard:", error);

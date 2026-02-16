@@ -16,27 +16,21 @@ import type { Book } from "@shared/schema";
 import defaultBookCover from "@assets/background_1771243573729.png";
 
 const GENRES = [
-  { value: "bajke", label: "Bajke i priče" },
-  { value: "avantura", label: "Avantura" },
-  { value: "fantazija", label: "Fantazija" },
-  { value: "roman", label: "Roman" },
+  { value: "lektira", label: "Lektira" },
+  { value: "avantura_fantasy", label: "Avantura i Fantasy" },
+  { value: "realisticni_roman", label: "Realistični roman" },
+  { value: "beletristika", label: "Beletristika" },
+  { value: "bajke_basne", label: "Bajke i Basne" },
+  { value: "zanimljiva_nauka", label: "Zanimljiva nauka" },
   { value: "poezija", label: "Poezija" },
-  { value: "nauka", label: "Nauka i znanje" },
-  { value: "historija", label: "Historija" },
-  { value: "biografija", label: "Biografija" },
-  { value: "humor", label: "Humor" },
-  { value: "misterija", label: "Misterija" },
-  { value: "drama", label: "Drama" },
-  { value: "ostalo", label: "Ostalo" },
+  { value: "islam", label: "Islam" },
 ];
 
 const AGE_GROUPS = [
-  { value: "6-7", label: "6-7 godina" },
-  { value: "8-9", label: "8-9 godina" },
-  { value: "10-11", label: "10-11 godina" },
-  { value: "12-13", label: "12-13 godina" },
-  { value: "14-15", label: "14-15 godina" },
-  { value: "16+", label: "16+ godina" },
+  { value: "M", label: "M – Mlađi osnovci (6-10)" },
+  { value: "D", label: "D – Stariji osnovci (11-15)" },
+  { value: "O", label: "O – Omladina (15-18)" },
+  { value: "A", label: "A – Odrasli (18+)" },
 ];
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -69,7 +63,7 @@ function BookCard({ book }: { book: Book }) {
             <p className="text-sm text-muted-foreground">{book.author}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary">{book.ageGroup} god.</Badge>
+            <Badge variant="secondary">{book.ageGroup}</Badge>
             <Badge variant="outline">{genreLabel(book.genre)}</Badge>
             <Badge variant="outline" className="text-xs">
               {DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}
@@ -148,7 +142,7 @@ export default function PublicLibrary() {
                               <p className="text-sm text-muted-foreground">{weeklyPick.author}</p>
                               <p className="text-sm line-clamp-2">{weeklyPick.description}</p>
                               <div className="flex gap-2 pt-1">
-                                <Badge variant="secondary">{weeklyPick.ageGroup} god.</Badge>
+                                <Badge variant="secondary">{weeklyPick.ageGroup}</Badge>
                                 <Badge variant="outline">{genreLabel(weeklyPick.genre)}</Badge>
                               </div>
                             </div>
@@ -177,7 +171,7 @@ export default function PublicLibrary() {
                               <p className="text-sm text-muted-foreground">{mostRead.author}</p>
                               <p className="text-sm line-clamp-2">{mostRead.description}</p>
                               <div className="flex gap-2 pt-1">
-                                <Badge variant="secondary">{mostRead.ageGroup} god.</Badge>
+                                <Badge variant="secondary">{mostRead.ageGroup}</Badge>
                                 <Badge variant="outline">{mostRead.timesRead}x pročitano</Badge>
                               </div>
                             </div>

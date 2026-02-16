@@ -85,7 +85,7 @@ export default function TeacherLibrary() {
                     <p className="text-sm text-muted-foreground">{book.author}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary">{book.ageGroup} god.</Badge>
+                    <Badge variant="secondary">{book.ageGroup}</Badge>
                     <Badge variant="outline">
                       <FileText className="mr-1" />
                       {book.pageCount} str.

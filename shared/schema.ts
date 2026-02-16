@@ -21,7 +21,7 @@ export const users = pgTable("users", {
   createdByTeacherId: varchar("created_by_teacher_id"),
   subscriptionType: text("subscription_type", { enum: ["free", "standard", "full"] }).notNull().default("free"),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
-  ageGroup: text("age_group").default("child"),
+  ageGroup: text("age_group").default("M"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -39,7 +39,7 @@ export const books = pgTable("books", {
   coverImage: text("cover_image").notNull(),
   content: text("content").notNull(),
   ageGroup: text("age_group").notNull(),
-  genre: text("genre").notNull().default("ostalo"),
+  genre: text("genre").notNull().default("lektira"),
   readingDifficulty: text("reading_difficulty", { enum: ["lako", "srednje", "tesko"] }).notNull().default("srednje"),
   pageCount: integer("page_count").notNull(),
   pdfUrl: text("pdf_url"),

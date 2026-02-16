@@ -32,27 +32,21 @@ import {
 import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download } from "lucide-react";
 
 const GENRES = [
-  { value: "bajke", label: "Bajke i priče" },
-  { value: "avantura", label: "Avantura" },
-  { value: "fantazija", label: "Fantazija" },
-  { value: "roman", label: "Roman" },
+  { value: "lektira", label: "Lektira" },
+  { value: "avantura_fantasy", label: "Avantura i Fantasy" },
+  { value: "realisticni_roman", label: "Realistični roman" },
+  { value: "beletristika", label: "Beletristika" },
+  { value: "bajke_basne", label: "Bajke i Basne" },
+  { value: "zanimljiva_nauka", label: "Zanimljiva nauka" },
   { value: "poezija", label: "Poezija" },
-  { value: "nauka", label: "Nauka i znanje" },
-  { value: "historija", label: "Historija" },
-  { value: "biografija", label: "Biografija" },
-  { value: "humor", label: "Humor" },
-  { value: "misterija", label: "Misterija" },
-  { value: "drama", label: "Drama" },
-  { value: "ostalo", label: "Ostalo" },
+  { value: "islam", label: "Islam" },
 ];
 
 const AGE_GROUPS = [
-  { value: "6-7", label: "6-7 godina" },
-  { value: "8-9", label: "8-9 godina" },
-  { value: "10-11", label: "10-11 godina" },
-  { value: "12-13", label: "12-13 godina" },
-  { value: "14-15", label: "14-15 godina" },
-  { value: "16+", label: "16+ godina" },
+  { value: "M", label: "M – Mlađi osnovci (6-10)" },
+  { value: "D", label: "D – Stariji osnovci (11-15)" },
+  { value: "O", label: "O – Omladina (15-18)" },
+  { value: "A", label: "A – Odrasli (18+)" },
 ];
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -98,7 +92,7 @@ export default function AdminBooks() {
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
       title: "", author: "", description: "", coverImage: "", content: "",
-      ageGroup: "", genre: "ostalo", readingDifficulty: "srednje",
+      ageGroup: "", genre: "lektira", readingDifficulty: "srednje",
       pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
     },
   });
@@ -250,7 +244,7 @@ export default function AdminBooks() {
     setEditingBook(null);
     form.reset({
       title: "", author: "", description: "", coverImage: "", content: "",
-      ageGroup: "", genre: "ostalo", readingDifficulty: "srednje",
+      ageGroup: "", genre: "lektira", readingDifficulty: "srednje",
       pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
     });
     setDialogOpen(true);

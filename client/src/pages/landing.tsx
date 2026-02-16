@@ -87,9 +87,11 @@ interface TopReader {
 }
 
 function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: string }) {
-  const endpoint = ageGroup === "adult"
-    ? `/api/leaderboard/adults?period=${period}`
-    : `/api/leaderboard?period=${period}`;
+  const endpoint = ageGroup === "A"
+    ? `/api/leaderboard?period=${period}&ageGroup=A`
+    : `/api/leaderboard?period=${period}&ageGroup=MDO`;
+
+
 
   const { data: leaderboard = [] } = useQuery<any[]>({
     queryKey: [endpoint],
@@ -113,7 +115,7 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
             <TableRow>
               <TableHead className="w-16">Rang</TableHead>
               <TableHead>Ime</TableHead>
-              {ageGroup === "child" && <TableHead>Razred</TableHead>}
+              {ageGroup !== "A" && <TableHead>Razred</TableHead>}
               <TableHead className="text-right">Bodovi</TableHead>
             </TableRow>
           </TableHeader>
@@ -126,7 +128,7 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
                   </Badge>
                 </TableCell>
                 <TableCell className="font-medium">{user.fullName}</TableCell>
-                {ageGroup === "child" && <TableCell>{user.className}</TableCell>}
+                {ageGroup !== "A" && <TableCell>{user.className}</TableCell>}
                 <TableCell className="text-right">{user.totalScore || user.points}</TableCell>
               </TableRow>
             ))}
@@ -170,11 +172,11 @@ function TopReadersSection() {
             </TabsList>
 
             <TabsContent value="djeca">
-              <LeaderboardTable period={period} ageGroup="child" />
+              <LeaderboardTable period={period} ageGroup="MDO" />
             </TabsContent>
 
             <TabsContent value="odrasli">
-              <LeaderboardTable period={period} ageGroup="adult" />
+              <LeaderboardTable period={period} ageGroup="A" />
             </TabsContent>
           </Tabs>
 

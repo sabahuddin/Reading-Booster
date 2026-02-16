@@ -1,7 +1,7 @@
 # Čitanje - Platforma za unapređenje čitanja
 
 ## Overview
-Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici čitaju knjige, rješavaju kvizove, skupljaju bodove i prate napredak. Platforma je namijenjena školama, bibliotekama i porodicama na bosansko-hrvatskom govornom području. Naglasak je na otkrivanju fizičkih knjiga i integraciji sa školskim bibliotekama.
+Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici čitaju knjige, rješavaju kvizove, skupljaju bodove i prate napredak. Platforma je namijenjena školama, bibliotekama, mektebima i porodicama na bosansko-hrvatskom govornom području. Naglasak je na otkrivanju fizičkih knjiga i integraciji sa školskim bibliotekama. Platforma je opća sa jakim islamskim modulom i mogućnošću porodičnog takmičenja.
 
 ## Tech Stack
 - **Frontend:** React + TypeScript + Tailwind CSS + shadcn/ui + Framer Motion
@@ -20,10 +20,26 @@ Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici
 - **Logo:** Uvećan u navbar-u (h-14 w-14), smanjen padding (py-1)
 - **Slike knjiga:** Portrait aspect ratio 2:3 (kao prave knjige)
 
+## Starosne skupine (ageGroup) — za knjige i korisnike
+- **M** — Mlađi osnovci (6-10 godina, 1.-4. razred)
+- **D** — Stariji osnovci (11-15 godina, 5.-9. razred)
+- **O** — Omladina / Young Adult (15-18 godina, srednja škola)
+- **A** — Odrasli (18+, roditelji i stariji korisnici)
+
+## Žanrovi (genre)
+- **lektira** — Svi obavezni naslovi za osnovne i srednje škole
+- **avantura_fantasy** — Dinamične knjige sa jasnom radnjom (Avantura i Fantasy)
+- **realisticni_roman** — Priče o stvarnom životu, odrastanju i školi
+- **beletristika** — Romani i pripovijetke za odrasle (A) i omladinu (O), omogućava porodično takmičenje
+- **bajke_basne** — Klasici namijenjeni prvenstveno kategoriji M
+- **zanimljiva_nauka** — Popularno-naučni sadržaji, enciklopedije i zanimljivosti
+- **poezija** — Zbirke pjesama za djecu i odrasle
+- **islam** — Vjerska literatura, priče o poslanicima, ahlak i historija (za sve uzraste i mektebe)
+
 ## User Roles
 - **Admin** — Upravljanje cijelom platformom (knjige, kvizovi, korisnici, blog, poruke, partneri, izazovi, institucionalna odobrenja)
-- **Učitelj (Teacher)** — Pregled učenika, kreiranje učeničkih računa (auto-generirani kredencijali), CSV export, praćenje napretka, bonus bodovi, sedmični izazovi
-- **Roditelj (Parent)** — Pregled napretka djece i rezultata kvizova
+- **Učitelj (Teacher) / Muallim** — Pregled učenika, kreiranje učeničkih računa, CSV export, praćenje napretka, bonus bodovi, sedmični izazovi
+- **Roditelj (Parent)** — Pregled napretka djece i rezultata kvizova, porodično takmičenje kroz kategoriju A
 - **Učenik (Student)** — Pregled biblioteke, rješavanje kvizova, skupljanje bodova
 
 ## Project Structure
@@ -82,6 +98,7 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - Detaljna stranica knjige sa "Gdje pronaći ovu knjigu?" sekcijom (biblioteka, kupovina, PDF preview)
 - Slike knjiga u portrait formatu 2:3
 - Informacije: izdavač, ISBN, godina, jezik, format, broj stranica
+- CSV bulk import knjiga sa mapiranjem na nove ageGroup (M/D/O/A) i žanrove
 
 ### Kvizovi
 - Interaktivni kvizovi vezani za knjige
@@ -89,9 +106,10 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 
 ### Leaderboard
 - Javni top čitači na naslovnoj stranici
-- Odvojeni tabovi "Djeca" i "Odrasli" (po ageGroup korisnika)
+- Odvojeni tabovi "Djeca" (M+D+O) i "Odrasli" (A) po ageGroup korisnika
 - Filtriranje po periodu: sedmica/mjesec/godina
 - API: /api/leaderboard?period=week|month|year, /api/leaderboard/adults?period=week|month|year
+- Porodično takmičenje: roditelji (A) se mogu takmičiti kroz Beletristiku i Islam
 
 ### Učiteljski dashboard
 - Pregled klase: ukupan broj učenika, pročitanih knjiga, prosjek bodova
@@ -111,9 +129,9 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 
 ### Registracija
 - Tri taba: Prijava, Registracija, Institucija
-- Samoregistracija: učenik/roditelj sa izborom starosne skupine (dijete/odrasla osoba)
+- Samoregistracija: učenik/roditelj sa izborom starosne skupine (M/D/O/A)
 - Institucionalna registracija: škola/mekteb sa izborom uloge, zahtijeva admin odobrenje
-- Polje ageGroup (child/adult) za odvajanje na leaderboardu
+- Polje ageGroup (M/D/O/A) za odvajanje na leaderboardu i filtriranje biblioteke
 
 ### Blog
 - Admin može kreirati i uređivati blog postove
@@ -132,7 +150,17 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 
 ## User Fields
 - Standardni: username, password, role, firstName, lastName, email, points, booksRead
-- Prošireni: ageGroup (child/adult), institutionType, institutionRole, approved, maxStudentAccounts, createdByTeacherId
+- Prošireni: ageGroup (M/D/O/A), institutionType, institutionRole, approved, maxStudentAccounts, createdByTeacherId
+
+## Primjeri mapiranja knjiga
+| Naslov | ageGroup | genre |
+|--------|----------|-------|
+| Ježeva kućica | M | bajke_basne |
+| Priče o poslanicima | M | islam |
+| Družba Pere Kvržice | D | lektira |
+| Hajduk u Beogradu | D | avantura_fantasy |
+| Tvrđava | A | beletristika |
+| Sira: Životopis Poslanika | A | islam |
 
 ## Language
 UI je na bosanskom/hrvatskom jeziku. Sav korisnički tekst je na hrvatskom/bosanskom.

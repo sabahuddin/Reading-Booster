@@ -25,10 +25,10 @@ import type { Book, Quiz, QuizResult } from "@shared/schema";
 import defaultBookCover from "@assets/background_1771243573729.png";
 
 const GENRES: Record<string, string> = {
-  bajke: "Bajke i priče", avantura: "Avantura", fantazija: "Fantazija",
-  roman: "Roman", poezija: "Poezija", nauka: "Nauka i znanje",
-  historija: "Historija", biografija: "Biografija", humor: "Humor",
-  misterija: "Misterija", drama: "Drama", ostalo: "Ostalo",
+  lektira: "Lektira", avantura_fantasy: "Avantura i Fantasy",
+  realisticni_roman: "Realistični roman", beletristika: "Beletristika",
+  bajke_basne: "Bajke i Basne", zanimljiva_nauka: "Zanimljiva nauka",
+  poezija: "Poezija", islam: "Islam",
 };
 
 const DIFFICULTY_LABELS: Record<string, string> = {

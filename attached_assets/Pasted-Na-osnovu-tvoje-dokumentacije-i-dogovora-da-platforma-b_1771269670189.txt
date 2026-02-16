@@ -1,0 +1,50 @@
+Na osnovu tvoje dokumentacije i dogovora da platforma bude opća s jakim islamskim modulom i mogućnošću porodičnog takmičenja, evo konkretnih parametara koje trebaš unijeti u sistem:
+
+## 1. Starosna dob (ageGroup)
+
+U bazi podataka koristi ove oznake za polje `ageGroup`:
+
+* **M (Mlađi osnovci):** 6 – 10 godina (1. – 4. razred).
+* **D (Stariji osnovci):** 11 – 15 godina (5. – 9. razred).
+* **O (Omladina / Young Adult):** 15 – 18 godina (Srednja škola).
+* **A (Odrasli):** 18+ godina (Roditelji i stariji korisnici).
+
+---
+
+## 2. Žanrovi (genre)
+
+Ovo je finalna lista za tvoje polje `genre` u tabeli `books`:
+
+* **Lektira:** Svi obavezni naslovi za osnovne i srednje škole.
+* **Avantura i Fantasy:** Dinamične knjige sa jasnom radnjom (npr. *Harry Potter*, *Pet prijatelja*).
+* **Realistični roman:** Priče o stvarnom životu, odrastanju i školi (npr. *Magareće godine*).
+* **Beletristika:** Romani i pripovijetke za odrasle (**A**) i omladinu (**O**) koji omogućavaju porodično takmičenje.
+* **Bajke i Basne:** Klasici namijenjeni prvenstveno kategoriji **M**.
+* **Zanimljiva nauka:** Popularno-naučni sadržaji, enciklopedije i zanimljivosti prilagođene kvizovima.
+* **Poezija:** Zbirke pjesama za djecu i odrasle.
+* **Islam:** Vjerska literatura, priče o poslanicima, ahlak i historija (za sve uzraste i mektebe).
+
+---
+
+## 3. Primjeri mapiranja za bazu (CSV Import)
+
+Ovako bi trebali izgledati tvoji testni podaci za bulk import:
+
+| Naslov knjige | Starosna dob (`ageGroup`) | Žanr (`genre`) |
+| --- | --- | --- |
+| *Ježeva kućica* | **M** | **Bajke i Basne** |
+| *Priče o poslanicima* | **M** | **Islam** |
+| *Družba Pere Kvržice* | **D** | **Lektira** |
+| *Hajduk u Beogradu* | **D** | **Avantura i Fantasy** |
+| *Tvrđava* | **A** | **Beletristika** |
+| *Sira: Životopis Poslanika* | **A** | **Islam** |
+
+---
+
+### Zašto je ovo dobro za tvoju aplikaciju?
+
+* **Precizna pretraga:** Korisnici mogu filtrirati biblioteku (`public-library.tsx`) kombinujući dob i žanr.
+* **Lokalizacija:** Uloge poput "Muallim" u mektebima će odmah prepoznati žanr **Islam** kao svoj primarni alat.
+* **Porodični mod:** Roditelji (kategorija **A**) kroz **Beletristiku** ili **Islam** ulaze u takmičarski sistem bodovanja.
+
+Želiš li da ti sada pripremim **JSON objekt** ili **CSV template** sa ovih 8 žanrova i 4 dobne skupine kako bi tvoj programer mogao odmah testirati `admin-books.tsx` stranicu?

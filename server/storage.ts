@@ -464,12 +464,15 @@ export class DatabaseStorage implements IStorage {
     for (const r of results) {
       scoreMap.set(r.userId, (scoreMap.get(r.userId) || 0) + r.score);
     }
-    const sorted = Array.from(scoreMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const sorted = Array.from(scoreMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 20);
     const leaderboard: any[] = [];
     for (const [userId, totalScore] of sorted) {
       const user = await this.getUser(userId);
       if (user) {
-        if (ageGroup && user.ageGroup !== ageGroup) continue;
+        if (ageGroup) {
+          const allowedGroups = ageGroup.split("");
+          if (!allowedGroups.includes(user.ageGroup || "M")) continue;
+        }
         leaderboard.push({
           id: user.id,
           fullName: user.fullName,
@@ -477,6 +480,7 @@ export class DatabaseStorage implements IStorage {
           points: totalScore,
           ageGroup: user.ageGroup,
         });
+        if (leaderboard.length >= 10) break;
       }
     }
     return leaderboard;
