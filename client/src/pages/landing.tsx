@@ -48,7 +48,7 @@ const steps = [
     icon: UserPlus,
     step: "1",
     title: "Registriraj se",
-    description: "Napravi svoj račun brzo i lako - treba ti samo par klikova!",
+    description: "Napravi svoj račun brzo i lahko - treba ti samo par klikova!",
   },
   {
     icon: BookText,
@@ -208,7 +208,7 @@ function ChallengesSection() {
             Izazovi i nagrade
           </h2>
           <p className="mt-2 text-muted-foreground text-lg">
-            Sudjeluj u izazovima i osvoji nagrade!
+            Učestvuj u izazovima i osvoji nagrade!
           </p>
         </motion.div>
 
@@ -396,10 +396,10 @@ export default function LandingPage() {
               className="text-3xl font-bold sm:text-4xl"
               data-testid="text-features-title"
             >
-              Zašto je Čitaj! super?
+              Zašto je Čitanje! super?
             </h2>
             <p className="mt-4 text-muted-foreground text-lg">
-              Pogledaj što te sve čeka!
+              Pogledaj šta te sve čeka!
             </p>
           </motion.div>
 
@@ -453,7 +453,7 @@ export default function LandingPage() {
               Kako početi?
             </h2>
             <p className="mt-4 text-muted-foreground text-lg">
-              Super lako - samo tri koraka!
+              Super lahko - samo tri koraka!
             </p>
           </motion.div>
 
@@ -531,7 +531,7 @@ export default function LandingPage() {
               Spreman za avanturu?
             </h2>
             <p className="mt-4 text-white/90">
-              Pridruži se tisućama učenika koji već čitaju i osvajaju bodove!
+              Pridruži se hiljadama učenika koji već čitaju i osvajaju bodove!
             </p>
             <div className="mt-8">
               <Link href="/registracija">

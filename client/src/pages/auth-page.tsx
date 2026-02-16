@@ -426,7 +426,7 @@ export default function AuthPage() {
                   <div className="mt-2 mb-4 p-3 bg-muted rounded-md">
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
                       <Building2 className="h-4 w-4 shrink-0" />
-                      Registracija za škole i mektebe. Vaš račun će biti aktivan nakon odobrenja administratora.
+                      Registracija za biblioteke, škole i mektebe. Vaš račun će biti aktivan nakon odobrenja administratora.
                     </p>
                   </div>
                   <Form {...institutionForm}>
@@ -500,6 +500,7 @@ export default function AuthPage() {
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="school">Škola</SelectItem>
+                                <SelectItem value="mekteb">Biblioteka</SelectItem>
                                 <SelectItem value="mekteb">Mekteb</SelectItem>
                               </SelectContent>
                             </Select>
@@ -537,7 +538,7 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Naziv institucije</FormLabel>
                             <FormControl>
-                              <Input placeholder="Naziv škole ili mekteba" data-testid="input-inst-school" {...field} value={field.value ?? ""} />
+                              <Input placeholder="Naziv biblioteke, škole ili mekteba" data-testid="input-inst-school" {...field} value={field.value ?? ""} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -576,10 +577,10 @@ export default function AuthPage() {
           <div className="max-w-md text-center text-white p-8">
             <BookOpen className="mx-auto mb-6 h-16 w-16" />
             <h2 className="mb-4 text-3xl font-bold" data-testid="text-branding-title">
-              Čitaj!
+              Čitanje!
             </h2>
             <p className="text-lg text-blue-100" data-testid="text-branding-tagline">
-              Interaktivna platforma za čitanje koja povezuje učenike, nastavnike i
+              Interaktivna platforma za čitanje koja povezuje čitatelje - učenike, nastavnike/muallime i
               roditelje. Razvijajte ljubav prema knjigama kroz kvizove, praćenje
               napretka i zajedničko učenje.
             </p>

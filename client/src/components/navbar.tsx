@@ -137,7 +137,7 @@ export function Navbar() {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  Čitaj!
+                  Čitanje!
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-6 flex flex-col gap-2">
