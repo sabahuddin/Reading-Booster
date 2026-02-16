@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Search, FileText } from "lucide-react";
 import type { Book } from "@shared/schema";
+import defaultBookCover from "@assets/background_1771243573729.png";
 
 export default function Library() {
   const [search, setSearch] = useState("");
@@ -71,20 +72,14 @@ export default function Library() {
               <Link key={book.id} href={`/ucenik/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
                 <Card className="hover-elevate h-full">
                   <CardContent className="p-4 space-y-3">
-                    {book.coverImage ? (
-                      <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
-                        <img
-                          src={book.coverImage}
-                          alt={book.title}
-                          className="h-full w-full object-cover rounded-md"
-                          data-testid={`img-book-cover-${book.id}`}
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center">
-                        <BookOpen className="text-muted-foreground" />
-                      </div>
-                    )}
+                    <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                      <img
+                        src={book.coverImage || defaultBookCover}
+                        alt={book.title}
+                        className="h-full w-full object-cover rounded-md"
+                        data-testid={`img-book-cover-${book.id}`}
+                      />
+                    </div>
                     <div>
                       <h3 className="font-semibold line-clamp-2" data-testid={`text-book-title-${book.id}`}>
                         {book.title}

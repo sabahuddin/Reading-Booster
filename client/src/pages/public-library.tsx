@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { BookOpen, Search, FileText, Star, TrendingUp, Heart, Sparkles } from "lucide-react";
 import type { Book } from "@shared/schema";
+import defaultBookCover from "@assets/background_1771243573729.png";
 
 const GENRES = [
   { value: "bajke", label: "Bajke i priče" },
@@ -53,20 +54,14 @@ function BookCard({ book }: { book: Book }) {
     <Link href={`/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
       <Card className="hover-elevate h-full">
         <CardContent className="p-4 space-y-3">
-          {book.coverImage ? (
-            <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
-              <img
-                src={book.coverImage}
-                alt={book.title}
-                className="h-full w-full object-cover rounded-md"
-                data-testid={`img-book-cover-${book.id}`}
-              />
-            </div>
-          ) : (
-            <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center">
-              <BookOpen className="text-muted-foreground" />
-            </div>
-          )}
+          <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
+            <img
+              src={book.coverImage || defaultBookCover}
+              alt={book.title}
+              className="h-full w-full object-cover rounded-md"
+              data-testid={`img-book-cover-${book.id}`}
+            />
+          </div>
           <div>
             <h3 className="font-semibold line-clamp-2" data-testid={`text-book-title-${book.id}`}>
               {book.title}
@@ -145,15 +140,9 @@ export default function PublicLibrary() {
                       <CardContent>
                         <Link href={`/knjiga/${weeklyPick.id}`}>
                           <div className="flex gap-4 items-start cursor-pointer hover:opacity-80 transition-opacity">
-                            {weeklyPick.coverImage ? (
-                              <div className="w-20 h-28 shrink-0 rounded-md overflow-hidden bg-muted">
-                                <img src={weeklyPick.coverImage} alt={weeklyPick.title} className="w-full h-full object-cover" />
-                              </div>
-                            ) : (
-                              <div className="w-20 h-28 shrink-0 rounded-md bg-muted flex items-center justify-center">
-                                <BookOpen className="text-muted-foreground" />
-                              </div>
-                            )}
+                            <div className="w-20 h-28 shrink-0 rounded-md overflow-hidden bg-muted">
+                              <img src={weeklyPick.coverImage || defaultBookCover} alt={weeklyPick.title} className="w-full h-full object-cover" />
+                            </div>
                             <div className="space-y-1">
                               <h3 className="font-bold text-lg">{weeklyPick.title}</h3>
                               <p className="text-sm text-muted-foreground">{weeklyPick.author}</p>
@@ -180,15 +169,9 @@ export default function PublicLibrary() {
                       <CardContent>
                         <Link href={`/knjiga/${mostRead.id}`}>
                           <div className="flex gap-4 items-start cursor-pointer hover:opacity-80 transition-opacity">
-                            {mostRead.coverImage ? (
-                              <div className="w-20 h-28 shrink-0 rounded-md overflow-hidden bg-muted">
-                                <img src={mostRead.coverImage} alt={mostRead.title} className="w-full h-full object-cover" />
-                              </div>
-                            ) : (
-                              <div className="w-20 h-28 shrink-0 rounded-md bg-muted flex items-center justify-center">
-                                <BookOpen className="text-muted-foreground" />
-                              </div>
-                            )}
+                            <div className="w-20 h-28 shrink-0 rounded-md overflow-hidden bg-muted">
+                              <img src={mostRead.coverImage || defaultBookCover} alt={mostRead.title} className="w-full h-full object-cover" />
+                            </div>
                             <div className="space-y-1">
                               <h3 className="font-bold text-lg">{mostRead.title}</h3>
                               <p className="text-sm text-muted-foreground">{mostRead.author}</p>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, BookOpen, FileText, CheckCircle, ShoppingCart, Download, Users, BarChart3 } from "lucide-react";
 import type { Book, Quiz, QuizResult } from "@shared/schema";
+import defaultBookCover from "@assets/background_1771243573729.png";
 
 const GENRES: Record<string, string> = {
   bajke: "Bajke i priče", avantura: "Avantura", fantazija: "Fantazija",
@@ -66,20 +67,14 @@ export default function BookDetail() {
           <>
             <div className="flex flex-col md:flex-row gap-6">
               <div className="shrink-0">
-                {book.coverImage ? (
-                  <div className="w-48 h-64 rounded-md overflow-hidden bg-muted">
-                    <img
-                      src={book.coverImage}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                      data-testid="img-book-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-48 h-64 rounded-md bg-muted flex items-center justify-center">
-                    <BookOpen className="text-muted-foreground" />
-                  </div>
-                )}
+                <div className="w-48 h-64 rounded-md overflow-hidden bg-muted">
+                  <img
+                    src={book.coverImage || defaultBookCover}
+                    alt={book.title}
+                    className="w-full h-full object-cover"
+                    data-testid="img-book-cover"
+                  />
+                </div>
               </div>
               <div className="space-y-3 flex-1 min-w-0">
                 <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-book-title">

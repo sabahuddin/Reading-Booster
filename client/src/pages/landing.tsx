@@ -370,16 +370,16 @@ export default function LandingPage() {
                   Kreni u avanturu!
                 </Button>
               </Link>
-              <Link href="/biblioteka">
+              <a href="/biblioteka">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-white backdrop-blur-sm bg-white/10"
+                  className="text-white backdrop-blur-sm bg-white/10 border-white"
                   data-testid="button-cta-learn-more"
                 >
                   Pogledaj knjige
                 </Button>
-              </Link>
+              </a>
             </div>
           </motion.div>
         </div>
