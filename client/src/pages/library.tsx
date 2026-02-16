@@ -47,7 +47,7 @@ export default function Library() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Card key={i}>
                 <CardContent className="p-4 space-y-3">
-                  <Skeleton className="h-40 w-full rounded-md" />
+                  <Skeleton className="aspect-[2/3] w-full rounded-md" />
                   <Skeleton className="h-5 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                   <div className="flex gap-2">
@@ -72,7 +72,7 @@ export default function Library() {
               <Link key={book.id} href={`/ucenik/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
                 <Card className="hover-elevate h-full">
                   <CardContent className="p-4 space-y-3">
-                    <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                    <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
                       <img
                         src={book.coverImage || defaultBookCover}
                         alt={book.title}

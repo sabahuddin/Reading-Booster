@@ -80,11 +80,11 @@ export default function BookDetail() {
         ) : (
           <>
             <div className="grid md:grid-cols-[300px_1fr] gap-8">
-              <div>
+              <div className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-muted">
                 <img
                   src={book.coverImage || defaultBookCover}
                   alt={book.title}
-                  className="w-full rounded-lg shadow-lg"
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
                   data-testid="img-book-cover"
                 />
               </div>

@@ -54,7 +54,7 @@ function BookCard({ book }: { book: Book }) {
     <Link href={`/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
       <Card className="hover-elevate h-full">
         <CardContent className="p-4 space-y-3">
-          <div className="h-40 w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
+          <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
             <img
               src={book.coverImage || defaultBookCover}
               alt={book.title}
@@ -140,7 +140,7 @@ export default function PublicLibrary() {
                       <CardContent>
                         <Link href={`/knjiga/${weeklyPick.id}`}>
                           <div className="flex gap-4 items-start cursor-pointer hover:opacity-80 transition-opacity">
-                            <div className="w-20 h-28 shrink-0 rounded-md overflow-hidden bg-muted">
+                            <div className="w-20 aspect-[2/3] shrink-0 rounded-md overflow-hidden bg-muted">
                               <img src={weeklyPick.coverImage || defaultBookCover} alt={weeklyPick.title} className="w-full h-full object-cover" />
                             </div>
                             <div className="space-y-1">
@@ -169,7 +169,7 @@ export default function PublicLibrary() {
                       <CardContent>
                         <Link href={`/knjiga/${mostRead.id}`}>
                           <div className="flex gap-4 items-start cursor-pointer hover:opacity-80 transition-opacity">
-                            <div className="w-20 h-28 shrink-0 rounded-md overflow-hidden bg-muted">
+                            <div className="w-20 aspect-[2/3] shrink-0 rounded-md overflow-hidden bg-muted">
                               <img src={mostRead.coverImage || defaultBookCover} alt={mostRead.title} className="w-full h-full object-cover" />
                             </div>
                             <div className="space-y-1">
@@ -267,7 +267,7 @@ export default function PublicLibrary() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <Card key={i}>
                   <CardContent className="p-4 space-y-3">
-                    <Skeleton className="h-40 w-full rounded-md" />
+                    <Skeleton className="aspect-[2/3] w-full rounded-md" />
                     <Skeleton className="h-5 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
                     <div className="flex gap-2">
