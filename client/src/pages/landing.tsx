@@ -363,7 +363,7 @@ export default function LandingPage() {
 
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBg})` }} />
-        <div className="absolute inset-0 bg-[rgba(180,90,10,0.82)]" />
+        <div className="absolute inset-0 bg-[rgba(210,105,10,0.85)]" />
         <div className="relative mx-auto max-w-7xl px-4 py-24 sm:py-32 lg:py-40">
           <motion.div
             className="mx-auto max-w-3xl text-center"
@@ -541,7 +541,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative bg-[hsl(24,85%,40%)]">
+      <section className="relative bg-[hsl(28,95%,45%)]">
         <div className="relative mx-auto max-w-7xl px-4 py-16">
           <motion.div
             className="text-center"
