@@ -28,6 +28,7 @@ import {
   GraduationCap,
   Baby,
   PenTool,
+  Globe,
 } from "lucide-react";
 
 type Role = "student" | "teacher" | "parent" | "admin";
@@ -127,7 +128,17 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter className="p-4">
+          <SidebarFooter className="p-4 flex flex-col gap-1">
+            <Link href="/">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2"
+                data-testid="link-public-site"
+              >
+                <Globe className="shrink-0" />
+                <span>Početna stranica</span>
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               className="w-full justify-start gap-2"
