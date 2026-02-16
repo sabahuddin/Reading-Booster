@@ -128,120 +128,11 @@ export default function BookDetail() {
               </div>
             </div>
 
-            <Card className="border-2 border-primary" data-testid="card-where-to-find">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="text-primary" />
-                  Gdje pronaći ovu knjigu?
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {book.availableInLibrary && (
-                  <Alert data-testid="alert-library-available">
-                    <Library className="h-5 w-5" />
-                    <AlertTitle>Dostupno u školskoj biblioteci</AlertTitle>
-                    <AlertDescription>
-                      {book.locationInLibrary && (
-                        <p className="mt-2">
-                          <strong>Lokacija:</strong> {book.locationInLibrary}
-                        </p>
-                      )}
-                      {book.copiesAvailable !== undefined && book.copiesAvailable !== null && (
-                        <p>
-                          <strong>Dostupno primjeraka:</strong> {book.copiesAvailable}
-                        </p>
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {book.purchaseUrl && (
-                  <Button size="lg" className="w-full" asChild data-testid="button-buy-book">
-                    <a href={book.purchaseUrl} target="_blank" rel="noopener noreferrer">
-                      <ShoppingCart className="mr-2" />
-                      Kupi knjigu online
-                    </a>
-                  </Button>
-                )}
-
-                {book.pdfUrl && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Možeš pogledati prvih nekoliko stranica:
-                    </p>
-                    <Button variant="outline" className="w-full" asChild data-testid="button-preview-pdf">
-                      <a href={book.pdfUrl} target="_blank" rel="noopener noreferrer">
-                        <Eye className="mr-2" />
-                        Pogledaj uzorak knjige (PDF)
-                      </a>
-                    </Button>
-                  </div>
-                )}
-
-                {!book.availableInLibrary && !book.purchaseUrl && !book.pdfUrl && (
-                  <p className="text-sm text-muted-foreground text-center py-4" data-testid="text-no-availability">
-                    Informacije o dostupnosti knjige nisu trenutno dostupne.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            {quiz && (
-              <Card data-testid="card-quiz-section">
-                <CardHeader>
-                  <CardTitle>Pročitao si knjigu?</CardTitle>
-                  <CardDescription>
-                    Dokaži svoje znanje i osvoji bodove!
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {quizzes && quizzes.length > 0 ? (
-                    <div className="space-y-3">
-                      {quizzes.map((q) => {
-                        const taken = takenQuizIds.has(q.id);
-                        const result = myResults?.find((r) => r.quizId === q.id);
-                        return (
-                          <div
-                            key={q.id}
-                            className="flex items-center justify-between gap-4 flex-wrap p-3 rounded-md border"
-                            data-testid={`quiz-row-${q.id}`}
-                          >
-                            <div>
-                              <p className="font-medium">{q.title}</p>
-                              {taken && result && (
-                                <p className="text-sm text-muted-foreground">
-                                  Rezultat: {result.correctAnswers}/{result.totalQuestions} ({result.score} bodova)
-                                </p>
-                              )}
-                            </div>
-                            {taken ? (
-                              <Badge variant="secondary">Riješeno</Badge>
-                            ) : (
-                              <Link href={`/ucenik/kviz/${q.id}`}>
-                                <Button data-testid={`button-take-quiz-${q.id}`}>
-                                  <Brain className="mr-2" />
-                                  Rješavaj kviz
-                                </Button>
-                              </Link>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-4">
-                      Za ovu knjigu još nema kvizova.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
             <Card data-testid="card-book-details">
               <CardHeader>
                 <CardTitle>Detalji o knjizi</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <strong>Autor:</strong> {book.author}
@@ -282,6 +173,39 @@ export default function BookDetail() {
                   {book.recommendedForGrades && book.recommendedForGrades.length > 0 && (
                     <div className="md:col-span-2">
                       <strong>Preporučeno za:</strong> {book.recommendedForGrades.join(', ')} razred
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-6 border-t space-y-4" data-testid="card-where-to-find">
+                  <h3 className="font-bold text-lg">Gdje pronaći ovu knjigu?</h3>
+                  <p className="text-muted-foreground">
+                    Knjigu potražite u vašoj školskoj ili gradskoj biblioteci.
+                  </p>
+                  
+                  {book.purchaseUrl && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <p className="text-sm">Za kupovinu knjige kontaktirajte našeg partnera:</p>
+                      <Button size="sm" asChild data-testid="button-buy-book">
+                        <a href={book.purchaseUrl} target="_blank" rel="noopener noreferrer">
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Kupi
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+
+                  {book.pdfUrl && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        Možeš pogledati prvih nekoliko stranica:
+                      </p>
+                      <Button variant="outline" size="sm" asChild data-testid="button-preview-pdf">
+                        <a href={book.pdfUrl} target="_blank" rel="noopener noreferrer">
+                          <Eye className="mr-2 h-4 w-4" />
+                          Pogledaj uzorak (PDF)
+                        </a>
+                      </Button>
                     </div>
                   )}
                 </div>
