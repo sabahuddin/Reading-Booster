@@ -14,6 +14,11 @@ export const users = pgTable("users", {
   className: text("class_name"),
   points: integer("points").notNull().default(0),
   parentId: varchar("parent_id"),
+  institutionType: text("institution_type", { enum: ["school", "mekteb"] }),
+  institutionRole: text("institution_role", { enum: ["ucitelj", "muallim", "bibliotekar", "sekretar"] }),
+  approved: boolean("approved").default(false),
+  maxStudentAccounts: integer("max_student_accounts").default(0),
+  createdByTeacherId: varchar("created_by_teacher_id"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -131,3 +136,40 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 });
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+
+export const partners = pgTable("partners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  logoUrl: text("logo_url"),
+  address: text("address"),
+  websiteUrl: text("website_url"),
+  description: text("description"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPartnerSchema = createInsertSchema(partners).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertPartner = z.infer<typeof insertPartnerSchema>;
+export type Partner = typeof partners.$inferSelect;
+
+export const challenges = pgTable("challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  prizes: text("prizes").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertChallengeSchema = createInsertSchema(challenges).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertChallenge = z.infer<typeof insertChallengeSchema>;
+export type Challenge = typeof challenges.$inferSelect;

@@ -20,6 +20,9 @@ import AdminQuizzes from "@/pages/admin-quizzes";
 import AdminUsers from "@/pages/admin-users";
 import AdminBlog from "@/pages/admin-blog";
 import AdminMessages from "@/pages/admin-messages";
+import AdminPartners from "@/pages/admin-partners";
+import AdminChallenges from "@/pages/admin-challenges";
+import AdminApprovals from "@/pages/admin-approvals";
 import StudentDashboard from "@/pages/student-dashboard";
 import Library from "@/pages/library";
 import BookDetail from "@/pages/book-detail";
@@ -55,6 +58,9 @@ function Router() {
       <Route path="/admin/korisnici" component={AdminUsers} />
       <Route path="/admin/blog" component={AdminBlog} />
       <Route path="/admin/poruke" component={AdminMessages} />
+      <Route path="/admin/partneri" component={AdminPartners} />
+      <Route path="/admin/izazovi" component={AdminChallenges} />
+      <Route path="/admin/odobrenja" component={AdminApprovals} />
       <Route component={NotFound} />
     </Switch>
   );

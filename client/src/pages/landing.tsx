@@ -1,10 +1,15 @@
+import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { BookOpen, Brain, TrendingUp, Users, UserPlus, BookText, ClipboardCheck, Sparkles, Rocket } from "lucide-react";
+import { BookOpen, Brain, TrendingUp, Users, UserPlus, BookText, ClipboardCheck, Sparkles, Rocket, Trophy, Medal, Award, Calendar, Gift, ExternalLink, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import type { Partner, Challenge } from "@shared/schema";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -64,6 +69,264 @@ const stats = [
   { value: "10,000+", label: "učenika" },
   { value: "1,000+", label: "kvizova" },
 ];
+
+interface TopReader {
+  userId: string;
+  username: string;
+  fullName: string;
+  totalScore: number;
+}
+
+function TopReadersSection() {
+  const [period, setPeriod] = useState("week");
+
+  const { data: readers } = useQuery<TopReader[]>({
+    queryKey: ["/api/leaderboard", period],
+    queryFn: async () => {
+      const res = await fetch(`/api/leaderboard?period=${period}`);
+      return res.json();
+    },
+  });
+
+  const periodLabels: Record<string, string> = {
+    week: "Čitatelj sedmice",
+    month: "Čitatelj mjeseca",
+    year: "Čitatelj godine",
+  };
+
+  const medalIcons = [
+    <Medal className="h-5 w-5 text-yellow-500" />,
+    <Medal className="h-5 w-5 text-gray-400" />,
+    <Medal className="h-5 w-5 text-amber-700" />,
+  ];
+
+  return (
+    <section className="py-20 bg-card">
+      <div className="mx-auto max-w-7xl px-4">
+        <motion.div
+          className="text-center"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Trophy className="h-8 w-8 text-yellow-500" />
+          </div>
+          <h2 className="text-3xl font-bold sm:text-4xl" data-testid="text-leaderboard-title">
+            Najbolji čitatelji
+          </h2>
+          <p className="mt-2 text-muted-foreground text-lg">
+            Pogledaj ko najviše čita!
+          </p>
+        </motion.div>
+
+        <div className="mt-8 max-w-2xl mx-auto">
+          <Tabs value={period} onValueChange={setPeriod} className="w-full">
+            <TabsList className="grid w-full grid-cols-3" data-testid="tabs-leaderboard">
+              <TabsTrigger value="week" data-testid="tab-leaderboard-week">Sedmica</TabsTrigger>
+              <TabsTrigger value="month" data-testid="tab-leaderboard-month">Mjesec</TabsTrigger>
+              <TabsTrigger value="year" data-testid="tab-leaderboard-year">Godina</TabsTrigger>
+            </TabsList>
+            <TabsContent value={period}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg text-center">{periodLabels[period]}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!readers || readers.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-6">
+                      Još nema rezultata za ovaj period.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {readers.map((reader, index) => (
+                        <div
+                          key={reader.userId}
+                          className={`flex items-center gap-3 p-3 rounded-md ${
+                            index === 0
+                              ? "bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900"
+                              : index === 1
+                              ? "bg-gray-50 dark:bg-gray-900/20"
+                              : index === 2
+                              ? "bg-amber-50 dark:bg-amber-950/20"
+                              : ""
+                          }`}
+                          data-testid={`row-reader-${index}`}
+                        >
+                          <span className="text-lg font-bold w-8 text-center">
+                            {index < 3 ? medalIcons[index] : `${index + 1}.`}
+                          </span>
+                          <div className="flex-1">
+                            <p className="font-medium" data-testid={`text-reader-name-${index}`}>{reader.fullName}</p>
+                            <p className="text-sm text-muted-foreground">@{reader.username}</p>
+                          </div>
+                          <Badge variant="default" className="text-sm" data-testid={`text-reader-score-${index}`}>
+                            {reader.totalScore} bodova
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ChallengesSection() {
+  const { data: challengesList } = useQuery<Challenge[]>({
+    queryKey: ["/api/challenges"],
+  });
+
+  if (!challengesList || challengesList.length === 0) return null;
+
+  function formatDate(d: Date | string) {
+    return new Date(d).toLocaleDateString("bs-BA", { day: "numeric", month: "long", year: "numeric" });
+  }
+
+  return (
+    <section className="py-20">
+      <div className="mx-auto max-w-7xl px-4">
+        <motion.div
+          className="text-center"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Award className="h-8 w-8 text-purple-500" />
+          </div>
+          <h2 className="text-3xl font-bold sm:text-4xl" data-testid="text-challenges-title">
+            Izazovi i nagrade
+          </h2>
+          <p className="mt-2 text-muted-foreground text-lg">
+            Sudjeluj u izazovima i osvoji nagrade!
+          </p>
+        </motion.div>
+
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {challengesList.map((challenge) => (
+            <motion.div
+              key={challenge.id}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+              variants={fadeIn}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="h-full border-2 border-purple-200 dark:border-purple-900" data-testid={`card-challenge-${challenge.id}`}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                    <CardTitle className="text-lg">{challenge.title}</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                    <Calendar className="h-3 w-3" />
+                    {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm">{challenge.description}</p>
+                  <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-md">
+                    <div className="flex items-center gap-1 mb-2">
+                      <Gift className="h-4 w-4 text-amber-600" />
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Nagrade:</p>
+                    </div>
+                    {challenge.prizes.split("|").map((prize, i) => (
+                      <p key={i} className="text-sm text-amber-700 dark:text-amber-300 ml-5">{prize.trim()}</p>
+                    ))}
+                  </div>
+                  <Link href="/registracija">
+                    <Button size="sm" variant="outline" className="w-full mt-2" data-testid={`button-join-challenge-${challenge.id}`}>
+                      Pridruži se izazovu
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PartnersSection() {
+  const { data: partnersList } = useQuery<Partner[]>({
+    queryKey: ["/api/partners"],
+  });
+
+  if (!partnersList || partnersList.length === 0) return null;
+
+  return (
+    <section className="py-16 bg-card">
+      <div className="mx-auto max-w-7xl px-4">
+        <motion.div
+          className="text-center"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Handshake className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-bold sm:text-3xl" data-testid="text-partners-title">
+            Naši partneri
+          </h2>
+        </motion.div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
+          {partnersList.map((partner) => (
+            <motion.div
+              key={partner.id}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeIn}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center gap-2"
+              data-testid={`partner-item-${partner.id}`}
+            >
+              {partner.websiteUrl ? (
+                <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                  {partner.logoUrl ? (
+                    <img src={partner.logoUrl} alt={partner.name} className="h-16 w-auto max-w-[120px] object-contain" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-xl font-bold">
+                      {partner.name.charAt(0)}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-muted-foreground">{partner.name}</span>
+                </a>
+              ) : (
+                <>
+                  {partner.logoUrl ? (
+                    <img src={partner.logoUrl} alt={partner.name} className="h-16 w-auto max-w-[120px] object-contain" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-xl font-bold">
+                      {partner.name.charAt(0)}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-muted-foreground">{partner.name}</span>
+                </>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function LandingPage() {
   return (
@@ -168,6 +431,10 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <TopReadersSection />
+
+      <ChallengesSection />
 
       <section className="bg-card py-20">
         <div className="mx-auto max-w-7xl px-4">
@@ -280,6 +547,8 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </section>
+
+      <PartnersSection />
 
       <Footer />
     </div>

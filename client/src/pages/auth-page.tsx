@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BookOpen } from "lucide-react";
+import { BookOpen, School, Building2 } from "lucide-react";
 import { insertUserSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -40,12 +41,25 @@ const registerSchema = insertUserSchema.extend({
   email: z.string().email("Unesite ispravnu email adresu"),
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
-  role: z.enum(["student", "teacher", "parent"]),
+  role: z.enum(["student", "parent"]),
   schoolName: z.string().optional().nullable(),
   className: z.string().optional().nullable(),
 });
 
 type RegisterValues = z.infer<typeof registerSchema>;
+
+const institutionSchema = insertUserSchema.extend({
+  username: z.string().min(3, "Korisničko ime mora imati najmanje 3 znaka"),
+  email: z.string().email("Unesite ispravnu email adresu"),
+  password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
+  fullName: z.string().min(2, "Ime i prezime je obavezno"),
+  institutionType: z.enum(["school", "mekteb"], { required_error: "Odaberite tip institucije" }),
+  institutionRole: z.enum(["ucitelj", "muallim", "bibliotekar", "sekretar"], { required_error: "Odaberite vašu ulogu" }),
+  schoolName: z.string().min(2, "Naziv institucije je obavezan"),
+  className: z.string().optional().nullable(),
+});
+
+type InstitutionValues = z.infer<typeof institutionSchema>;
 
 function getDashboardPath(role: string): string {
   switch (role) {
@@ -95,6 +109,21 @@ export default function AuthPage() {
     },
   });
 
+  const institutionForm = useForm<InstitutionValues>({
+    resolver: zodResolver(institutionSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      fullName: "",
+      institutionType: undefined,
+      institutionRole: undefined,
+      schoolName: "",
+      className: "",
+      role: "teacher",
+    },
+  });
+
   const selectedRole = registerForm.watch("role");
 
   async function onLogin(data: LoginValues) {
@@ -126,6 +155,29 @@ export default function AuthPage() {
     }
   }
 
+  async function onInstitutionRegister(data: InstitutionValues) {
+    try {
+      const submitData = {
+        ...data,
+        role: "teacher" as const,
+      };
+      const result: any = await register.mutateAsync(submitData);
+      if (result?.pendingApproval) {
+        toast({
+          title: "Zahtjev poslan!",
+          description: "Vaš zahtjev za registraciju institucije je poslan. Administrator će odobriti vaš račun.",
+        });
+        setActiveTab("login");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Greška pri registraciji",
+        description: error.message || "Registracija nije uspjela. Pokušajte ponovo.",
+        variant: "destructive",
+      });
+    }
+  }
+
   if (isAuthenticated && user) {
     return null;
   }
@@ -146,12 +198,16 @@ export default function AuthPage() {
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2" data-testid="tabs-auth">
+                <TabsList className="grid w-full grid-cols-3" data-testid="tabs-auth">
                   <TabsTrigger value="login" data-testid="tab-login">
                     Prijava
                   </TabsTrigger>
                   <TabsTrigger value="register" data-testid="tab-register">
                     Registracija
+                  </TabsTrigger>
+                  <TabsTrigger value="institution" data-testid="tab-institution">
+                    <School className="h-4 w-4 mr-1" />
+                    Institucija
                   </TabsTrigger>
                 </TabsList>
 
@@ -303,9 +359,6 @@ export default function AuthPage() {
                                 <SelectItem value="student" data-testid="select-role-student">
                                   Učenik
                                 </SelectItem>
-                                <SelectItem value="teacher" data-testid="select-role-teacher">
-                                  Učitelj
-                                </SelectItem>
                                 <SelectItem value="parent" data-testid="select-role-parent">
                                   Roditelj
                                 </SelectItem>
@@ -316,14 +369,14 @@ export default function AuthPage() {
                         )}
                       />
 
-                      {(selectedRole === "student" || selectedRole === "teacher") && (
+                      {selectedRole === "student" && (
                         <>
                           <FormField
                             control={registerForm.control}
                             name="schoolName"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Naziv škole</FormLabel>
+                                <FormLabel>Naziv škole (opcionalno)</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Unesite naziv škole"
@@ -341,7 +394,7 @@ export default function AuthPage() {
                             name="className"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Razred</FormLabel>
+                                <FormLabel>Razred (opcionalno)</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Unesite razred"
@@ -368,12 +421,158 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 </TabsContent>
+
+                <TabsContent value="institution">
+                  <div className="mt-2 mb-4 p-3 bg-muted rounded-md">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Building2 className="h-4 w-4 shrink-0" />
+                      Registracija za škole i mektebe. Vaš račun će biti aktivan nakon odobrenja administratora.
+                    </p>
+                  </div>
+                  <Form {...institutionForm}>
+                    <form
+                      onSubmit={institutionForm.handleSubmit(onInstitutionRegister)}
+                      className="space-y-4"
+                    >
+                      <FormField
+                        control={institutionForm.control}
+                        name="fullName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ime i prezime</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Vaše ime i prezime" data-testid="input-inst-fullname" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={institutionForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="Vaš email" data-testid="input-inst-email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={institutionForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Korisničko ime</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Odaberite korisničko ime" data-testid="input-inst-username" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={institutionForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Lozinka</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Odaberite lozinku" data-testid="input-inst-password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={institutionForm.control}
+                        name="institutionType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tip institucije</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-inst-type">
+                                  <SelectValue placeholder="Odaberite tip" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="school">Škola</SelectItem>
+                                <SelectItem value="mekteb">Mekteb</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={institutionForm.control}
+                        name="institutionRole"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Vaša uloga</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-inst-role">
+                                  <SelectValue placeholder="Odaberite ulogu" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="ucitelj">Učitelj</SelectItem>
+                                <SelectItem value="muallim">Muallim</SelectItem>
+                                <SelectItem value="bibliotekar">Bibliotekar</SelectItem>
+                                <SelectItem value="sekretar">Sekretar</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={institutionForm.control}
+                        name="schoolName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Naziv institucije</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Naziv škole ili mekteba" data-testid="input-inst-school" {...field} value={field.value ?? ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={institutionForm.control}
+                        name="className"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Razred / Grupa (opcionalno)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="npr. 5a" data-testid="input-inst-class" {...field} value={field.value ?? ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={register.isPending}
+                        data-testid="button-inst-submit"
+                      >
+                        {register.isPending ? "Slanje zahtjeva..." : "Pošalji zahtjev za registraciju"}
+                      </Button>
+                    </form>
+                  </Form>
+                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
         </div>
 
-        <div className="hidden lg:flex lg:flex-1 items-center justify-center bg-gradient-to-br from-[hsl(210,85%,42%)] via-[hsl(210,85%,35%)] to-[hsl(210,85%,25%)]">
+        <div className="hidden lg:flex lg:flex-1 items-center justify-center bg-gradient-to-br from-[hsl(262,80%,55%)] via-[hsl(280,70%,45%)] to-[hsl(310,65%,40%)]">
           <div className="max-w-md text-center text-white p-8">
             <BookOpen className="mx-auto mb-6 h-16 w-16" />
             <h2 className="mb-4 text-3xl font-bold" data-testid="text-branding-title">

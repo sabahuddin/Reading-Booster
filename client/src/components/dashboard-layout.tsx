@@ -29,6 +29,9 @@ import {
   Baby,
   PenTool,
   Globe,
+  Handshake,
+  Award,
+  UserCheck,
 } from "lucide-react";
 
 type Role = "student" | "teacher" | "parent" | "admin";
@@ -59,6 +62,9 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Knjige", url: "/admin/knjige", icon: BookOpen },
     { title: "Kvizovi", url: "/admin/kvizovi", icon: FileQuestion },
     { title: "Korisnici", url: "/admin/korisnici", icon: Users },
+    { title: "Odobrenja", url: "/admin/odobrenja", icon: UserCheck },
+    { title: "Partneri", url: "/admin/partneri", icon: Handshake },
+    { title: "Izazovi", url: "/admin/izazovi", icon: Award },
     { title: "Blog", url: "/admin/blog", icon: PenTool },
     { title: "Poruke", url: "/admin/poruke", icon: Mail },
   ],

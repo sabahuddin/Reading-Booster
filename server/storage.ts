@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte, desc } from "drizzle-orm";
 import { db } from "./db";
 import {
   users,
@@ -8,6 +8,8 @@ import {
   quizResults,
   blogPosts,
   contactMessages,
+  partners,
+  challenges,
   type User,
   type InsertUser,
   type Book,
@@ -22,6 +24,10 @@ import {
   type InsertBlogPost,
   type ContactMessage,
   type InsertContactMessage,
+  type Partner,
+  type InsertPartner,
+  type Challenge,
+  type InsertChallenge,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -35,6 +41,8 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: string): Promise<void>;
+  getStudentsByTeacherId(teacherId: string): Promise<User[]>;
+  getPendingTeachers(): Promise<User[]>;
 
   getAllBooks(): Promise<Book[]>;
   getBook(id: string): Promise<Book | undefined>;
@@ -57,6 +65,7 @@ export interface IStorage {
   getQuizResultsByUserId(userId: string): Promise<QuizResult[]>;
   createQuizResult(result: InsertQuizResult): Promise<QuizResult>;
   getQuizResultByUserAndQuiz(userId: string, quizId: string): Promise<QuizResult | undefined>;
+  getTopReadersSince(since: Date, limit?: number): Promise<Array<{ userId: string; username: string; fullName: string; totalScore: number }>>;
 
   getAllBlogPosts(): Promise<BlogPost[]>;
   getBlogPost(id: string): Promise<BlogPost | undefined>;
@@ -66,6 +75,20 @@ export interface IStorage {
 
   createContactMessage(msg: InsertContactMessage): Promise<ContactMessage>;
   getAllContactMessages(): Promise<ContactMessage[]>;
+
+  getAllPartners(): Promise<Partner[]>;
+  getActivePartners(): Promise<Partner[]>;
+  getPartner(id: string): Promise<Partner | undefined>;
+  createPartner(partner: InsertPartner): Promise<Partner>;
+  updatePartner(id: string, data: Partial<InsertPartner>): Promise<Partner | undefined>;
+  deletePartner(id: string): Promise<void>;
+
+  getAllChallenges(): Promise<Challenge[]>;
+  getActiveChallenges(): Promise<Challenge[]>;
+  getChallenge(id: string): Promise<Challenge | undefined>;
+  createChallenge(challenge: InsertChallenge): Promise<Challenge>;
+  updateChallenge(id: string, data: Partial<InsertChallenge>): Promise<Challenge | undefined>;
+  deleteChallenge(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -115,6 +138,18 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  async getStudentsByTeacherId(teacherId: string): Promise<User[]> {
+    return db.select().from(users).where(
+      and(eq(users.createdByTeacherId, teacherId), eq(users.role, "student"))
+    );
+  }
+
+  async getPendingTeachers(): Promise<User[]> {
+    return db.select().from(users).where(
+      and(eq(users.role, "teacher"), eq(users.approved, false))
+    );
   }
 
   async getAllBooks(): Promise<Book[]> {
@@ -203,6 +238,23 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getTopReadersSince(since: Date, limit: number = 10): Promise<Array<{ userId: string; username: string; fullName: string; totalScore: number }>> {
+    const results = await db.select().from(quizResults).where(gte(quizResults.completedAt, since));
+    const scoreMap = new Map<string, number>();
+    for (const r of results) {
+      scoreMap.set(r.userId, (scoreMap.get(r.userId) || 0) + r.score);
+    }
+    const sorted = Array.from(scoreMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, limit);
+    const topReaders: Array<{ userId: string; username: string; fullName: string; totalScore: number }> = [];
+    for (const [userId, totalScore] of sorted) {
+      const user = await this.getUser(userId);
+      if (user) {
+        topReaders.push({ userId, username: user.username, fullName: user.fullName, totalScore });
+      }
+    }
+    return topReaders;
+  }
+
   async getAllBlogPosts(): Promise<BlogPost[]> {
     return db.select().from(blogPosts);
   }
@@ -233,6 +285,60 @@ export class DatabaseStorage implements IStorage {
 
   async getAllContactMessages(): Promise<ContactMessage[]> {
     return db.select().from(contactMessages);
+  }
+
+  async getAllPartners(): Promise<Partner[]> {
+    return db.select().from(partners).orderBy(partners.sortOrder);
+  }
+
+  async getActivePartners(): Promise<Partner[]> {
+    return db.select().from(partners).where(eq(partners.active, true)).orderBy(partners.sortOrder);
+  }
+
+  async getPartner(id: string): Promise<Partner | undefined> {
+    const [partner] = await db.select().from(partners).where(eq(partners.id, id));
+    return partner;
+  }
+
+  async createPartner(partner: InsertPartner): Promise<Partner> {
+    const [created] = await db.insert(partners).values(partner).returning();
+    return created;
+  }
+
+  async updatePartner(id: string, data: Partial<InsertPartner>): Promise<Partner | undefined> {
+    const [updated] = await db.update(partners).set(data).where(eq(partners.id, id)).returning();
+    return updated;
+  }
+
+  async deletePartner(id: string): Promise<void> {
+    await db.delete(partners).where(eq(partners.id, id));
+  }
+
+  async getAllChallenges(): Promise<Challenge[]> {
+    return db.select().from(challenges).orderBy(desc(challenges.createdAt));
+  }
+
+  async getActiveChallenges(): Promise<Challenge[]> {
+    return db.select().from(challenges).where(eq(challenges.active, true)).orderBy(desc(challenges.createdAt));
+  }
+
+  async getChallenge(id: string): Promise<Challenge | undefined> {
+    const [challenge] = await db.select().from(challenges).where(eq(challenges.id, id));
+    return challenge;
+  }
+
+  async createChallenge(challenge: InsertChallenge): Promise<Challenge> {
+    const [created] = await db.insert(challenges).values(challenge).returning();
+    return created;
+  }
+
+  async updateChallenge(id: string, data: Partial<InsertChallenge>): Promise<Challenge | undefined> {
+    const [updated] = await db.update(challenges).set(data).where(eq(challenges.id, id)).returning();
+    return updated;
+  }
+
+  async deleteChallenge(id: string): Promise<void> {
+    await db.delete(challenges).where(eq(challenges.id, id));
   }
 }
 
