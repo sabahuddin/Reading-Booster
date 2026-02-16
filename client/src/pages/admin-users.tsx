@@ -32,6 +32,12 @@ import { Plus, Pencil, Trash2, Users, Search } from "lucide-react";
 
 type UserWithoutPassword = Omit<User, "password">;
 
+const subscriptionLabels: Record<string, string> = {
+  free: "Besplatni",
+  standard: "Standard",
+  full: "Full",
+};
+
 const editUserSchema = z.object({
   fullName: z.string().min(1, "Ime je obavezno"),
   email: z.string().email("Neispravan email"),
@@ -42,6 +48,8 @@ const editUserSchema = z.object({
   schoolName: z.string().optional(),
   className: z.string().optional(),
   parentId: z.string().optional(),
+  subscriptionType: z.enum(["free", "standard", "full"]).optional(),
+  subscriptionExpiresAt: z.string().optional(),
 });
 
 const createUserSchema = z.object({
@@ -164,6 +172,8 @@ export default function AdminUsers() {
       schoolName: user.schoolName ?? "",
       className: user.className ?? "",
       parentId: user.parentId ?? "",
+      subscriptionType: (user.subscriptionType as "free" | "standard" | "full") ?? "free",
+      subscriptionExpiresAt: user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).toISOString().split("T")[0] : "",
     });
     setEditDialogOpen(true);
   }
@@ -224,6 +234,7 @@ export default function AdminUsers() {
                     <TableHead>Škola</TableHead>
                     <TableHead>Razred</TableHead>
                     <TableHead>Bodovi</TableHead>
+                    <TableHead>Pretplata</TableHead>
                     <TableHead>Akcije</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -241,6 +252,11 @@ export default function AdminUsers() {
                         <TableCell>{user.className ?? "-"}</TableCell>
                         <TableCell>{user.points}</TableCell>
                         <TableCell>
+                          <Badge variant={user.subscriptionType === "free" ? "outline" : user.subscriptionType === "full" ? "default" : "secondary"}>
+                            {subscriptionLabels[user.subscriptionType] ?? "Besplatni"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1">
                             <Button size="icon" variant="ghost" onClick={() => openEdit(user)} data-testid={`button-edit-user-${user.id}`}>
                               <Pencil className="h-4 w-4" />
@@ -254,7 +270,7 @@ export default function AdminUsers() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         {searchQuery || roleFilter !== "all" ? "Nema rezultata za zadani filter." : "Nema korisnika."}
                       </TableCell>
                     </TableRow>
@@ -334,6 +350,36 @@ export default function AdminUsers() {
                     <FormMessage />
                   </FormItem>
                 )} />
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-sm font-medium mb-3">Pretplata</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={editForm.control} name="subscriptionType" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tip pretplate</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "free"}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-edit-subscription">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="free">Besplatni</SelectItem>
+                            <SelectItem value="standard">Standard (10 KM/god)</SelectItem>
+                            <SelectItem value="full">Full (20 KM/god)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={editForm.control} name="subscriptionExpiresAt" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ističe</FormLabel>
+                        <FormControl><Input type="date" {...field} data-testid="input-edit-subscriptionExpires" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
                 <DialogFooter>
                   <Button type="submit" disabled={updateMutation.isPending} data-testid="button-submit-edit-user">
                     {updateMutation.isPending ? "Spremanje..." : "Spremi promjene"}

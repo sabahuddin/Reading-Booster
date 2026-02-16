@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +31,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Pencil, FileQuestion } from "lucide-react";
+import { Plus, Trash2, Pencil, FileQuestion, Download, Upload } from "lucide-react";
 
 const quizFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
@@ -304,6 +304,8 @@ export default function AdminQuizzes() {
   const { toast } = useToast();
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
   const [deleteQuiz, setDeleteQuiz] = useState<Quiz | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<Quiz[]>({
     queryKey: ["/api/quizzes"],
@@ -349,6 +351,62 @@ export default function AdminQuizzes() {
     },
   });
 
+  function downloadTemplate() {
+    window.open("/api/admin/templates/quizzes", "_blank");
+  }
+
+  async function handleImportCSV(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("csv", file);
+
+      const response = await fetch("/api/admin/import/quizzes", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast({
+          title: "Greška pri uvozu",
+          description: error.message || "Došlo je do greške pri uvozu CSV datoteke.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await response.json();
+      const { quizzesCreated, questionsCreated, errors } = result;
+
+      const successMessage = `Uvezeno ${quizzesCreated} kvizova i ${questionsCreated} pitanja`;
+      const description = errors && errors.length > 0 ? errors.join("; ") : undefined;
+
+      toast({
+        title: "Uvoz je uspješan",
+        description: description ? `${successMessage}\n\nGreške: ${description}` : successMessage,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Nepoznata greška";
+      toast({
+        title: "Greška pri uvozu",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
   function getBookTitle(bookId: string): string {
     const book = books?.find((b) => b.id === bookId);
     return book?.title ?? "Nepoznata knjiga";
@@ -362,10 +420,37 @@ export default function AdminQuizzes() {
             <FileQuestion className="h-6 w-6" />
             <h1 className="text-2xl font-bold" data-testid="text-quizzes-title">Upravljanje kvizovima</h1>
           </div>
-          <Button onClick={() => { form.reset({ title: "", bookId: "" }); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
-            <Plus className="mr-2 h-4 w-4" />
-            Dodaj kviz
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={downloadTemplate}
+              variant="outline"
+              data-testid="button-download-quizzes-template"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Preuzmi šablon
+            </Button>
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              disabled={isImporting}
+              data-testid="button-import-quizzes-csv"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {isImporting ? "Uvozim..." : "Uvezi CSV"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleImportCSV}
+              className="hidden"
+              data-testid="input-import-quizzes-file"
+            />
+            <Button onClick={() => { form.reset({ title: "", bookId: "" }); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
+              <Plus className="mr-2 h-4 w-4" />
+              Dodaj kviz
+            </Button>
+          </div>
         </div>
 
         <Card>

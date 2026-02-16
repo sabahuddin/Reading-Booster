@@ -84,7 +84,8 @@ function TopReadersSection() {
     queryKey: ["/api/leaderboard", period],
     queryFn: async () => {
       const res = await fetch(`/api/leaderboard?period=${period}`);
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
   });
 

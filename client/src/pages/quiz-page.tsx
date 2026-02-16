@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,24 +17,39 @@ import {
   Trophy,
   Send,
   FileQuestion,
+  Lock,
+  Crown,
 } from "lucide-react";
 import type { Quiz, Question, QuizResult } from "@shared/schema";
 
 type QuizWithQuestions = Quiz & { questions: Question[] };
 
+type SubscriptionStatus = {
+  subscriptionType: string;
+  completedQuizzes: number;
+  freeQuizLimit: number;
+  canTakeQuiz: boolean;
+};
+
 export default function QuizPage() {
   const [, params] = useRoute("/ucenik/kviz/:id");
   const quizId = params?.id;
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
+  const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
 
   const { data: quiz, isLoading } = useQuery<QuizWithQuestions>({
     queryKey: ["/api/quizzes", quizId],
     enabled: !!quizId,
+  });
+
+  const { data: subStatus } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/subscription/status"],
   });
 
   const submitMutation = useMutation({
@@ -55,8 +70,13 @@ export default function QuizPage() {
       setSubmitted(true);
       queryClient.invalidateQueries({ queryKey: ["/api/quiz-results/my"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
     },
     onError: (error: Error) => {
+      if (error.message === "SUBSCRIPTION_REQUIRED") {
+        setShowSubscriptionPrompt(true);
+        return;
+      }
       toast({
         title: "Greška",
         description: error.message || "Nije moguće predati kviz.",
@@ -83,6 +103,59 @@ export default function QuizPage() {
     { key: "c", label: "C", field: "optionC" },
     { key: "d", label: "D", field: "optionD" },
   ];
+
+  if (showSubscriptionPrompt || (subStatus && !subStatus.canTakeQuiz)) {
+    return (
+      <DashboardLayout role="student">
+        <div className="max-w-xl mx-auto space-y-6">
+          <div className="text-center space-y-4">
+            <Lock className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h1 className="text-2xl font-bold" data-testid="text-subscription-required">Potrebna pretplata</h1>
+            <p className="text-muted-foreground">
+              Iskoristili ste sva {subStatus?.freeQuizLimit || 3} besplatna kviza. 
+              Nadogradite svoj paket za neograničen pristup svim kvizovima.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="border-primary">
+              <CardContent className="p-6 text-center space-y-3">
+                <Crown className="mx-auto h-8 w-8 text-primary" />
+                <h3 className="font-bold text-lg">Standard</h3>
+                <p className="text-3xl font-bold">10 <span className="text-sm font-normal text-muted-foreground">KM/godišnje</span></p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>Neograničen broj kvizova</li>
+                  <li>Pristup svim knjigama</li>
+                  <li>Detaljne statistike</li>
+                </ul>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6 text-center space-y-3">
+                <Crown className="mx-auto h-8 w-8 text-yellow-500" />
+                <h3 className="font-bold text-lg">Full</h3>
+                <p className="text-3xl font-bold">20 <span className="text-sm font-normal text-muted-foreground">KM/godišnje</span></p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>Sve iz Standard paketa</li>
+                  <li>Učešće u takmičenjima</li>
+                  <li>Učešće u izvlačenjima</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex gap-3 flex-wrap justify-center">
+            <Button asChild data-testid="button-go-pricing">
+              <Link href="/cijene">Pogledaj pakete</Link>
+            </Button>
+            <Button variant="outline" asChild data-testid="button-back-library">
+              <Link href="/ucenik/biblioteka">Natrag u biblioteku</Link>
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (submitted && result) {
     return (

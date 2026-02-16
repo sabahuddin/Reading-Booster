@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   approved: boolean("approved").default(false),
   maxStudentAccounts: integer("max_student_accounts").default(0),
   createdByTeacherId: varchar("created_by_teacher_id"),
+  subscriptionType: text("subscription_type", { enum: ["free", "standard", "full"] }).notNull().default("free"),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

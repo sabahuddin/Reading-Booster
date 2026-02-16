@@ -29,7 +29,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download } from "lucide-react";
 
 const GENRES = [
   { value: "bajke", label: "Bajke i priče" },
@@ -85,8 +85,10 @@ export default function AdminBooks() {
   const [deleteBook, setDeleteBook] = useState<Book | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const bookFileInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [coverUploading, setCoverUploading] = useState(false);
   const [bookFileUploading, setBookFileUploading] = useState(false);
+  const [csvImporting, setCsvImporting] = useState(false);
 
   const { data: books, isLoading } = useQuery<Book[]>({
     queryKey: ["/api/books"],
@@ -192,6 +194,58 @@ export default function AdminBooks() {
     },
   });
 
+  async function handleDownloadTemplate() {
+    try {
+      window.open("/api/admin/templates/books", "_blank");
+      toast({ title: "Preuzimanje", description: "Šablon se preuzima..." });
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    }
+  }
+
+  async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setCsvImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("csv", file);
+      
+      const res = await fetch("/api/admin/import/books", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Import failed");
+      }
+      
+      const data = await res.json();
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      
+      const description = data.errors && data.errors.length > 0 
+        ? `Uvezeno: ${data.imported || 0}. Greške: ${data.errors.join(", ")}`
+        : `Uspješno uvezeno ${data.imported || 0} knjiga.`;
+      
+      toast({ 
+        title: "Import završen", 
+        description: description,
+        variant: data.errors && data.errors.length > 0 ? "default" : "default"
+      });
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    } finally {
+      setCsvImporting(false);
+      if (csvInputRef.current) {
+        csvInputRef.current.value = "";
+      }
+    }
+  }
+
   function openCreate() {
     setEditingBook(null);
     form.reset({
@@ -247,10 +301,28 @@ export default function AdminBooks() {
             <BookOpen className="h-6 w-6" />
             <h1 className="text-2xl font-bold" data-testid="text-books-title">Upravljanje knjigama</h1>
           </div>
-          <Button onClick={openCreate} data-testid="button-add-book">
-            <Plus className="mr-2 h-4 w-4" />
-            Dodaj knjigu
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleDownloadTemplate} variant="outline" data-testid="button-download-books-template">
+              <Download className="mr-2 h-4 w-4" />
+              Preuzmi šablon
+            </Button>
+            <Button onClick={() => csvInputRef.current?.click()} variant="outline" disabled={csvImporting} data-testid="button-import-books-csv">
+              <Upload className="mr-2 h-4 w-4" />
+              {csvImporting ? "Učitavanje..." : "Uvezi CSV"}
+            </Button>
+            <input
+              type="file"
+              ref={csvInputRef}
+              accept=".csv"
+              className="hidden"
+              onChange={handleCsvImport}
+              data-testid="input-import-books-file"
+            />
+            <Button onClick={openCreate} data-testid="button-add-book">
+              <Plus className="mr-2 h-4 w-4" />
+              Dodaj knjigu
+            </Button>
+          </div>
         </div>
 
         <Card>

@@ -63,6 +63,7 @@ export interface IStorage {
   updateQuestion(id: string, data: Partial<InsertQuestion>): Promise<Question | undefined>;
 
   getQuizResultsByUserId(userId: string): Promise<QuizResult[]>;
+  getQuizResultsCountByUserId(userId: string): Promise<number>;
   createQuizResult(result: InsertQuizResult): Promise<QuizResult>;
   getQuizResultByUserAndQuiz(userId: string, quizId: string): Promise<QuizResult | undefined>;
   getTopReadersSince(since: Date, limit?: number): Promise<Array<{ userId: string; username: string; fullName: string; totalScore: number }>>;
@@ -224,6 +225,11 @@ export class DatabaseStorage implements IStorage {
 
   async getQuizResultsByUserId(userId: string): Promise<QuizResult[]> {
     return db.select().from(quizResults).where(eq(quizResults.userId, userId));
+  }
+
+  async getQuizResultsCountByUserId(userId: string): Promise<number> {
+    const results = await db.select().from(quizResults).where(eq(quizResults.userId, userId));
+    return results.length;
   }
 
   async createQuizResult(result: InsertQuizResult): Promise<QuizResult> {

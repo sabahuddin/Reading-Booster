@@ -61,6 +61,33 @@ const uploadLogo = multer({ storage: logoStorage, limits: { fileSize: 5 * 1024 *
   else cb(new Error("Samo slike su dozvoljene"));
 }});
 
+const csvDir = path.join(uploadsDir, "csv");
+fs.mkdirSync(csvDir, { recursive: true });
+const csvStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, csvDir),
+  filename: (_req, file, cb) => cb(null, `${Date.now()}-${randomBytes(4).toString("hex")}.csv`),
+});
+const uploadCSV = multer({ storage: csvStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+  if (file.mimetype === "text/csv" || file.originalname.endsWith(".csv")) cb(null, true);
+  else cb(new Error("Samo CSV datoteke su dozvoljene"));
+}});
+
+function parseCSV(content: string): Record<string, string>[] {
+  const lines = content.replace(/^\uFEFF/, "").split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(";").map(h => h.trim().replace(/^"|"$/g, ""));
+  const rows: Record<string, string>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(";").map(v => v.trim().replace(/^"|"$/g, ""));
+    if (values.length === headers.length) {
+      const row: Record<string, string> = {};
+      headers.forEach((h, idx) => { row[h] = values[idx]; });
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string): Promise<string> {
@@ -388,6 +415,27 @@ export async function registerRoutes(
 
   // ==================== QUIZ RESULTS ROUTES ====================
 
+  app.get("/api/subscription/status", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const completedQuizzes = await storage.getQuizResultsCountByUserId(user.id);
+      const isExpired = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) < new Date();
+      const effectiveType = (user.subscriptionType !== "free" && isExpired) ? "free" : user.subscriptionType;
+      const FREE_QUIZ_LIMIT = 3;
+      return res.json({
+        subscriptionType: effectiveType,
+        subscriptionExpiresAt: user.subscriptionExpiresAt,
+        completedQuizzes,
+        freeQuizLimit: FREE_QUIZ_LIMIT,
+        canTakeQuiz: effectiveType !== "free" || completedQuizzes < FREE_QUIZ_LIMIT,
+        canParticipateInChallenges: effectiveType === "full",
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/quiz-results", requireAuth, async (req, res) => {
     try {
       const { quizId, answers } = req.body;
@@ -396,6 +444,18 @@ export async function registerRoutes(
       }
 
       const userId = req.session.userId!;
+
+      const currentUser = await storage.getUser(userId);
+      if (currentUser) {
+        const isExpired = currentUser.subscriptionExpiresAt && new Date(currentUser.subscriptionExpiresAt) < new Date();
+        const effectiveType = (currentUser.subscriptionType !== "free" && isExpired) ? "free" : currentUser.subscriptionType;
+        if (effectiveType === "free") {
+          const completedCount = await storage.getQuizResultsCountByUserId(userId);
+          if (completedCount >= 3) {
+            return res.status(403).json({ message: "SUBSCRIPTION_REQUIRED", description: "Besplatni paket dozvoljava samo 3 kviza. Nadogradite pretplatu za neograničen pristup." });
+          }
+        }
+      }
 
       const existingResult = await storage.getQuizResultByUserAndQuiz(userId, quizId);
       if (existingResult) {
@@ -433,9 +493,9 @@ export async function registerRoutes(
         wrongAnswers: wrongCount,
       });
 
-      const user = await storage.getUser(userId);
-      if (user) {
-        await storage.updateUserPoints(userId, user.points + score);
+      const updatedUser = await storage.getUser(userId);
+      if (updatedUser) {
+        await storage.updateUserPoints(userId, updatedUser.points + score);
       }
 
       const quiz = await storage.getQuiz(quizId);
@@ -887,6 +947,144 @@ export async function registerRoutes(
       const children = await storage.getChildrenByParentId(req.session.userId!);
       const childrenWithoutPasswords = children.map(({ password, ...c }) => c);
       return res.json(childrenWithoutPasswords);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== CSV TEMPLATE & IMPORT ROUTES ====================
+
+  app.get("/api/admin/templates/books", requireAdmin, (_req, res) => {
+    const headers = "title;author;description;coverImage;content;ageGroup;genre;readingDifficulty;pageCount;pdfUrl;purchaseUrl;weeklyPick";
+    const example = '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"8-9";"bajke";"lako";"96";"";"";""';
+    const csv = headers + "\n" + example;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=knjige_template.csv");
+    return res.send("\uFEFF" + csv);
+  });
+
+  app.get("/api/admin/templates/quizzes", requireAdmin, (_req, res) => {
+    const headers = "bookTitle;quizTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer;points";
+    const example = '"Mali princ";"Kviz: Mali princ";"Koji cvijet je rastao na planeti malog princa?";"Ruža";"Tulipan";"Ljiljan";"Narcis";"a";"1"';
+    const csv = headers + "\n" + example;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=kvizovi_template.csv");
+    return res.send("\uFEFF" + csv);
+  });
+
+  app.post("/api/admin/import/books", requireAdmin, uploadCSV.single("csv"), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "CSV datoteka je obavezna" });
+      const content = fs.readFileSync(req.file.path, "utf-8");
+      const rows = parseCSV(content);
+      if (rows.length === 0) return res.status(400).json({ message: "CSV je prazan ili neispravan format" });
+
+      const created: string[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        try {
+          if (!row.title || !row.author) {
+            errors.push(`Red ${i + 2}: Naslov i autor su obavezni`);
+            continue;
+          }
+          await storage.createBook({
+            title: row.title,
+            author: row.author,
+            description: row.description || "",
+            coverImage: row.coverImage || "https://via.placeholder.com/200x300?text=Knjiga",
+            content: row.content || row.description || "",
+            ageGroup: row.ageGroup || "8-9",
+            genre: row.genre || "ostalo",
+            readingDifficulty: (row.readingDifficulty as "lako" | "srednje" | "tesko") || "srednje",
+            pageCount: parseInt(row.pageCount) || 100,
+            pdfUrl: row.pdfUrl || null,
+            purchaseUrl: row.purchaseUrl || null,
+            weeklyPick: row.weeklyPick === "true" || row.weeklyPick === "1" || row.weeklyPick === "da",
+          });
+          created.push(row.title);
+        } catch (err: any) {
+          errors.push(`Red ${i + 2} (${row.title}): ${err.message}`);
+        }
+      }
+
+      fs.unlinkSync(req.file.path);
+      return res.json({ imported: created.length, errors, titles: created });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/import/quizzes", requireAdmin, uploadCSV.single("csv"), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "CSV datoteka je obavezna" });
+      const content = fs.readFileSync(req.file.path, "utf-8");
+      const rows = parseCSV(content);
+      if (rows.length === 0) return res.status(400).json({ message: "CSV je prazan ili neispravan format" });
+
+      const allBooks = await storage.getAllBooks();
+      const quizMap = new Map<string, { bookId: string; title: string; questions: Array<{ questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string; points: number }> }>();
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const book = allBooks.find(b => b.title.toLowerCase() === (row.bookTitle || "").toLowerCase());
+        if (!book) {
+          errors.push(`Red ${i + 2}: Knjiga "${row.bookTitle}" nije pronađena`);
+          continue;
+        }
+        if (!row.questionText) {
+          errors.push(`Red ${i + 2}: Tekst pitanja je obavezan`);
+          continue;
+        }
+
+        const quizTitle = row.quizTitle || `Kviz: ${book.title}`;
+        const key = `${book.id}::${quizTitle}`;
+        if (!quizMap.has(key)) {
+          quizMap.set(key, { bookId: book.id, title: quizTitle, questions: [] });
+        }
+        const validAnswers = ["a", "b", "c", "d"];
+        const correctAnswer = validAnswers.includes((row.correctAnswer || "").toLowerCase()) ? row.correctAnswer.toLowerCase() : "a";
+        quizMap.get(key)!.questions.push({
+          questionText: row.questionText,
+          optionA: row.optionA || "",
+          optionB: row.optionB || "",
+          optionC: row.optionC || "",
+          optionD: row.optionD || "",
+          correctAnswer,
+          points: parseInt(row.points) || 1,
+        });
+      }
+
+      let quizzesCreated = 0;
+      let questionsCreated = 0;
+
+      const quizEntries = Array.from(quizMap.values());
+      for (const quizData of quizEntries) {
+        try {
+          const quiz = await storage.createQuiz({ bookId: quizData.bookId, title: quizData.title });
+          quizzesCreated++;
+          for (const q of quizData.questions) {
+            await storage.createQuestion({
+              quizId: quiz.id,
+              questionText: q.questionText,
+              optionA: q.optionA,
+              optionB: q.optionB,
+              optionC: q.optionC,
+              optionD: q.optionD,
+              correctAnswer: q.correctAnswer as "a" | "b" | "c" | "d",
+              points: q.points,
+            });
+            questionsCreated++;
+          }
+        } catch (err: any) {
+          errors.push(`Kviz "${quizData.title}": ${err.message}`);
+        }
+      }
+
+      fs.unlinkSync(req.file.path);
+      return res.json({ quizzesCreated, questionsCreated, errors });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
