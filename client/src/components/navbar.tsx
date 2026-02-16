@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const navLinks = [
   { href: "/", label: "Početna" },
+  { href: "/biblioteka", label: "Biblioteka" },
   { href: "/blog", label: "Blog" },
   { href: "/cijene", label: "Cijene" },
   { href: "/kontakt", label: "Kontakt" },

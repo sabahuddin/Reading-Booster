@@ -25,6 +25,8 @@ import Library from "@/pages/library";
 import BookDetail from "@/pages/book-detail";
 import QuizPage from "@/pages/quiz-page";
 import StudentResults from "@/pages/student-results";
+import PublicLibrary from "@/pages/public-library";
+import PublicBookDetail from "@/pages/public-book-detail";
 
 function Router() {
   return (
@@ -33,6 +35,8 @@ function Router() {
       <Route path="/blog" component={BlogPage} />
       <Route path="/cijene" component={PricingPage} />
       <Route path="/kontakt" component={ContactPage} />
+      <Route path="/biblioteka" component={PublicLibrary} />
+      <Route path="/knjiga/:id" component={PublicBookDetail} />
       <Route path="/prijava" component={AuthPage} />
       <Route path="/registracija" component={AuthPage} />
       <Route path="/ucenik" component={StudentDashboard} />
