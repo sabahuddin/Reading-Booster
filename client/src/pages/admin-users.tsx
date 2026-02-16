@@ -35,6 +35,9 @@ type UserWithoutPassword = Omit<User, "password">;
 const editUserSchema = z.object({
   fullName: z.string().min(1, "Ime je obavezno"),
   email: z.string().email("Neispravan email"),
+  password: z.string().optional().refine((val) => !val || val.length >= 6, {
+    message: "Lozinka mora imati barem 6 znakova",
+  }),
   role: z.enum(["student", "teacher", "parent", "admin"]),
   schoolName: z.string().optional(),
   className: z.string().optional(),
@@ -88,7 +91,7 @@ export default function AdminUsers() {
 
   const editForm = useForm<EditUserValues>({
     resolver: zodResolver(editUserSchema),
-    defaultValues: { fullName: "", email: "", role: "student", schoolName: "", className: "", parentId: "" },
+    defaultValues: { fullName: "", email: "", password: "", role: "student", schoolName: "", className: "", parentId: "" },
   });
 
   const createForm = useForm<CreateUserValues>({
@@ -99,6 +102,7 @@ export default function AdminUsers() {
   const updateMutation = useMutation({
     mutationFn: async (data: EditUserValues) => {
       const payload: Record<string, unknown> = { ...data };
+      if (!payload.password) delete payload.password;
       if (!payload.schoolName) delete payload.schoolName;
       if (!payload.className) delete payload.className;
       if (!payload.parentId) delete payload.parentId;
@@ -155,6 +159,7 @@ export default function AdminUsers() {
     editForm.reset({
       fullName: user.fullName,
       email: user.email,
+      password: "",
       role: user.role as "student" | "teacher" | "parent" | "admin",
       schoolName: user.schoolName ?? "",
       className: user.className ?? "",
@@ -279,6 +284,13 @@ export default function AdminUsers() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl><Input {...field} data-testid="input-edit-email" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={editForm.control} name="password" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nova lozinka</FormLabel>
+                    <FormControl><Input type="password" placeholder="Ostavite prazno ako ne želite mijenjati" {...field} data-testid="input-edit-password" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
