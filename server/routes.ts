@@ -1116,5 +1116,179 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== BONUS POINTS ====================
+
+  app.post("/api/teacher/bonus-points", requireTeacher, async (req, res) => {
+    try {
+      const { studentId, points, reason } = req.body;
+
+      if (!studentId || !points || !reason) {
+        return res.status(400).json({ message: "Sva polja su obavezna" });
+      }
+
+      const student = await storage.getUser(studentId);
+      if (!student || student.createdByTeacherId !== req.session.userId) {
+        return res.status(403).json({ message: "Nemate pristup ovom učeniku" });
+      }
+
+      const bonusPoint = await storage.createBonusPoints({
+        studentId,
+        teacherId: req.session.userId,
+        points,
+        reason,
+      });
+
+      await storage.updateUser(studentId, {
+        points: (student.points || 0) + points,
+      } as any);
+
+      res.json(bonusPoint);
+    } catch (error) {
+      console.error("Error adding bonus points:", error);
+      res.status(500).json({ message: "Greška pri dodavanju bonus bodova" });
+    }
+  });
+
+  // ==================== BOOK RECOMMENDATIONS ====================
+
+  app.post("/api/recommend-book", requireAuth, async (req, res) => {
+    try {
+      const { toUserId, bookId, message, priority } = req.body;
+
+      if (!toUserId || !bookId) {
+        return res.status(400).json({ message: "Nedostaju obavezna polja" });
+      }
+
+      const fromUser = await storage.getUser(req.session.userId!);
+      if (!fromUser) return res.status(401).json({ message: "Korisnik nije pronađen" });
+
+      const toUser = await storage.getUser(toUserId);
+      if (!toUser) {
+        return res.status(404).json({ message: "Korisnik nije pronađen" });
+      }
+
+      const canRecommend =
+        (fromUser.role === "teacher" && toUser.createdByTeacherId === fromUser.id) ||
+        (fromUser.role === "parent" && toUser.parentId === fromUser.id);
+
+      if (!canRecommend) {
+        return res.status(403).json({ message: "Nemate dozvolu da preporučite ovom korisniku" });
+      }
+
+      const recommendation = await storage.createBookRecommendation({
+        fromUserId: fromUser.id,
+        toUserId,
+        bookId,
+        message: message || "Preporučujem ti ovu knjigu!",
+        priority: priority || "normal",
+      });
+
+      res.json(recommendation);
+    } catch (error) {
+      console.error("Error creating recommendation:", error);
+      res.status(500).json({ message: "Greška pri kreiranju preporuke" });
+    }
+  });
+
+  app.get("/api/recommendations/my", requireAuth, async (req, res) => {
+    try {
+      const recommendations = await storage.getRecommendationsForUser(req.session.userId!);
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+      res.status(500).json({ message: "Greška pri preuzimanju preporuka" });
+    }
+  });
+
+  // ==================== CLASS CHALLENGES ====================
+
+  app.post("/api/teacher/class-challenge", requireTeacher, async (req, res) => {
+    try {
+      const { className, bookId, challengeType, startDate, endDate, bonusPoints, description } = req.body;
+
+      const challenge = await storage.createClassChallenge({
+        teacherId: req.session.userId,
+        className,
+        bookId,
+        challengeType,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        bonusPoints: bonusPoints || 10,
+        description,
+        active: true,
+      });
+
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error creating class challenge:", error);
+      res.status(500).json({ message: "Greška pri kreiranju izazova" });
+    }
+  });
+
+  app.get("/api/class-challenges/:className", requireAuth, async (req, res) => {
+    try {
+      const className = req.params.className as string;
+      const challenges = await storage.getActiveChallengesForClass(className);
+      res.json(challenges);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      res.status(500).json({ message: "Greška pri preuzimanju izazova" });
+    }
+  });
+
+  // ==================== INACTIVE STUDENTS ====================
+
+  app.get("/api/teacher/inactive-students", requireTeacher, async (req, res) => {
+    try {
+      const students = await storage.getStudentsByTeacherId(req.session.userId!);
+
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const inactiveStudents = [];
+
+      for (const student of students) {
+        const lastActivity = await storage.getLastQuizResultForUser(student.id);
+
+        if (!lastActivity || new Date(lastActivity.completedAt) < sevenDaysAgo) {
+          inactiveStudents.push({
+            ...student,
+            lastActivity: lastActivity?.completedAt || null,
+          });
+        }
+      }
+
+      res.json(inactiveStudents);
+    } catch (error) {
+      console.error("Error fetching inactive students:", error);
+      res.status(500).json({ message: "Greška pri preuzimanju neaktivnih učenika" });
+    }
+  });
+
+  // ==================== ADULT LEADERBOARD ====================
+
+  app.get("/api/leaderboard/adults", async (req, res) => {
+    try {
+      const { period = "week" } = req.query;
+
+      let startDate: Date;
+      const now = new Date();
+
+      if (period === "week") {
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (period === "month") {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else {
+        startDate = new Date(now.getFullYear(), 0, 1);
+      }
+
+      const leaderboard = await storage.getLeaderboard(startDate, "adult");
+      res.json(leaderboard);
+    } catch (error) {
+      console.error("Error fetching adult leaderboard:", error);
+      res.status(500).json({ message: "Greška pri preuzimanju rang liste" });
+    }
+  });
+
   return httpServer;
 }
