@@ -252,7 +252,7 @@ export default function BookDetail() {
                     </div>
                   )}
                   <div data-testid="text-book-publisher">
-                    <strong>Izdavač:</strong> {book.publisher || "/"}
+                    <strong>Izdavač i godina:</strong> {book.publisher || "/"}, {book.publicationYear || "/"}
                   </div>
                   <div data-testid="text-book-isbn">
                     <strong>ISBN:</strong> {book.isbn || "/"}
