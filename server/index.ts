@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import crypto from "crypto";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -10,6 +13,7 @@ declare module "express-session" {
   interface SessionData {
     userId: string;
     userRole: string;
+    csrfToken: string;
   }
 }
 
@@ -31,6 +35,7 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 const PgStore = connectPgSimple(session);
 
@@ -51,6 +56,33 @@ app.use(
     },
   }),
 );
+
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Previše neuspjelih pokušaja prijave. Pokušajte ponovo za 15 minuta.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Previše zahtjeva. Pokušajte ponovo kasnije.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api/", apiLimiter);
+
+app.get("/api/csrf-token", (req, res) => {
+  let csrfToken = req.session.csrfToken;
+  if (!csrfToken) {
+    csrfToken = crypto.randomBytes(32).toString("hex");
+    req.session.csrfToken = csrfToken;
+  }
+  res.json({ csrfToken });
+});
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -6,8 +6,9 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import express from "express";
+import xss from "xss";
 import { storage } from "./storage";
-import { requireAuth, requireAdmin, requireTeacher } from "./index";
+import { requireAuth, requireAdmin, requireTeacher, loginLimiter } from "./index";
 import {
   insertUserSchema,
   insertBookSchema,
@@ -88,6 +89,24 @@ function parseCSV(content: string): Record<string, string>[] {
   return rows;
 }
 
+function validatePassword(password: string): { valid: boolean; message?: string } {
+  if (password.length < 8) return { valid: false, message: "Lozinka mora imati najmanje 8 karaktera" };
+  if (!/[A-Z]/.test(password)) return { valid: false, message: "Lozinka mora sadržavati barem jedno veliko slovo" };
+  if (!/[0-9]/.test(password)) return { valid: false, message: "Lozinka mora sadržavati barem jedan broj" };
+  return { valid: true };
+}
+
+function sanitizeInput(req: Request, _res: Response, next: NextFunction) {
+  if (req.body && typeof req.body === "object") {
+    for (const key in req.body) {
+      if (typeof req.body[key] === "string") {
+        req.body[key] = xss(req.body[key]);
+      }
+    }
+  }
+  next();
+}
+
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string): Promise<string> {
@@ -126,6 +145,8 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   app.use("/uploads", express.static(uploadsDir));
+
+  app.use("/api", sanitizeInput);
 
   // ==================== UPLOAD ROUTES ====================
 
@@ -174,6 +195,11 @@ export async function registerRoutes(
 
       const isInstitutional = parsed.data.institutionType && parsed.data.institutionRole;
 
+      const passwordCheck = validatePassword(parsed.data.password);
+      if (!passwordCheck.valid) {
+        return res.status(400).json({ message: passwordCheck.message });
+      }
+
       const hashedPassword = await hashPassword(parsed.data.password);
       const userData: any = {
         ...parsed.data,
@@ -201,7 +227,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", loginLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
       if (!username || !password) {

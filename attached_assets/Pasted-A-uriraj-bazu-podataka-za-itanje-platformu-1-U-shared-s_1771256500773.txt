@@ -1,0 +1,104 @@
+Ažuriraj bazu podataka za Čitanje platformu:
+
+1. U shared/schema.ts PRONAĐI books tabelu i DODAJ ove nove kolone (nakon postojećih):
+
+export const books = pgTable("books", {
+  // ... postojeća polja ostaju ...
+  
+  // DODAJ OVE NOVE KOLONE:
+  isbn: varchar("isbn", { length: 13 }),
+  publisher: text("publisher"),
+  publicationYear: integer("publication_year"),
+  availableInLibrary: boolean("available_in_library").default(false),
+  copiesAvailable: integer("copies_available").default(0),
+  locationInLibrary: text("location_in_library"),
+  recommendedForGrades: text("recommended_for_grades").array(),
+  language: text("language").default("bosanski"),
+  bookFormat: text("book_format"),
+});
+
+2. U shared/schema.ts PRONAĐI users tabelu i DODAJ:
+
+export const users = pgTable("users", {
+  // ... postojeća polja ostaju ...
+  
+  // DODAJ:
+  ageGroup: text("age_group").default("child"),
+});
+
+3. U shared/schema.ts DODAJ 4 NOVE TABELE (na kraju fajla, prije exporta):
+
+// Bonus bodovi od učitelja
+export const bonusPoints = pgTable("bonus_points", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  studentId: varchar("student_id", { length: 255 }).notNull().references(() => users.id),
+  teacherId: varchar("teacher_id", { length: 255 }).notNull().references(() => users.id),
+  points: integer("points").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertBonusPointsSchema = createInsertSchema(bonusPoints);
+
+// Preporuke knjiga
+export const bookRecommendations = pgTable("book_recommendations", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  fromUserId: varchar("from_user_id", { length: 255 }).notNull().references(() => users.id),
+  toUserId: varchar("to_user_id", { length: 255 }).notNull().references(() => users.id),
+  bookId: varchar("book_id", { length: 255 }).notNull().references(() => books.id),
+  message: text("message"),
+  priority: text("priority").default("normal"),
+  createdAt: timestamp("created_at").defaultNow(),
+  read: boolean("read").default(false),
+});
+
+export const insertBookRecommendationSchema = createInsertSchema(bookRecommendations);
+
+// Razredni izazovi
+export const classChallenges = pgTable("class_challenges", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  teacherId: varchar("teacher_id", { length: 255 }).notNull().references(() => users.id),
+  className: text("class_name").notNull(),
+  bookId: varchar("book_id", { length: 255 }).references(() => books.id),
+  challengeType: text("challenge_type").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  bonusPoints: integer("bonus_points").default(10),
+  description: text("description"),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertClassChallengeSchema = createInsertSchema(classChallenges);
+
+// Evidencija zaduženja knjiga
+export const bookBorrowings = pgTable("book_borrowings", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  studentId: varchar("student_id", { length: 255 }).notNull().references(() => users.id),
+  bookId: varchar("book_id", { length: 255 }).notNull().references(() => books.id),
+  librarianId: varchar("librarian_id", { length: 255 }).references(() => users.id),
+  borrowedAt: timestamp("borrowed_at").defaultNow(),
+  dueDate: timestamp("due_date").notNull(),
+  returnedAt: timestamp("returned_at"),
+  overdue: boolean("overdue").default(false),
+});
+
+export const insertBookBorrowingSchema = createInsertSchema(bookBorrowings);
+
+4. DODAJ INDEKSE (na samom kraju shared/schema.ts, nakon svih tabela):
+
+import { index } from "drizzle-orm/pg-core";
+
+export const usersRoleIndex = index("users_role_idx").on(users.role);
+export const usersParentIdIndex = index("users_parent_id_idx").on(users.parentId);
+export const booksAgeGroupIndex = index("books_age_group_idx").on(books.ageGroup);
+export const booksGenreIndex = index("books_genre_idx").on(books.genre);
+export const booksAvailableIndex = index("books_available_in_library_idx").on(books.availableInLibrary);
+export const quizResultsUserIndex = index("quiz_results_user_id_idx").on(quizResults.userId);
+export const quizResultsQuizIndex = index("quiz_results_quiz_id_idx").on(quizResults.quizId);
+export const quizResultsCompletedIndex = index("quiz_results_completed_at_idx").on(quizResults.completedAt);
+
+5. POKRENI MIGRACIJU:
+npm run db:push
+
+Javi kad završiš ovaj korak i da li su sve tabele uspješno kreirane.
