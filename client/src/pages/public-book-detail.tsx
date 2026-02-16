@@ -272,23 +272,27 @@ export default function PublicBookDetail() {
                         <strong>Broj stranica:</strong> {book.pageCount}
                       </div>
                     )}
-                    <div data-testid="text-book-publisher">
-                      <strong>Izdavač i godina:</strong> {book.publisher || "/"}, {book.publicationYear || "/"}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <div data-testid="text-book-publisher">
+                        <strong>Izdavač i jezik:</strong> {book.publisher || "/"}, {book.language || "/"}
+                      </div>
                     </div>
-                    <div data-testid="text-book-isbn">
-                      <strong>ISBN:</strong> {book.isbn || "/"}
-                    </div>
-                    <div data-testid="text-book-cobiss">
-                      <strong>COBISS.BH-ID:</strong> {book.cobissId || "/"}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <div data-testid="text-book-isbn">
+                        <strong>ISBN:</strong> {book.isbn || "/"}
+                      </div>
+                      <div data-testid="text-book-cobiss">
+                        <strong>COBISS.BH-ID:</strong> {book.cobissId || "/"}
+                      </div>
                     </div>
                     {book.readingDifficulty && (
                       <div>
                         <strong>Težina čitanja:</strong> {DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}
                       </div>
                     )}
-                    {book.language && (
+                    {book.publicationYear && (
                       <div>
-                        <strong>Jezik:</strong> {book.language}
+                        <strong>Godina izdanja:</strong> {book.publicationYear}
                       </div>
                     )}
                     {book.bookFormat && (
