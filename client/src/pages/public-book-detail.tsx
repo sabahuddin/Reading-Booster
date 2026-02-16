@@ -281,11 +281,11 @@ export default function PublicBookDetail() {
                       <strong>Godina i mjesto:</strong> {book.publicationYear || "/"} {book.publicationCity ? `, ${book.publicationCity}` : ""}
                     </div>
                     {book.isbn && (
-                      <div>
+                      <div data-testid="text-book-isbn">
                         <strong>ISBN:</strong> {book.isbn}
                       </div>
                     )}
-                    <div>
+                    <div data-testid="text-book-cobiss">
                       <strong>COBISS.BH-ID:</strong> {book.cobissId || "/"}
                     </div>
                     {book.readingDifficulty && (
