@@ -1,4 +1,4 @@
-import { eq, and, gte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, isNull } from "drizzle-orm";
 import { db } from "./db";
 import {
   users,
@@ -10,6 +10,10 @@ import {
   contactMessages,
   partners,
   challenges,
+  bonusPoints,
+  bookRecommendations,
+  classChallenges,
+  bookBorrowings,
   type User,
   type InsertUser,
   type Book,
@@ -90,6 +94,20 @@ export interface IStorage {
   createChallenge(challenge: InsertChallenge): Promise<Challenge>;
   updateChallenge(id: string, data: Partial<InsertChallenge>): Promise<Challenge | undefined>;
   deleteChallenge(id: string): Promise<void>;
+
+  createBonusPoints(data: any): Promise<any>;
+  getBonusPointsForStudent(studentId: string): Promise<any[]>;
+  createBookRecommendation(data: any): Promise<any>;
+  getRecommendationsForUser(userId: string): Promise<any[]>;
+  markRecommendationAsRead(recommendationId: string): Promise<void>;
+  createClassChallenge(data: any): Promise<any>;
+  getActiveChallengesForClass(className: string): Promise<any[]>;
+  updateClassChallenge(id: string, data: any): Promise<any>;
+  getLastQuizResultForUser(userId: string): Promise<any | null>;
+  getLeaderboard(startDate: Date, ageGroup?: string): Promise<any[]>;
+  createBookBorrowing(data: any): Promise<any>;
+  getActiveBorrowings(librarianId?: string): Promise<any[]>;
+  returnBook(borrowingId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -345,6 +363,161 @@ export class DatabaseStorage implements IStorage {
 
   async deleteChallenge(id: string): Promise<void> {
     await db.delete(challenges).where(eq(challenges.id, id));
+  }
+
+  async createBonusPoints(data: any) {
+    const [result] = await db.insert(bonusPoints).values(data).returning();
+    return result;
+  }
+
+  async getBonusPointsForStudent(studentId: string) {
+    return await db
+      .select()
+      .from(bonusPoints)
+      .where(eq(bonusPoints.studentId, studentId))
+      .orderBy(desc(bonusPoints.createdAt));
+  }
+
+  async createBookRecommendation(data: any) {
+    const [result] = await db.insert(bookRecommendations).values(data).returning();
+    return result;
+  }
+
+  async getRecommendationsForUser(userId: string) {
+    return await db
+      .select({
+        id: bookRecommendations.id,
+        message: bookRecommendations.message,
+        priority: bookRecommendations.priority,
+        read: bookRecommendations.read,
+        createdAt: bookRecommendations.createdAt,
+        book: books,
+        fromUser: {
+          id: users.id,
+          fullName: users.fullName,
+          role: users.role,
+        },
+      })
+      .from(bookRecommendations)
+      .leftJoin(books, eq(bookRecommendations.bookId, books.id))
+      .leftJoin(users, eq(bookRecommendations.fromUserId, users.id))
+      .where(eq(bookRecommendations.toUserId, userId))
+      .orderBy(desc(bookRecommendations.createdAt));
+  }
+
+  async markRecommendationAsRead(recommendationId: string) {
+    await db
+      .update(bookRecommendations)
+      .set({ read: true })
+      .where(eq(bookRecommendations.id, recommendationId));
+  }
+
+  async createClassChallenge(data: any) {
+    const [result] = await db.insert(classChallenges).values(data).returning();
+    return result;
+  }
+
+  async getActiveChallengesForClass(className: string) {
+    const now = new Date();
+    return await db
+      .select({
+        challenge: classChallenges,
+        book: books,
+      })
+      .from(classChallenges)
+      .leftJoin(books, eq(classChallenges.bookId, books.id))
+      .where(
+        and(
+          eq(classChallenges.className, className),
+          eq(classChallenges.active, true),
+          lte(classChallenges.startDate, now),
+          gte(classChallenges.endDate, now)
+        )
+      )
+      .orderBy(desc(classChallenges.createdAt));
+  }
+
+  async updateClassChallenge(id: string, data: any) {
+    const [result] = await db
+      .update(classChallenges)
+      .set(data)
+      .where(eq(classChallenges.id, id))
+      .returning();
+    return result;
+  }
+
+  async getLastQuizResultForUser(userId: string) {
+    const [result] = await db
+      .select()
+      .from(quizResults)
+      .where(eq(quizResults.userId, userId))
+      .orderBy(desc(quizResults.completedAt))
+      .limit(1);
+    return result || null;
+  }
+
+  async getLeaderboard(startDate: Date, ageGroup?: string) {
+    const conditions: any[] = [gte(quizResults.completedAt, startDate)];
+
+    const results = await db.select().from(quizResults).where(and(...conditions));
+    const scoreMap = new Map<string, number>();
+    for (const r of results) {
+      scoreMap.set(r.userId, (scoreMap.get(r.userId) || 0) + r.score);
+    }
+    const sorted = Array.from(scoreMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const leaderboard: any[] = [];
+    for (const [userId, totalScore] of sorted) {
+      const user = await this.getUser(userId);
+      if (user) {
+        if (ageGroup && user.ageGroup !== ageGroup) continue;
+        leaderboard.push({
+          id: user.id,
+          fullName: user.fullName,
+          className: user.className,
+          points: totalScore,
+          ageGroup: user.ageGroup,
+        });
+      }
+    }
+    return leaderboard;
+  }
+
+  async createBookBorrowing(data: any) {
+    const [result] = await db.insert(bookBorrowings).values(data).returning();
+    return result;
+  }
+
+  async getActiveBorrowings(librarianId?: string) {
+    const conditions: any[] = [isNull(bookBorrowings.returnedAt)];
+
+    if (librarianId) {
+      conditions.push(eq(bookBorrowings.librarianId, librarianId));
+    }
+
+    const results = await db
+      .select({
+        borrowing: bookBorrowings,
+        student: {
+          id: users.id,
+          fullName: users.fullName,
+          className: users.className,
+        },
+        book: books,
+      })
+      .from(bookBorrowings)
+      .leftJoin(users, eq(bookBorrowings.studentId, users.id))
+      .leftJoin(books, eq(bookBorrowings.bookId, books.id))
+      .where(and(...conditions))
+      .orderBy(desc(bookBorrowings.borrowedAt));
+
+    return results;
+  }
+
+  async returnBook(borrowingId: string) {
+    await db
+      .update(bookBorrowings)
+      .set({ returnedAt: new Date() })
+      .where(eq(bookBorrowings.id, borrowingId));
   }
 }
 
