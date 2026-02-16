@@ -1,0 +1,182 @@
+Ažuriraj server/storage.ts za nove funkcionalnosti:
+
+1. U IStorage INTERFACE dodaj nove metode (nakon postojećih metoda):
+
+export interface IStorage {
+  // ... postojeće metode ostaju ...
+  
+  // DODAJ OVE NOVE METODE:
+  createBonusPoints(data: any): Promise<any>;
+  getBonusPointsForStudent(studentId: string): Promise<any[]>;
+  createBookRecommendation(data: any): Promise<any>;
+  getRecommendationsForUser(userId: string): Promise<any[]>;
+  markRecommendationAsRead(recommendationId: string): Promise<void>;
+  createClassChallenge(data: any): Promise<any>;
+  getActiveChallengesForClass(className: string): Promise<any[]>;
+  updateClassChallenge(id: string, data: any): Promise<any>;
+  getLastQuizResultForUser(userId: string): Promise<any | null>;
+  getLeaderboard(startDate: Date, ageGroup?: string): Promise<any[]>;
+  createBookBorrowing(data: any): Promise<any>;
+  getActiveBorrowings(librarianId?: string): Promise<any[]>;
+  returnBook(borrowingId: string): Promise<void>;
+}
+
+2. NA VRH FAJLA dodaj importove novih tabela (ako već nisu):
+
+import { bonusPoints, bookRecommendations, classChallenges, bookBorrowings } from "@db/schema";
+
+3. U DatabaseStorage KLASI implementiraj sve metode (u klasi, nakon postojećih metoda):
+
+async createBonusPoints(data: any) {
+  const [result] = await this.db.insert(bonusPoints).values(data).returning();
+  return result;
+}
+
+async getBonusPointsForStudent(studentId: string) {
+  return await this.db
+    .select()
+    .from(bonusPoints)
+    .where(eq(bonusPoints.studentId, studentId))
+    .orderBy(desc(bonusPoints.createdAt));
+}
+
+async createBookRecommendation(data: any) {
+  const [result] = await this.db.insert(bookRecommendations).values(data).returning();
+  return result;
+}
+
+async getRecommendationsForUser(userId: string) {
+  return await this.db
+    .select({
+      id: bookRecommendations.id,
+      message: bookRecommendations.message,
+      priority: bookRecommendations.priority,
+      read: bookRecommendations.read,
+      createdAt: bookRecommendations.createdAt,
+      book: books,
+      fromUser: {
+        id: users.id,
+        fullName: users.fullName,
+        role: users.role,
+      },
+    })
+    .from(bookRecommendations)
+    .leftJoin(books, eq(bookRecommendations.bookId, books.id))
+    .leftJoin(users, eq(bookRecommendations.fromUserId, users.id))
+    .where(eq(bookRecommendations.toUserId, userId))
+    .orderBy(desc(bookRecommendations.createdAt));
+}
+
+async markRecommendationAsRead(recommendationId: string) {
+  await this.db
+    .update(bookRecommendations)
+    .set({ read: true })
+    .where(eq(bookRecommendations.id, recommendationId));
+}
+
+async createClassChallenge(data: any) {
+  const [result] = await this.db.insert(classChallenges).values(data).returning();
+  return result;
+}
+
+async getActiveChallengesForClass(className: string) {
+  const now = new Date();
+  return await this.db
+    .select({
+      challenge: classChallenges,
+      book: books,
+    })
+    .from(classChallenges)
+    .leftJoin(books, eq(classChallenges.bookId, books.id))
+    .where(
+      and(
+        eq(classChallenges.className, className),
+        eq(classChallenges.active, true),
+        lte(classChallenges.startDate, now),
+        gte(classChallenges.endDate, now)
+      )
+    )
+    .orderBy(desc(classChallenges.createdAt));
+}
+
+async updateClassChallenge(id: string, data: any) {
+  const [result] = await this.db
+    .update(classChallenges)
+    .set(data)
+    .where(eq(classChallenges.id, id))
+    .returning();
+  return result;
+}
+
+async getLastQuizResultForUser(userId: string) {
+  const [result] = await this.db
+    .select()
+    .from(quizResults)
+    .where(eq(quizResults.userId, userId))
+    .orderBy(desc(quizResults.completedAt))
+    .limit(1);
+  return result || null;
+}
+
+async getLeaderboard(startDate: Date, ageGroup?: string) {
+  const conditions = [gte(users.createdAt, startDate)];
+  
+  if (ageGroup) {
+    conditions.push(eq(users.ageGroup, ageGroup));
+  }
+  
+  const results = await this.db
+    .select({
+      id: users.id,
+      fullName: users.fullName,
+      className: users.className,
+      points: users.points,
+      ageGroup: users.ageGroup,
+    })
+    .from(users)
+    .where(and(...conditions))
+    .orderBy(desc(users.points))
+    .limit(10);
+    
+  return results;
+}
+
+async createBookBorrowing(data: any) {
+  const [result] = await this.db.insert(bookBorrowings).values(data).returning();
+  return result;
+}
+
+async getActiveBorrowings(librarianId?: string) {
+  const conditions = [isNull(bookBorrowings.returnedAt)];
+  
+  if (librarianId) {
+    conditions.push(eq(bookBorrowings.librarianId, librarianId));
+  }
+  
+  const results = await this.db
+    .select({
+      borrowing: bookBorrowings,
+      student: {
+        id: users.id,
+        fullName: users.fullName,
+        className: users.className,
+      },
+      book: books,
+    })
+    .from(bookBorrowings)
+    .leftJoin(users, eq(bookBorrowings.studentId, users.id))
+    .leftJoin(books, eq(bookBorrowings.bookId, books.id))
+    .where(and(...conditions))
+    .orderBy(desc(bookBorrowings.borrowedAt));
+    
+  return results;
+}
+
+async returnBook(borrowingId: string) {
+  await this.db
+    .update(bookBorrowings)
+    .set({ returnedAt: new Date() })
+    .where(eq(bookBorrowings.id, borrowingId));
+}
+
+4. PROVJERI IMPORTOVE - trebaju ti ove Drizzle funkcije (dodaj ako nedostaju):

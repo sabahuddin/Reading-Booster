@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   createdByTeacherId: varchar("created_by_teacher_id"),
   subscriptionType: text("subscription_type", { enum: ["free", "standard", "full"] }).notNull().default("free"),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  ageGroup: text("age_group").default("child"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -46,6 +47,15 @@ export const books = pgTable("books", {
   timesRead: integer("times_read").notNull().default(0),
   weeklyPick: boolean("weekly_pick").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  isbn: varchar("isbn", { length: 13 }),
+  publisher: text("publisher"),
+  publicationYear: integer("publication_year"),
+  availableInLibrary: boolean("available_in_library").default(false),
+  copiesAvailable: integer("copies_available").default(0),
+  locationInLibrary: text("location_in_library"),
+  recommendedForGrades: text("recommended_for_grades").array(),
+  language: text("language").default("bosanski"),
+  bookFormat: text("book_format"),
 });
 
 export const insertBookSchema = createInsertSchema(books).omit({
@@ -175,3 +185,76 @@ export const insertChallengeSchema = createInsertSchema(challenges).omit({
 });
 export type InsertChallenge = z.infer<typeof insertChallengeSchema>;
 export type Challenge = typeof challenges.$inferSelect;
+
+export const bonusPoints = pgTable("bonus_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull(),
+  teacherId: varchar("teacher_id").notNull(),
+  points: integer("points").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertBonusPointsSchema = createInsertSchema(bonusPoints).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertBonusPoints = z.infer<typeof insertBonusPointsSchema>;
+export type BonusPoints = typeof bonusPoints.$inferSelect;
+
+export const bookRecommendations = pgTable("book_recommendations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromUserId: varchar("from_user_id").notNull(),
+  toUserId: varchar("to_user_id").notNull(),
+  bookId: varchar("book_id").notNull(),
+  message: text("message"),
+  priority: text("priority").default("normal"),
+  createdAt: timestamp("created_at").defaultNow(),
+  read: boolean("read").default(false),
+});
+
+export const insertBookRecommendationSchema = createInsertSchema(bookRecommendations).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertBookRecommendation = z.infer<typeof insertBookRecommendationSchema>;
+export type BookRecommendation = typeof bookRecommendations.$inferSelect;
+
+export const classChallenges = pgTable("class_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull(),
+  className: text("class_name").notNull(),
+  bookId: varchar("book_id"),
+  challengeType: text("challenge_type").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  bonusPoints: integer("bonus_points").default(10),
+  description: text("description"),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertClassChallengeSchema = createInsertSchema(classChallenges).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertClassChallenge = z.infer<typeof insertClassChallengeSchema>;
+export type ClassChallenge = typeof classChallenges.$inferSelect;
+
+export const bookBorrowings = pgTable("book_borrowings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull(),
+  bookId: varchar("book_id").notNull(),
+  librarianId: varchar("librarian_id"),
+  borrowedAt: timestamp("borrowed_at").defaultNow(),
+  dueDate: timestamp("due_date").notNull(),
+  returnedAt: timestamp("returned_at"),
+  overdue: boolean("overdue").default(false),
+});
+
+export const insertBookBorrowingSchema = createInsertSchema(bookBorrowings).omit({
+  id: true,
+  borrowedAt: true,
+});
+export type InsertBookBorrowing = z.infer<typeof insertBookBorrowingSchema>;
+export type BookBorrowing = typeof bookBorrowings.$inferSelect;
