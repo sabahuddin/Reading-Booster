@@ -38,6 +38,8 @@ const bookFormSchema = z.object({
   content: z.string().min(1, "Sadržaj je obavezan"),
   gradeLevel: z.string().min(1, "Razred je obavezan"),
   pageCount: z.coerce.number().min(1, "Broj stranica mora biti barem 1"),
+  pdfUrl: z.string().optional(),
+  purchaseUrl: z.string().optional(),
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -55,13 +57,14 @@ export default function AdminBooks() {
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
-      title: "", author: "", description: "", coverImage: "", content: "", gradeLevel: "", pageCount: 1,
+      title: "", author: "", description: "", coverImage: "", content: "", gradeLevel: "", pageCount: 1, pdfUrl: "", purchaseUrl: "",
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: BookFormValues) => {
-      await apiRequest("POST", "/api/books", data);
+      const payload = { ...data, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null };
+      await apiRequest("POST", "/api/books", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/books"] });
@@ -76,7 +79,8 @@ export default function AdminBooks() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: BookFormValues) => {
-      await apiRequest("PUT", `/api/books/${editingBook!.id}`, data);
+      const payload = { ...data, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null };
+      await apiRequest("PUT", `/api/books/${editingBook!.id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/books"] });
@@ -105,7 +109,7 @@ export default function AdminBooks() {
 
   function openCreate() {
     setEditingBook(null);
-    form.reset({ title: "", author: "", description: "", coverImage: "", content: "", gradeLevel: "", pageCount: 1 });
+    form.reset({ title: "", author: "", description: "", coverImage: "", content: "", gradeLevel: "", pageCount: 1, pdfUrl: "", purchaseUrl: "" });
     setDialogOpen(true);
   }
 
@@ -119,6 +123,8 @@ export default function AdminBooks() {
       content: book.content,
       gradeLevel: book.gradeLevel,
       pageCount: book.pageCount,
+      pdfUrl: book.pdfUrl ?? "",
+      purchaseUrl: book.purchaseUrl ?? "",
     });
     setDialogOpen(true);
   }
@@ -279,6 +285,20 @@ export default function AdminBooks() {
                   <FormItem>
                     <FormLabel>Broj stranica</FormLabel>
                     <FormControl><Input type="number" {...field} data-testid="input-book-pageCount" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="pdfUrl" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>PDF / E-book URL</FormLabel>
+                    <FormControl><Input placeholder="Link na PDF ili e-book (opcionalno)" {...field} data-testid="input-book-pdfUrl" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="purchaseUrl" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link za kupovinu</FormLabel>
+                    <FormControl><Input placeholder="Link na online trgovinu (opcionalno)" {...field} data-testid="input-book-purchaseUrl" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

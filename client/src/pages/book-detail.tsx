@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, BookOpen, FileText, GraduationCap, CheckCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, GraduationCap, CheckCircle, ShoppingCart, Download } from "lucide-react";
 import type { Book, Quiz, QuizResult } from "@shared/schema";
 
 export default function BookDetail() {
@@ -90,6 +90,24 @@ export default function BookDetail() {
                 <p className="text-muted-foreground leading-relaxed" data-testid="text-book-description">
                   {book.description}
                 </p>
+                <div className="flex items-center gap-3 flex-wrap pt-2">
+                  {book.purchaseUrl && (
+                    <Button asChild data-testid="button-buy-book">
+                      <a href={book.purchaseUrl} target="_blank" rel="noopener noreferrer">
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Kupi knjigu
+                      </a>
+                    </Button>
+                  )}
+                  {book.pdfUrl && (
+                    <Button variant="outline" asChild data-testid="button-download-pdf">
+                      <a href={book.pdfUrl} target="_blank" rel="noopener noreferrer">
+                        <Download className="mr-2 h-4 w-4" />
+                        Čitaj online
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 

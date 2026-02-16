@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { BookOpen, Brain, TrendingUp, Users, UserPlus, BookText, ClipboardCheck } from "lucide-react";
+import { BookOpen, Brain, TrendingUp, Users, UserPlus, BookText, ClipboardCheck, Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Navbar } from "@/components/navbar";
@@ -14,27 +14,27 @@ const fadeIn = {
 const features = [
   {
     icon: BookOpen,
-    title: "Biblioteka knjiga",
+    title: "Puno knjiga",
     description:
-      "Pristupite bogatoj kolekciji knjiga prilagođenih različitim uzrastima i razinama čitanja.",
+      "Istraži našu veliku biblioteku punu zanimljivih knjiga za tvoj uzrast!",
   },
   {
     icon: Brain,
-    title: "Interaktivni kvizovi",
+    title: "Zabavni kvizovi",
     description:
-      "Testirajte razumijevanje pročitanog kroz zanimljive kvizove i osvojite bodove.",
+      "Nakon čitanja, riješi kviz i pokaži koliko si naučio. Svaki točan odgovor donosi bodove!",
   },
   {
     icon: TrendingUp,
-    title: "Praćenje napretka",
+    title: "Prati svoj napredak",
     description:
-      "Pratite svoj napredak kroz detaljne statistike i izvještaje o čitanju.",
+      "Gledaj kako tvoji bodovi rastu! Prati koliko si knjiga pročitao i kvizova riješio.",
   },
   {
     icon: Users,
-    title: "Povezivanje",
+    title: "Zajedno učimo",
     description:
-      "Povezujemo učenike, nastavnike i roditelje za bolje rezultate u učenju.",
+      "Tvoji učitelji i roditelji mogu pratiti tvoj napredak i pomoći ti da postaneš bolji čitač!",
   },
 ];
 
@@ -43,19 +43,19 @@ const steps = [
     icon: UserPlus,
     step: "1",
     title: "Registriraj se",
-    description: "Kreirajte besplatni račun u samo nekoliko koraka.",
+    description: "Napravi svoj račun brzo i lako - treba ti samo par klikova!",
   },
   {
     icon: BookText,
     step: "2",
     title: "Čitaj knjige",
-    description: "Odaberite knjigu iz naše bogate biblioteke i počnite čitati.",
+    description: "Odaberi knjigu koja ti se sviđa i uživaj u čitanju!",
   },
   {
     icon: ClipboardCheck,
     step: "3",
     title: "Riješi kviz",
-    description: "Nakon čitanja, testirajte svoje znanje kroz interaktivni kviz.",
+    description: "Pokaži koliko si zapamtio i osvoji bodove!",
   },
 ];
 
@@ -70,7 +70,7 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-[hsl(210,85%,42%)] via-[hsl(210,85%,35%)] to-[hsl(210,85%,25%)]">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[hsl(262,80%,55%)] via-[hsl(280,70%,45%)] to-[hsl(310,65%,40%)]">
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative mx-auto max-w-7xl px-4 py-24 sm:py-32 lg:py-40">
           <motion.div
@@ -80,34 +80,38 @@ export default function LandingPage() {
             variants={fadeIn}
             transition={{ duration: 0.6 }}
           >
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <BookOpen className="h-14 w-14 sm:h-16 sm:w-16 text-white/90" />
+              <Sparkles className="h-10 w-10 sm:h-12 sm:w-12 text-yellow-300" />
+            </div>
             <h1
-              className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl"
+              className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl"
               data-testid="text-hero-title"
             >
-              Unaprijedi čitanje, osvoji znanje!
+              Čitaj, uči, osvajaj!
             </h1>
-            <p className="mt-6 text-lg text-white/80 sm:text-xl">
-              Platforma koja pomaže učenicima da razviju ljubav prema čitanju,
-              nastavnicima da prate napredak, a roditeljima da budu informirani.
+            <p className="mt-6 text-lg text-white/90 sm:text-xl">
+              Zabavna platforma za mlade čitatelje! Čitaj knjige, rješavaj kvizove
+              i sakupljaj bodove. Tvoja čitalačka avantura počinje ovdje!
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <Link href="/registracija">
                 <Button
                   size="lg"
-                  className="bg-white text-[hsl(210,85%,42%)] border-white/80"
+                  className="bg-white text-[hsl(262,80%,55%)] border-white/80"
                   data-testid="button-cta-register"
                 >
-                  Započni besplatno
+                  Kreni u avanturu!
                 </Button>
               </Link>
-              <Link href="/cijene">
+              <Link href="/biblioteka">
                 <Button
                   size="lg"
                   variant="outline"
                   className="text-white backdrop-blur-sm bg-white/10"
                   data-testid="button-cta-learn-more"
                 >
-                  Saznaj više
+                  Pogledaj knjige
                 </Button>
               </Link>
             </div>
@@ -129,10 +133,10 @@ export default function LandingPage() {
               className="text-3xl font-bold sm:text-4xl"
               data-testid="text-features-title"
             >
-              Sve što trebate na jednom mjestu
+              Zašto je Čitaj! super?
             </h2>
-            <p className="mt-4 text-muted-foreground">
-              Otkrijte mogućnosti koje naša platforma nudi
+            <p className="mt-4 text-muted-foreground text-lg">
+              Pogledaj što te sve čeka!
             </p>
           </motion.div>
 
@@ -179,10 +183,10 @@ export default function LandingPage() {
               className="text-3xl font-bold sm:text-4xl"
               data-testid="text-how-it-works-title"
             >
-              Kako funkcionira?
+              Kako početi?
             </h2>
-            <p className="mt-4 text-muted-foreground">
-              Tri jednostavna koraka do boljeg čitanja
+            <p className="mt-4 text-muted-foreground text-lg">
+              Super lako - samo tri koraka!
             </p>
           </motion.div>
 
@@ -241,7 +245,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-gradient-to-r from-[hsl(210,85%,42%)] to-[hsl(210,85%,30%)]">
+      <section className="bg-gradient-to-r from-[hsl(262,80%,55%)] to-[hsl(310,65%,40%)]">
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative mx-auto max-w-7xl px-4 py-16">
           <motion.div
@@ -252,17 +256,21 @@ export default function LandingPage() {
             variants={fadeIn}
             transition={{ duration: 0.5 }}
           >
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Rocket className="h-10 w-10 sm:h-12 sm:w-12 text-yellow-300" />
+              <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 text-white/80" />
+            </div>
             <h2 className="text-3xl font-bold text-white sm:text-4xl">
-              Spremni za početak?
+              Spreman za avanturu?
             </h2>
-            <p className="mt-4 text-white/80">
-              Pridružite se tisućama učenika koji već koriste Čitaj!.
+            <p className="mt-4 text-white/90">
+              Pridruži se tisućama učenika koji već čitaju i osvajaju bodove!
             </p>
             <div className="mt-8">
               <Link href="/registracija">
                 <Button
                   size="lg"
-                  className="bg-white text-[hsl(210,85%,42%)] border-white/80"
+                  className="bg-white text-[hsl(262,80%,55%)] border-white/80"
                   data-testid="button-cta-bottom-register"
                 >
                   Započni besplatno
