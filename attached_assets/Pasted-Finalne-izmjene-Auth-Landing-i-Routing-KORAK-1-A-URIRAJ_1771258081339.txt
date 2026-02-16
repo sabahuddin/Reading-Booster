@@ -1,0 +1,166 @@
+Finalne izmjene - Auth, Landing i Routing:
+
+KORAK 1: AŽURIRAJ AUTH STRANICU (dodaj age group)
+
+U client/src/pages/auth-page.tsx pronađi registracionu formu i DODAJ novi select ZA age group.
+
+Pronađi gdje je role select i PRIJE njega dodaj:
+
+<div>
+  <label htmlFor="ageGroup" className="block text-sm font-medium mb-2">
+    Starosna skupina
+  </label>
+  <Select name="ageGroup" required>
+    <SelectTrigger>
+      <SelectValue placeholder="Odaberite..." />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="child">Dijete (do 18 godina)</SelectItem>
+      <SelectItem value="adult">Odrasla osoba (18+ godina)</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
+KORAK 2: AŽURIRAJ BACKEND REGISTRACIJU
+
+U server/routes.ts pronađi /api/auth/register endpoint i dodaj:
+
+Poslije linije gdje se uzima role iz req.body, dodaj:
+const { ageGroup } = req.body;
+
+I u newUser objektu gdje se kreira novi korisnik dodaj:
+ageGroup: ageGroup || 'child',
+
+KORAK 3: AŽURIRAJ LANDING PAGE (odvojeni leaderboard)
+
+U client/src/pages/landing.tsx pronađi leaderboard sekciju i ZAMIJENI JE sa ovim:
+
+Prvo dodaj import na vrhu fajla (ako već nije):
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+Zatim pronađi sekciju sa leaderboardom (obično ima "Top čitači" naslov) i zamijeni sa:
+
+<section className="py-16 bg-muted/30">
+  <div className="container mx-auto px-4">
+    <h2 className="text-3xl font-bold text-center mb-8">
+      🏆 Top čitači
+    </h2>
+    
+    <Tabs defaultValue="djeca" className="max-w-4xl mx-auto">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="djeca">Djeca</TabsTrigger>
+        <TabsTrigger value="odrasli">Odrasli</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="djeca">
+        <LeaderboardTable period={period} ageGroup="child" />
+      </TabsContent>
+      
+      <TabsContent value="odrasli">
+        <LeaderboardTable period={period} ageGroup="adult" />
+      </TabsContent>
+    </Tabs>
+    
+    <div className="flex justify-center gap-2 mt-6">
+      <Button
+        variant={period === 'week' ? 'default' : 'outline'}
+        onClick={() => setPeriod('week')}
+      >
+        Sedmica
+      </Button>
+      <Button
+        variant={period === 'month' ? 'default' : 'outline'}
+        onClick={() => setPeriod('month')}
+      >
+        Mjesec
+      </Button>
+      <Button
+        variant={period === 'year' ? 'default' : 'outline'}
+        onClick={() => setPeriod('year')}
+      >
+        Godina
+      </Button>
+    </div>
+  </div>
+</section>
+
+I dodaj novu komponentu UNUTAR istog landing.tsx fajla (na kraju, prije default export-a):
+
+function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: string }) {
+  const endpoint = ageGroup === 'adult' 
+    ? `/api/leaderboard/adults?period=${period}`
+    : `/api/leaderboard?period=${period}`;
+    
+  const { data: leaderboard = [] } = useQuery({
+    queryKey: [endpoint],
+  });
+
+  if (leaderboard.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6 text-center text-muted-foreground">
+          Nema podataka za ovaj period
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16">Rang</TableHead>
+              <TableHead>Ime</TableHead>
+              {ageGroup === 'child' && <TableHead>Razred</TableHead>}
+              <TableHead className="text-right">Bodovi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {leaderboard.map((user: any, index: number) => (
+              <TableRow key={user.id}>
+                <TableCell>
+                  <Badge variant={index < 3 ? 'default' : 'secondary'}>
+                    #{index + 1}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium">{user.fullName}</TableCell>
+                {ageGroup === 'child' && <TableCell>{user.className}</TableCell>}
+                <TableCell className="text-right">{user.points}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+Provjeri da imaš sve potrebne importove na vrhu landing.tsx:
+- Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+- Card, CardContent
+- Badge
+- useQuery
+
+KORAK 4: DODAJ RUTU ZA TEACHER DASHBOARD
+
+Pronađi gdje su definirane rute (može biti u main.tsx, App.tsx, ili routes.tsx).
+
+Dodaj novu rutu:
+import TeacherDashboard from "@/pages/teacher-dashboard";
+
+<Route path="/ucitelj" component={TeacherDashboard} />
+
+Provjeri da je ruta zaštićena - trebala bi biti dostupna samo učiteljima.
+
+KORAK 5: FINALNO TESTIRANJE
+
+Pokreni aplikaciju i testiraj:
+
+1. Registracija: Otvori /registracija - treba biti select za "Starosna skupina"
+2. Leaderboard: Otvori početnu stranicu - treba biti tabovi "Djeca" i "Odrasli"
+3. Učiteljski dashboard: Prijavi se kao učitelj (ucitelj1 / ucitelj123) i otvori /ucitelj
+4. Book detail: Otvori bilo koju knjigu - sekcija "Gdje naći knjigu" treba biti prominentna
+
+Javi mi rezultate testiranja i sve greške koje naiđeš!

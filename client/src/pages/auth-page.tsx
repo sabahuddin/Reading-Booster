@@ -42,6 +42,7 @@ const registerSchema = insertUserSchema.extend({
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
   role: z.enum(["student", "parent"]),
+  ageGroup: z.enum(["child", "adult"]).default("child"),
   schoolName: z.string().optional().nullable(),
   className: z.string().optional().nullable(),
 });
@@ -104,6 +105,7 @@ export default function AuthPage() {
       password: "",
       fullName: "",
       role: "student",
+      ageGroup: "child",
       schoolName: "",
       className: "",
     },
@@ -336,6 +338,30 @@ export default function AuthPage() {
                                 {...field}
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="ageGroup"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Starosna skupina</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger data-testid="select-register-age-group">
+                                  <SelectValue placeholder="Odaberite..." />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="child">Dijete (do 18 godina)</SelectItem>
+                                <SelectItem value="adult">Odrasla osoba (18+ godina)</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}

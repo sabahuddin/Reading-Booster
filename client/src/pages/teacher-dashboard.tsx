@@ -27,7 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import {
   Users,
   BookOpen,
@@ -70,7 +70,7 @@ export default function TeacherDashboard() {
     .sort((a: any, b: any) => (b.booksRead || 0) - (a.booksRead || 0))
     .slice(0, 5);
 
-  const handleAddBonus = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddBonus = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 

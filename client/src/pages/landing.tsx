@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import type { Partner, Challenge } from "@shared/schema";
@@ -78,29 +86,59 @@ interface TopReader {
   totalScore: number;
 }
 
-function TopReadersSection() {
-  const [period, setPeriod] = useState("week");
+function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: string }) {
+  const endpoint = ageGroup === "adult"
+    ? `/api/leaderboard/adults?period=${period}`
+    : `/api/leaderboard?period=${period}`;
 
-  const { data: readers } = useQuery<TopReader[]>({
-    queryKey: ["/api/leaderboard", period],
-    queryFn: async () => {
-      const res = await fetch(`/api/leaderboard?period=${period}`);
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    },
+  const { data: leaderboard = [] } = useQuery<any[]>({
+    queryKey: [endpoint],
   });
 
-  const periodLabels: Record<string, string> = {
-    week: "Čitatelj sedmice",
-    month: "Čitatelj mjeseca",
-    year: "Čitatelj godine",
-  };
+  if (leaderboard.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6 text-center text-muted-foreground">
+          Nema podataka za ovaj period
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const medalIcons = [
-    <Medal className="h-5 w-5 text-yellow-500" />,
-    <Medal className="h-5 w-5 text-gray-400" />,
-    <Medal className="h-5 w-5 text-amber-700" />,
-  ];
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16">Rang</TableHead>
+              <TableHead>Ime</TableHead>
+              {ageGroup === "child" && <TableHead>Razred</TableHead>}
+              <TableHead className="text-right">Bodovi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {leaderboard.map((user: any, index: number) => (
+              <TableRow key={user.userId || user.id || index}>
+                <TableCell>
+                  <Badge variant={index < 3 ? "default" : "secondary"}>
+                    #{index + 1}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium">{user.fullName}</TableCell>
+                {ageGroup === "child" && <TableCell>{user.className}</TableCell>}
+                <TableCell className="text-right">{user.totalScore || user.points}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TopReadersSection() {
+  const [period, setPeriod] = useState("week");
 
   return (
     <section className="py-20 bg-card">
@@ -117,64 +155,52 @@ function TopReadersSection() {
             <Trophy className="h-8 w-8 text-yellow-500" />
           </div>
           <h2 className="text-3xl font-bold sm:text-4xl" data-testid="text-leaderboard-title">
-            Najbolji čitatelji
+            Top čitači
           </h2>
           <p className="mt-2 text-muted-foreground text-lg">
             Pogledaj ko najviše čita!
           </p>
         </motion.div>
 
-        <div className="mt-8 max-w-2xl mx-auto">
-          <Tabs value={period} onValueChange={setPeriod} className="w-full">
-            <TabsList className="grid w-full grid-cols-3" data-testid="tabs-leaderboard">
-              <TabsTrigger value="week" data-testid="tab-leaderboard-week">Sedmica</TabsTrigger>
-              <TabsTrigger value="month" data-testid="tab-leaderboard-month">Mjesec</TabsTrigger>
-              <TabsTrigger value="year" data-testid="tab-leaderboard-year">Godina</TabsTrigger>
+        <div className="mt-8 max-w-4xl mx-auto">
+          <Tabs defaultValue="djeca" className="w-full">
+            <TabsList className="grid w-full grid-cols-2" data-testid="tabs-leaderboard-age">
+              <TabsTrigger value="djeca" data-testid="tab-leaderboard-djeca">Djeca</TabsTrigger>
+              <TabsTrigger value="odrasli" data-testid="tab-leaderboard-odrasli">Odrasli</TabsTrigger>
             </TabsList>
-            <TabsContent value={period}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg text-center">{periodLabels[period]}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!readers || readers.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-6">
-                      Još nema rezultata za ovaj period.
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {readers.map((reader, index) => (
-                        <div
-                          key={reader.userId}
-                          className={`flex items-center gap-3 p-3 rounded-md ${
-                            index === 0
-                              ? "bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900"
-                              : index === 1
-                              ? "bg-gray-50 dark:bg-gray-900/20"
-                              : index === 2
-                              ? "bg-amber-50 dark:bg-amber-950/20"
-                              : ""
-                          }`}
-                          data-testid={`row-reader-${index}`}
-                        >
-                          <span className="text-lg font-bold w-8 text-center">
-                            {index < 3 ? medalIcons[index] : `${index + 1}.`}
-                          </span>
-                          <div className="flex-1">
-                            <p className="font-medium" data-testid={`text-reader-name-${index}`}>{reader.fullName}</p>
-                            <p className="text-sm text-muted-foreground">@{reader.username}</p>
-                          </div>
-                          <Badge variant="default" className="text-sm" data-testid={`text-reader-score-${index}`}>
-                            {reader.totalScore} bodova
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+
+            <TabsContent value="djeca">
+              <LeaderboardTable period={period} ageGroup="child" />
+            </TabsContent>
+
+            <TabsContent value="odrasli">
+              <LeaderboardTable period={period} ageGroup="adult" />
             </TabsContent>
           </Tabs>
+
+          <div className="flex justify-center gap-2 mt-6">
+            <Button
+              variant={period === "week" ? "default" : "outline"}
+              onClick={() => setPeriod("week")}
+              data-testid="button-period-week"
+            >
+              Sedmica
+            </Button>
+            <Button
+              variant={period === "month" ? "default" : "outline"}
+              onClick={() => setPeriod("month")}
+              data-testid="button-period-month"
+            >
+              Mjesec
+            </Button>
+            <Button
+              variant={period === "year" ? "default" : "outline"}
+              onClick={() => setPeriod("year")}
+              data-testid="button-period-year"
+            >
+              Godina
+            </Button>
+          </div>
         </div>
       </div>
     </section>

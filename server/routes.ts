@@ -205,6 +205,7 @@ export async function registerRoutes(
         ...parsed.data,
         password: hashedPassword,
         role: isInstitutional ? "teacher" : parsed.data.role,
+        ageGroup: parsed.data.ageGroup || "child",
         approved: isInstitutional ? false : undefined,
       };
 
