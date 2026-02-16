@@ -272,19 +272,12 @@ export default function PublicBookDetail() {
                         <strong>Broj stranica:</strong> {book.pageCount}
                       </div>
                     )}
-                    {book.publisher && (
-                      <div>
-                        <strong>Izdavač:</strong> {book.publisher}
-                      </div>
-                    )}
-                    <div>
-                      <strong>Godina i mjesto:</strong> {book.publicationYear || "/"} {book.publicationCity ? `, ${book.publicationCity}` : ""}
+                    <div data-testid="text-book-publisher">
+                      <strong>Izdavač:</strong> {book.publisher || "/"}
                     </div>
-                    {book.isbn && (
-                      <div data-testid="text-book-isbn">
-                        <strong>ISBN:</strong> {book.isbn}
-                      </div>
-                    )}
+                    <div data-testid="text-book-isbn">
+                      <strong>ISBN:</strong> {book.isbn || "/"}
+                    </div>
                     <div data-testid="text-book-cobiss">
                       <strong>COBISS.BH-ID:</strong> {book.cobissId || "/"}
                     </div>
