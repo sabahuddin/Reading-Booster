@@ -1,0 +1,11 @@
+.icon-sprite {
+  background-image: url('@assets/a_1771361455383.png');
+  background-size: 400% 300%; /* 4 columns, 3 rows */
+  display: inline-block;
+}
+
+/* Map specific icons based on grid position */
+.icon-trophy-1 { background-position: 33.33% 0%; width: 100px; height: 100px; }
+.icon-books-heart { background-position: 0% 0%; width: 100px; height: 100px; }
+.icon-student-reading { background-position: 0% 33.33%; width: 100px; height: 100px; }
+.icon-medal-1 { background-position: 66.66% 66.66%; width: 100px; height: 100px; }

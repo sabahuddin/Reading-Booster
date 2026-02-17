@@ -144,7 +144,7 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
 function TopReadersSection() {
   const [period, setPeriod] = useState("week");
   const { scrollY } = useScroll();
-  const yTrophy = useTransform(scrollY, [400, 1500], [-150, 150]);
+  const yTrophy = useTransform(scrollY, [400, 1500], [-200, 200]);
 
   return (
     <section className="py-20 bg-card relative overflow-hidden">
@@ -159,9 +159,9 @@ function TopReadersSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yTrophy }}
-        className="absolute top-1/2 -translate-y-1/2 right-0 w-[600px] h-[600px] opacity-100 pointer-events-none hidden lg:block"
+        className="absolute top-1/2 -translate-y-1/2 -right-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden lg:block"
       >
-        <img src={trophyBooksImg} alt="" className="w-full h-full object-contain object-right" />
+        <img src={trophyBooksImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
@@ -234,7 +234,7 @@ function ChallengesSection() {
     queryKey: ["/api/challenges"],
   });
   const { scrollY } = useScroll();
-  const yKids = useTransform(scrollY, [1500, 3000], [150, -150]);
+  const yKids = useTransform(scrollY, [1500, 3000], [200, -200]);
 
   if (!challengesList || challengesList.length === 0) return null;
 
@@ -257,9 +257,9 @@ function ChallengesSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yKids }}
-        className="absolute top-1/2 -translate-y-1/2 left-0 w-[700px] h-[700px] opacity-100 pointer-events-none hidden xl:block"
+        className="absolute top-1/2 -translate-y-1/2 -left-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden xl:block"
       >
-        <img src={kidsReadingImg} alt="" className="w-full h-full object-contain object-left" />
+        <img src={kidsReadingImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
