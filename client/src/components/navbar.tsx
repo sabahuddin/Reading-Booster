@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const navLinks = [
   { href: "/", label: "Početna" },
+  { href: "/vodic", label: "Vodič" },
   { href: "/biblioteka", label: "Biblioteka" },
   { href: "/blog", label: "Blog" },
   { href: "/cijene", label: "Cijene" },

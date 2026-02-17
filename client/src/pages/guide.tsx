@@ -86,21 +86,46 @@ export default function GuidePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <p className="text-lg text-muted-foreground">Budite podrška svom djetetu na putu znanja.</p>
-                <ul className="space-y-4">
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
-                    <p><strong>Pratite napredak:</strong> Vidite koje knjige vaše dijete čita i kakve rezultate postiže na kvizovima.</p>
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                    <p><strong>Porodično takmičenje:</strong> Registrujte svoj račun u kategoriji "Odrasli" i takmičite se ko će više pročitati!</p>
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
-                    <p><strong>Povezivanje:</strong> Ako je dijete dobilo račun u školi, jednostavno ga povežite sa svojim profilom.</p>
-                  </li>
-                </ul>
+                <div className="grid md:grid-cols-2 gap-8 items-start">
+                  <div className="space-y-4">
+                    <p className="text-lg text-muted-foreground font-medium">Budite podrška svom djetetu na putu znanja.</p>
+                    <ul className="space-y-4">
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
+                        <p><strong>Pratite napredak:</strong> Vidite koje knjige vaše dijete čita i kakve rezultate postiže na kvizovima.</p>
+                      </li>
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
+                        <p><strong>Porodično takmičenje:</strong> Registrujte svoj račun u kategoriji "Odrasli" i takmičite se ko će više pročitati!</p>
+                      </li>
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
+                        <p><strong>Povezivanje:</strong> Ako je dijete dobilo račun u školi, jednostavno ga povežite sa svojim profilom.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="rounded-xl border-2 border-dashed p-4 bg-muted/30">
+                    <div className="flex items-center justify-between mb-4 border-b pb-2">
+                      <span className="font-bold text-sm">Pregled za roditelje (Primjer)</span>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-2 bg-background rounded border">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">A</div>
+                        <div className="flex-1">
+                          <div className="h-3 bg-muted rounded w-24 mb-1" />
+                          <div className="h-2 bg-primary/20 rounded w-full" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-2 bg-background rounded border">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">D</div>
+                        <div className="flex-1">
+                          <div className="h-3 bg-muted rounded w-32 mb-1" />
+                          <div className="h-2 bg-blue-200 rounded w-3/4" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -114,21 +139,48 @@ export default function GuidePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <p className="text-lg text-muted-foreground">Pretvorite lektiru u najdraži čas.</p>
-                <ul className="space-y-4">
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
-                    <p><strong>Upravljanje razredom:</strong> Kreirajte račune za sve svoje učenike jednim klikom.</p>
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                    <p><strong>Analitika:</strong> Pratite prosjek bodova razreda i identifikujte učenike kojima je potrebna dodatna motivacija.</p>
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
-                    <p><strong>Izazovi:</strong> Kreirajte sedmične izazove (npr. 'Ko će pročitati ovu knjigu do petka?') i dodijelite bonus bodove.</p>
-                  </li>
-                </ul>
+                <div className="grid md:grid-cols-2 gap-8 items-start">
+                  <div className="space-y-4">
+                    <p className="text-lg text-muted-foreground font-medium">Pretvorite lektiru u najdraži čas.</p>
+                    <ul className="space-y-4">
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
+                        <p><strong>Upravljanje razredom:</strong> Kreirajte račune za sve svoje učenike jednim klikom.</p>
+                      </li>
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
+                        <p><strong>Analitika:</strong> Pratite prosjek bodova razreda i identifikujte učenike kojima je potrebna dodatna motivacija.</p>
+                      </li>
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
+                        <p><strong>Izazovi:</strong> Kreirajte sedmične izazove i dodijelite bonus bodove.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="rounded-xl border-2 border-dashed p-4 bg-muted/30">
+                    <div className="flex items-center justify-between mb-4 border-b pb-2">
+                      <span className="font-bold text-sm">Dashboard Učitelja (Primjer)</span>
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 rounded-full bg-red-400" />
+                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                        <div className="w-2 h-2 rounded-full bg-green-400" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-8 bg-primary/10 rounded w-3/4 animate-pulse" />
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="h-16 bg-muted rounded" />
+                        <div className="h-16 bg-muted rounded" />
+                        <div className="h-16 bg-muted rounded" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded w-full" />
+                        <div className="h-4 bg-muted rounded w-5/6" />
+                        <div className="h-4 bg-muted rounded w-4/6" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -142,29 +194,46 @@ export default function GuidePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <p className="text-lg text-muted-foreground">Sistemsko rješenje za promociju pismenosti.</p>
-                <div className="bg-orange-50 p-6 rounded-xl border border-orange-100 mb-6">
-                  <h4 className="font-bold text-orange-900 mb-2">Napredno upravljanje (Škola Admin)</h4>
-                  <p className="text-orange-800">
-                    Kao institucionalni administrator (Škola ili Medžlis), imate uvid u cijeli kolektiv. Možete kreirati 
-                    stotine učeničkih računa, dodijeliti nastavnike ili muallime njihovim grupama i pratiti 
-                    ukupnu statistiku čitanja na nivou cijele ustanove.
-                  </p>
+                <div className="grid md:grid-cols-2 gap-8 items-start">
+                  <div className="space-y-4">
+                    <p className="text-lg text-muted-foreground font-medium">Sistemsko rješenje za promociju pismenosti.</p>
+                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-4">
+                      <h4 className="font-bold text-orange-900 mb-1 text-sm">Napredno upravljanje</h4>
+                      <p className="text-orange-800 text-sm">
+                        Kao institucionalni administrator, imate uvid u cijeli kolektiv, kreirate stotine računa i pratite statistiku na nivou ustanove.
+                      </p>
+                    </div>
+                    <ul className="space-y-4">
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
+                        <p><strong>Centralizacija:</strong> Svi nastavnici i svi učenici na jednom pregledu.</p>
+                      </li>
+                      <li className="flex gap-4">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
+                        <p><strong>Monitoring:</strong> Analizirajte trendove čitanja kroz mjesece.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="rounded-xl border-2 border-dashed p-4 bg-muted/30">
+                    <div className="flex items-center justify-between mb-4 border-b pb-2">
+                      <span className="font-bold text-sm">Statistika Ustanove (Primjer)</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-3 bg-background rounded border text-center">
+                        <div className="text-xl font-bold text-primary">300</div>
+                        <div className="text-[10px] uppercase text-muted-foreground">Učenika</div>
+                      </div>
+                      <div className="p-3 bg-background rounded border text-center">
+                        <div className="text-xl font-bold text-primary">10</div>
+                        <div className="text-[10px] uppercase text-muted-foreground">Nastavnika</div>
+                      </div>
+                      <div className="col-span-2 p-3 bg-background rounded border">
+                        <div className="h-2 bg-primary/10 rounded w-full mb-2" />
+                        <div className="h-2 bg-primary/30 rounded w-3/4" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <ul className="space-y-4">
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
-                    <p><strong>Centralizacija:</strong> Svi nastavnici i svi učenici na jednom pregledu.</p>
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                    <p><strong>Masovni import:</strong> Jednostavno dodajte nastavni kadar i rasporedite ih po odjeljenjima.</p>
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
-                    <p><strong>Monitoring:</strong> Analizirajte trendove čitanja kroz mjesece i nagradite najaktivnija odjeljenja.</p>
-                  </li>
-                </ul>
               </CardContent>
             </Card>
           </TabsContent>
