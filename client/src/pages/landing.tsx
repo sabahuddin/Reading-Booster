@@ -20,7 +20,7 @@ import { Footer } from "@/components/footer";
 import type { Partner, Challenge } from "@shared/schema";
 import heroBg from "@assets/background_1771243573729.png";
 import kidsReadingImg from "@assets/ChatGPT_Image_17._feb_2026._u_20_56_38_1771358489681.png";
-import whiteBookImg from "@assets/white_book_1771362980536.png";
+import bookIconImg from "@assets/book_icon_1771363420815.png";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -161,7 +161,7 @@ function TopReadersSection() {
         style={{ y: yTrophy }}
         className="absolute top-1/2 -translate-y-1/2 -right-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden lg:block"
       >
-        <img src={whiteBookImg} alt="" className="w-full h-full object-contain" />
+        <img src={bookIconImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
@@ -259,7 +259,7 @@ function ChallengesSection() {
         style={{ y: yKids }}
         className="absolute top-1/2 -translate-y-1/2 -left-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden xl:block"
       >
-        <img src={whiteBookImg} alt="" className="w-full h-full object-contain" />
+        <img src={bookIconImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
@@ -417,10 +417,8 @@ export default function LandingPage() {
             variants={fadeIn}
             transition={{ duration: 0.6 }}
           >
-            <div className="flex flex-col items-center justify-center gap-4 mb-4">
-              <div className="p-6">
-                <img src={whiteBookImg} alt="" className="h-32 w-auto opacity-80" />
-              </div>
+            <div className="flex flex-col items-center justify-center mb-2">
+              <img src={bookIconImg} alt="" className="h-32 w-auto opacity-90" />
             </div>
             <h1
               className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl"
