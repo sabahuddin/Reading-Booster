@@ -664,27 +664,23 @@ export default function LandingPage() {
       <section className="py-20">
         <div className="mx-auto max-w-7xl px-4">
           <motion.div
-            className="grid grid-cols-1 gap-8 sm:grid-cols-3"
+            className="grid grid-cols-1 gap-8 sm:grid-cols-2"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeIn}
             transition={{ duration: 0.5 }}
           >
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="text-center"
-                data-testid={`stat-${stat.label}`}
-              >
-                <p className="text-4xl font-bold text-primary sm:text-5xl">
-                  {stat.value}
-                </p>
-                <p className="mt-2 text-lg text-muted-foreground">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
+            <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
+              <BookOpen className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="text-2xl font-bold mb-2">Bogata biblioteka</h3>
+              <p className="text-muted-foreground">Stotine naslova prilagođenih svim uzrastima i interesovanjima.</p>
+            </div>
+            <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
+              <Users className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="text-2xl font-bold mb-2">Zajednica čitalaca</h3>
+              <p className="text-muted-foreground">Pridruži se vršnjacima, takmiči se i dijeli radost čitanja.</p>
+            </div>
           </motion.div>
         </div>
       </section>
