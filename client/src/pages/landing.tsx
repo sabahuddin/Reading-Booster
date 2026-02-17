@@ -144,23 +144,23 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
 function TopReadersSection() {
   const [period, setPeriod] = useState("week");
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 2000], [0, 200]);
-  const y2 = useTransform(scrollY, [0, 2000], [0, -150]);
+  const yKids = useTransform(scrollY, [400, 1500], [100, -100]);
+  const yTrophy = useTransform(scrollY, [400, 1500], [-100, 100]);
 
   return (
     <section className="py-20 bg-card relative overflow-hidden">
       {/* Background Illustration Paralax */}
       <motion.div 
-        style={{ y: y1 }}
-        className="absolute bottom-0 left-0 w-full h-full opacity-10 pointer-events-none hidden lg:block"
+        style={{ y: yKids }}
+        className="absolute inset-0 opacity-20 pointer-events-none hidden lg:block"
       >
-        <img src={kidsReadingImg} alt="" className="w-[800px] h-auto object-contain absolute -bottom-20 -left-20" />
+        <img src={kidsReadingImg} alt="" className="w-full h-full object-cover scale-110" />
       </motion.div>
       <motion.div 
-        style={{ y: y2 }}
-        className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none hidden lg:block"
+        style={{ y: yTrophy }}
+        className="absolute inset-0 opacity-15 pointer-events-none hidden lg:block"
       >
-        <img src={trophyBooksImg} alt="" className="w-[800px] h-auto object-contain absolute -top-20 -right-20" />
+        <img src={trophyBooksImg} alt="" className="w-full h-full object-cover scale-125" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
@@ -233,7 +233,7 @@ function ChallengesSection() {
     queryKey: ["/api/challenges"],
   });
   const { scrollY } = useScroll();
-  const yKids = useTransform(scrollY, [1000, 3000], [0, 100]);
+  const yFull = useTransform(scrollY, [1500, 3000], [150, -150]);
 
   if (!challengesList || challengesList.length === 0) return null;
 
@@ -245,10 +245,10 @@ function ChallengesSection() {
     <section className="py-20 relative overflow-hidden">
       {/* Background Illustration Paralax */}
       <motion.div 
-        style={{ y: yKids }}
-        className="absolute bottom-0 right-0 w-full h-full opacity-10 pointer-events-none hidden xl:block"
+        style={{ y: yFull }}
+        className="absolute inset-0 opacity-20 pointer-events-none hidden xl:block"
       >
-        <img src={kidsReadingImg} alt="" className="w-[900px] h-auto object-contain absolute -bottom-40 -right-40 transform scale-x-[-1]" />
+        <img src={kidsReadingImg} alt="" className="w-full h-full object-cover scale-150 transform scale-x-[-1]" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
