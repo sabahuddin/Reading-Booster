@@ -398,6 +398,99 @@ function PartnersSection() {
   );
 }
 
+function AboutSection() {
+  return (
+    <section className="py-24 bg-background relative overflow-hidden">
+      <div className="mx-auto max-w-4xl px-4 relative z-10">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          className="space-y-12"
+        >
+          {/* Q&A Section */}
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold mb-4">Često postavljana pitanja</h2>
+              <div className="h-1 w-20 bg-primary mx-auto rounded-full" />
+            </div>
+            
+            <div className="grid gap-6">
+              <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
+                <h3 className="text-lg font-bold text-orange-900 mb-2">Zašto Čitanje?</h3>
+                <p className="text-muted-foreground">U digitalnom dobu, motivacija za čitanje fizičkih knjiga opada. Naša platforma koristi elemente igre (gamification) kako bi čitanje ponovo postalo uzbudljiva avantura za djecu i mlade.</p>
+              </div>
+              
+              <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
+                <h3 className="text-lg font-bold text-orange-900 mb-2">Treba li nam ovo?</h3>
+                <p className="text-muted-foreground">Da, jer čitanje razvija empatiju, vokabular i kritičko razmišljanje. Čitanje.ba premošćuje jaz između ekrana i papira, čineći svaku pročitanu stranicu vrijednom bodova i priznanja.</p>
+              </div>
+              
+              <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
+                <h3 className="text-lg font-bold text-orange-900 mb-2">Koji je cilj?</h3>
+                <p className="text-muted-foreground">Naš cilj je stvoriti zajednicu čitalaca, povezati škole, biblioteke i porodice, te kroz pozitivno takmičenje podići nivo pismenosti i ljubavi prema knjizi na našem govornom području.</p>
+              </div>
+              
+              <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
+                <h3 className="text-lg font-bold text-orange-900 mb-2">Kako to uraditi?</h3>
+                <p className="text-muted-foreground">Jednostavno: odaberi knjigu iz biblioteke, pročitaj je u fizičkom formatu, vrati se na platformu da riješiš kviz, osvoji bodove i prati svoj rang na tabeli najboljih čitalaca!</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Guide & Scenarios */}
+          <div className="space-y-8 pt-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold mb-4">Vodič i scenariji korištenja</h2>
+              <div className="h-1 w-20 bg-primary mx-auto rounded-full" />
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">1</div>
+                <div>
+                  <h4 className="font-bold text-xl mb-1">Scenarij za škole</h4>
+                  <p className="text-muted-foreground">Učitelji kreiraju razrede i prate napredak učenika. Čitanje lektire postaje interaktivno, a najbolji čitaoci u razredu dobijaju digitalna i stvarna priznanja.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">2</div>
+                <div>
+                  <h4 className="font-bold text-xl mb-1">Porodično takmičenje</h4>
+                  <p className="text-muted-foreground">Roditelji se mogu registrovati, povezati sa svojom djecom i zajedno učestvovati u izazovima. Takmičite se ko će sakupiti više bodova kroz Beletristiku i Islam module!</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">3</div>
+                <div>
+                  <h4 className="font-bold text-xl mb-1">Mektebski modul</h4>
+                  <p className="text-muted-foreground">Poseban fokus na islamsku literaturu omogućava muallimima da motivišu polaznike mekteba na čitanje priča o poslanicima i islamske historije uz zabavne kvizove.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contribution */}
+          <div className="mt-16 p-8 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white text-center shadow-xl">
+            <h2 className="text-2xl font-bold mb-4">Postani dio naše priče</h2>
+            <p className="text-orange-50 mb-6 text-lg">
+              Čitanje je projekat zajednice. Možete doprinijeti razvoju platforme kroz <strong>sponzorstva nagrada</strong> za najuspješnije čitaoce ili jednostavno <strong>dijeljenjem sadržaja</strong> i pozivanjem prijatelja da nam se pridruže.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button variant="secondary" size="lg" asChild>
+                <Link href="/kontakt">Kontaktiraj nas za sponzorstvo</Link>
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingPage() {
   const { scrollY } = useScroll();
   const yKidsHero = useTransform(scrollY, [0, 800], [0, -200]);
@@ -519,6 +612,8 @@ export default function LandingPage() {
       <TopReadersSection />
 
       <ChallengesSection />
+
+      <AboutSection />
 
       <section className="bg-card py-20">
         <div className="mx-auto max-w-7xl px-4">
