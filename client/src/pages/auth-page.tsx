@@ -392,6 +392,11 @@ export default function AuthPage() {
                                 </SelectItem>
                               </SelectContent>
                             </Select>
+                            {field.value === "parent" && (
+                              <FormDescription className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md text-blue-800 dark:text-blue-200">
+                                Kao roditelj, moći ćete povezati račune svoje djece nakon prijave na Vašem panelu koristeći njihova korisnička imena i lozinke.
+                              </FormDescription>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}

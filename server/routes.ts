@@ -595,6 +595,48 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== PARENT ROUTES ====================
+
+  app.get("/api/parent/children", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Samo roditelji mogu pristupiti ovim podacima" });
+      }
+      const children = await storage.getChildrenByParentId(req.session.userId!);
+      const childrenWithoutPasswords = children.map(({ password, ...rest }) => rest);
+      return res.json(childrenWithoutPasswords);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/parent/add-child", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Samo roditelji mogu povezati dijete" });
+      }
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ message: "Korisničko ime i lozinka djeteta su obavezni" });
+      }
+
+      const child = await storage.getUserByUsername(username);
+      if (!child || child.role !== "student") {
+        return res.status(404).json({ message: "Učenik sa tim korisničkim imenom nije pronađen" });
+      }
+
+      const isValid = await comparePasswords(password, child.password);
+      if (!isValid) {
+        return res.status(401).json({ message: "Netačna lozinka za račun djeteta" });
+      }
+
+      await storage.updateUser(child.id, { parentId: req.session.userId! });
+      return res.json({ message: "Dijete uspješno povezano" });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // ==================== BLOG ROUTES ====================
 
   app.get("/api/blog", async (_req, res) => {
