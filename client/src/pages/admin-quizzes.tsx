@@ -44,7 +44,7 @@ const questionFormSchema = z.object({
   optionB: z.string().min(1, "Opcija B je obavezna"),
   optionC: z.string().min(1, "Opcija C je obavezna"),
   optionD: z.string().min(1, "Opcija D je obavezna"),
-  correctAnswer: z.enum(["a", "b", "c", "d"], { required_error: "Točan odgovor je obavezan" }),
+  correctAnswer: z.enum(["a", "b", "c", "d"], { required_error: "Tačan odgovor je obavezan" }),
   points: z.coerce.number().min(1, "Bodovi moraju biti barem 1"),
 });
 
@@ -167,7 +167,7 @@ function QuizQuestions({ quizId }: { quizId: string }) {
           <TableHeader>
             <TableRow>
               <TableHead>Pitanje</TableHead>
-              <TableHead>Točan odgovor</TableHead>
+              <TableHead>Tačan odgovor</TableHead>
               <TableHead>Bodovi</TableHead>
               <TableHead>Akcije</TableHead>
             </TableRow>
@@ -245,11 +245,11 @@ function QuizQuestions({ quizId }: { quizId: string }) {
               )} />
               <FormField control={form.control} name="correctAnswer" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Točan odgovor</FormLabel>
+                  <FormLabel>Tačan odgovor</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-correct-answer">
-                        <SelectValue placeholder="Odaberite točan odgovor" />
+                        <SelectValue placeholder="Odaberite tačan odgovor" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

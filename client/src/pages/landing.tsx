@@ -36,7 +36,7 @@ const features = [
     icon: Brain,
     title: "Zabavni kvizovi",
     description:
-      "Nakon čitanja, riješi kviz i pokaži koliko si naučio. Svaki točan odgovor donosi bodove!",
+      "Nakon čitanja, riješi kviz i pokaži koliko si naučio. Svaki tačan odgovor donosi bodove!",
   },
   {
     icon: TrendingUp,
@@ -114,7 +114,7 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">Rang</TableHead>
-              <TableHead>Ime</TableHead>
+              <TableHead>Korisničko ime</TableHead>
               {ageGroup !== "A" && <TableHead>Razred</TableHead>}
               <TableHead className="text-right">Bodovi</TableHead>
             </TableRow>
@@ -127,7 +127,7 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
                     #{index + 1}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-medium">{user.fullName}</TableCell>
+                <TableCell className="font-medium">{user.username}</TableCell>
                 {ageGroup !== "A" && <TableCell>{user.className}</TableCell>}
                 <TableCell className="text-right">{user.totalScore || user.points}</TableCell>
               </TableRow>
@@ -157,7 +157,7 @@ function TopReadersSection() {
             <Trophy className="h-8 w-8 text-yellow-500" />
           </div>
           <h2 className="text-3xl font-bold sm:text-4xl" data-testid="text-leaderboard-title">
-            Top čitači
+            Top čitaoci
           </h2>
           <p className="mt-2 text-muted-foreground text-lg">
             Pogledaj ko najviše čita!
