@@ -41,7 +41,7 @@ const registerSchema = insertUserSchema.extend({
   email: z.string().email("Unesite ispravnu email adresu"),
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
-  role: z.enum(["student", "parent"]),
+  role: z.enum(["student", "parent", "school"]),
   ageGroup: z.enum(["M", "D", "O", "A"]).default("M"),
   schoolName: z.string().optional().nullable(),
   className: z.string().optional().nullable(),
@@ -64,6 +64,8 @@ type InstitutionValues = z.infer<typeof institutionSchema>;
 
 function getDashboardPath(role: string): string {
   switch (role) {
+    case "school":
+      return "/skola";
     case "admin":
       return "/admin";
     case "teacher":
@@ -390,6 +392,9 @@ export default function AuthPage() {
                                 <SelectItem value="parent" data-testid="select-role-parent">
                                   Roditelj
                                 </SelectItem>
+                                <SelectItem value="school" data-testid="select-role-school">
+                                  Ustanova (Škola/Medžlis)
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             {field.value === "parent" && (
@@ -402,7 +407,13 @@ export default function AuthPage() {
                         )}
                       />
 
-                      {selectedRole === "student" && (
+                      {selectedRole === "school" && (
+                        <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-md text-orange-800 dark:text-orange-200 text-sm">
+                          Registracija za ustanove omogućava upravljanje nastavnim kadrom i velikim brojem učenika.
+                        </div>
+                      )}
+
+                      {(selectedRole === "student" || selectedRole === "school") && (
                         <>
                           <FormField
                             control={registerForm.control}
@@ -571,20 +582,7 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Naziv institucije</FormLabel>
                             <FormControl>
-                              <Input placeholder="Naziv biblioteke, škole ili mekteba" data-testid="input-inst-school" {...field} value={field.value ?? ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={institutionForm.control}
-                        name="className"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Razred / Grupa (opcionalno)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="npr. 5a" data-testid="input-inst-class" {...field} value={field.value ?? ""} />
+                              <Input placeholder="Pun naziv škole/mekteba/biblioteke" data-testid="input-inst-school" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -596,7 +594,7 @@ export default function AuthPage() {
                         disabled={register.isPending}
                         data-testid="button-inst-submit"
                       >
-                        {register.isPending ? "Slanje zahtjeva..." : "Pošalji zahtjev za registraciju"}
+                        {register.isPending ? "Slanje zahtjeva..." : "Pošalji zahtjev za odobrenje"}
                       </Button>
                     </form>
                   </Form>
@@ -604,20 +602,6 @@ export default function AuthPage() {
               </Tabs>
             </CardContent>
           </Card>
-        </div>
-
-        <div className="hidden lg:flex lg:flex-1 items-center justify-center bg-gradient-to-br from-[hsl(262,80%,55%)] via-[hsl(280,70%,45%)] to-[hsl(310,65%,40%)]">
-          <div className="max-w-md text-center text-white p-8">
-            <BookOpen className="mx-auto mb-6 h-16 w-16" />
-            <h2 className="mb-4 text-3xl font-bold" data-testid="text-branding-title">
-              Čitanje!
-            </h2>
-            <p className="text-lg text-blue-100" data-testid="text-branding-tagline">
-              Interaktivna platforma za čitanje koja povezuje čitatelje - učenike, nastavnike/muallime i
-              roditelje. Razvijajte ljubav prema knjigama kroz kvizove, praćenje
-              napretka i zajedničko učenje.
-            </p>
-          </div>
         </div>
       </div>
     </div>

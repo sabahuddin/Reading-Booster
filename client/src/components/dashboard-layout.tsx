@@ -34,7 +34,7 @@ import {
   UserCheck,
 } from "lucide-react";
 
-type Role = "student" | "teacher" | "parent" | "admin";
+type Role = "student" | "teacher" | "parent" | "admin" | "school";
 
 interface MenuItem {
   title: string;
@@ -57,6 +57,9 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Početna", url: "/roditelj", icon: Home },
     { title: "Djeca", url: "/roditelj/djeca", icon: Baby },
   ],
+  school: [
+    { title: "Početna", url: "/skola", icon: SchoolIcon },
+  ],
   admin: [
     { title: "Početna", url: "/admin", icon: Home },
     { title: "Knjige", url: "/admin/knjige", icon: BookOpen },
@@ -75,6 +78,7 @@ const roleLabels: Record<Role, string> = {
   teacher: "Učitelj",
   parent: "Roditelj",
   admin: "Administrator",
+  school: "Ustanova",
 };
 
 interface DashboardLayoutProps {

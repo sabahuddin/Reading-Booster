@@ -32,6 +32,10 @@ import StudentResults from "@/pages/student-results";
 import PublicLibrary from "@/pages/public-library";
 import PublicBookDetail from "@/pages/public-book-detail";
 
+import FAQPage from "@/pages/faq";
+import GuidePage from "@/pages/guide";
+import SchoolDashboard from "@/pages/school-dashboard";
+
 function Router() {
   return (
     <Switch>
@@ -40,6 +44,8 @@ function Router() {
       <Route path="/blog/:id" component={BlogDetail} />
       <Route path="/cijene" component={PricingPage} />
       <Route path="/kontakt" component={ContactPage} />
+      <Route path="/faq" component={FAQPage} />
+      <Route path="/vodic" component={GuidePage} />
       <Route path="/biblioteka" component={PublicLibrary} />
       <Route path="/knjiga/:id" component={PublicBookDetail} />
       <Route path="/prijava" component={AuthPage} />
@@ -54,6 +60,7 @@ function Router() {
       <Route path="/ucitelj/biblioteka" component={TeacherLibrary} />
       <Route path="/roditelj" component={ParentDashboard} />
       <Route path="/roditelj/djeca" component={ParentChildren} />
+      <Route path="/skola" component={SchoolDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/knjige" component={AdminBooks} />
       <Route path="/admin/kvizovi" component={AdminQuizzes} />

@@ -613,8 +613,6 @@ export default function LandingPage() {
 
       <ChallengesSection />
 
-      <AboutSection />
-
       <section className="bg-card py-20">
         <div className="mx-auto max-w-7xl px-4">
           <motion.div

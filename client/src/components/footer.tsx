@@ -9,8 +9,8 @@ const platformLinks = [
 
 const supportLinks = [
   { href: "/kontakt", label: "Kontakt" },
-  { href: "/kontakt", label: "Pomoć" },
-  { href: "/kontakt", label: "FAQ" },
+  { href: "/vodic", label: "Vodič" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 const legalLinks = [

@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role", { enum: ["student", "teacher", "parent", "admin"] }).notNull().default("student"),
+  role: text("role", { enum: ["student", "teacher", "parent", "admin", "school"] }).notNull().default("student"),
   fullName: text("full_name").notNull(),
   schoolName: text("school_name"),
   className: text("class_name"),
