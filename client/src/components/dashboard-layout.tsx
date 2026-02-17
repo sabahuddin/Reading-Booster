@@ -161,7 +161,7 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
         <div className="flex flex-col flex-1 min-w-0">
           <header className="flex items-center gap-2 border-b p-3 sticky top-0 bg-background z-50">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <span className="text-sm font-medium text-muted-foreground">Čitanje!</span>
+            <span className="text-sm font-medium text-muted-foreground">Čitanje</span>
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-auto">
             {children}

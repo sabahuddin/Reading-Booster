@@ -28,7 +28,7 @@ export function Footer() {
             <Link href="/">
               <span className="flex items-center gap-2 text-lg font-bold">
                 <BookOpen className="h-5 w-5 text-primary" />
-                Čitanje!
+                Čitanje
               </span>
             </Link>
             <p className="text-sm text-muted-foreground">
