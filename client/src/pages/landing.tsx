@@ -144,12 +144,12 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
 function TopReadersSection() {
   const [period, setPeriod] = useState("week");
   const { scrollY } = useScroll();
-  const yTrophy = useTransform(scrollY, [400, 1500], [-50, 50]);
+  const yTrophy = useTransform(scrollY, [400, 1500], [-150, 150]);
 
   return (
     <section className="py-20 bg-card relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+      <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
            style={{ 
              backgroundImage: `radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 0)`,
              backgroundSize: '32px 32px' 
@@ -159,7 +159,7 @@ function TopReadersSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yTrophy }}
-        className="absolute top-0 right-0 w-1/2 h-full opacity-20 pointer-events-none hidden lg:block"
+        className="absolute top-1/2 -translate-y-1/2 right-0 w-[600px] h-[600px] opacity-100 pointer-events-none hidden lg:block"
       >
         <img src={trophyBooksImg} alt="" className="w-full h-full object-contain object-right" />
       </motion.div>
@@ -234,7 +234,7 @@ function ChallengesSection() {
     queryKey: ["/api/challenges"],
   });
   const { scrollY } = useScroll();
-  const yKids = useTransform(scrollY, [1500, 3000], [50, -50]);
+  const yKids = useTransform(scrollY, [1500, 3000], [150, -150]);
 
   if (!challengesList || challengesList.length === 0) return null;
 
@@ -245,7 +245,7 @@ function ChallengesSection() {
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" 
+      <div className="absolute inset-0 opacity-[0.04] pointer-events-none" 
            style={{ 
              backgroundImage: `linear-gradient(45deg, hsl(var(--primary)) 25%, transparent 25%, transparent 75%, hsl(var(--primary)) 75%, hsl(var(--primary))), 
                                linear-gradient(45deg, hsl(var(--primary)) 25%, transparent 25%, transparent 75%, hsl(var(--primary)) 75%, hsl(var(--primary)))`,
@@ -257,7 +257,7 @@ function ChallengesSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yKids }}
-        className="absolute bottom-0 left-0 w-1/2 h-full opacity-20 pointer-events-none hidden xl:block"
+        className="absolute top-1/2 -translate-y-1/2 left-0 w-[700px] h-[700px] opacity-100 pointer-events-none hidden xl:block"
       >
         <img src={kidsReadingImg} alt="" className="w-full h-full object-contain object-left" />
       </motion.div>
