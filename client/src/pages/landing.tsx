@@ -444,7 +444,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-white backdrop-blur-sm bg-white/10 border-white"
+                  className="text-white backdrop-blur-sm bg-white/10 border-2 border-white hover:bg-white/20"
                   data-testid="button-cta-learn-more"
                 >
                   Pogledaj knjige
