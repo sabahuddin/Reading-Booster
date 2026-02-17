@@ -20,7 +20,7 @@ import { Footer } from "@/components/footer";
 import type { Partner, Challenge } from "@shared/schema";
 import heroBg from "@assets/background_1771243573729.png";
 import kidsReadingImg from "@assets/ChatGPT_Image_17._feb_2026._u_20_56_38_1771358489681.png";
-import trophyBooksImg from "@assets/ChatGPT_Image_17._feb_2026._u_21_00_25_1771358489681.png";
+import whiteBookImg from "@assets/white_book_1771362980536.png";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -159,9 +159,9 @@ function TopReadersSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yTrophy }}
-        className="absolute top-1/2 -translate-y-1/2 -right-48 w-[1024px] h-[1024px] opacity-100 pointer-events-none hidden lg:block"
+        className="absolute top-1/2 -translate-y-1/2 -right-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden lg:block"
       >
-        <img src={trophyBooksImg} alt="" className="w-full h-full object-contain" />
+        <img src={whiteBookImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
@@ -257,9 +257,9 @@ function ChallengesSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yKids }}
-        className="absolute top-1/2 -translate-y-1/2 -left-48 w-[1024px] h-[1024px] opacity-100 pointer-events-none hidden xl:block"
+        className="absolute top-1/2 -translate-y-1/2 -left-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden xl:block"
       >
-        <img src={kidsReadingImg} alt="" className="w-full h-full object-contain" />
+        <img src={whiteBookImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
@@ -399,6 +399,9 @@ function PartnersSection() {
 }
 
 export default function LandingPage() {
+  const { scrollY } = useScroll();
+  const yKidsHero = useTransform(scrollY, [0, 800], [0, -200]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -415,8 +418,8 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="flex flex-col items-center justify-center gap-4 mb-4">
-              <div className="bg-white/20 p-6 rounded-full backdrop-blur-md">
-                <img src={trophyBooksImg} alt="" className="h-32 w-auto" />
+              <div className="p-6">
+                <img src={whiteBookImg} alt="" className="h-32 w-auto opacity-80" />
               </div>
             </div>
             <h1
@@ -455,14 +458,17 @@ export default function LandingPage() {
       </section>
 
       <section className="py-20 relative overflow-hidden">
-        {/* Background Illustration */}
-        <div className="absolute inset-0 opacity-100 pointer-events-none flex items-center justify-center overflow-hidden">
+        {/* Background Illustration Paralax */}
+        <motion.div 
+          style={{ y: yKidsHero }}
+          className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden"
+        >
           <img 
             src={kidsReadingImg} 
             alt="" 
             className="w-[1024px] h-[1024px] object-contain opacity-100" 
           />
-        </div>
+        </motion.div>
         <div className="mx-auto max-w-7xl px-4 relative z-10">
           <motion.div
             className="text-center"
