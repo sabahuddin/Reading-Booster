@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import type { Partner, Challenge } from "@shared/schema";
 import heroBg from "@assets/background_1771243573729.png";
 import kidsReadingImg from "@assets/ChatGPT_Image_17._feb_2026._u_20_56_38_1771358489681.png";
 import trophyBooksImg from "@assets/ChatGPT_Image_17._feb_2026._u_21_00_25_1771358489681.png";
@@ -146,10 +147,10 @@ function TopReadersSection() {
   return (
     <section className="py-20 bg-card relative overflow-hidden">
       {/* Background Illustration */}
-      <div className="absolute -bottom-10 -left-10 w-64 h-64 opacity-20 grayscale pointer-events-none hidden lg:block">
+      <div className="absolute -bottom-4 -left-4 w-72 h-72 opacity-40 pointer-events-none hidden lg:block">
         <img src={kidsReadingImg} alt="" className="w-full h-full object-contain" />
       </div>
-      <div className="absolute -top-10 -right-10 w-64 h-64 opacity-20 grayscale pointer-events-none hidden lg:block">
+      <div className="absolute -top-4 -right-4 w-72 h-72 opacity-40 pointer-events-none hidden lg:block">
         <img src={trophyBooksImg} alt="" className="w-full h-full object-contain" />
       </div>
 
@@ -232,7 +233,7 @@ function ChallengesSection() {
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Background Illustration */}
-      <div className="absolute bottom-0 right-0 w-96 h-96 opacity-10 grayscale pointer-events-none hidden xl:block">
+      <div className="absolute bottom-0 right-0 w-[450px] h-[450px] opacity-30 pointer-events-none hidden xl:block">
         <img src={kidsReadingImg} alt="" className="w-full h-full object-contain transform scale-x-[-1]" />
       </div>
 
@@ -284,7 +285,7 @@ function ChallengesSection() {
                       <Gift className="h-4 w-4 text-amber-600" />
                       <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Nagrade:</p>
                     </div>
-                    {challenge.prizes.split("|").map((prize, i) => (
+                    {challenge.prizes.split("|").map((prize: string, i: number) => (
                       <p key={i} className="text-sm text-amber-700 dark:text-amber-300 ml-5">{prize.trim()}</p>
                     ))}
                   </div>
