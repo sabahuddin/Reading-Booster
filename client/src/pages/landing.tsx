@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/table";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import type { Partner, Challenge } from "@shared/schema";
 import heroBg from "@assets/background_1771243573729.png";
+import kidsReadingImg from "@assets/ChatGPT_Image_17._feb_2026._u_20_56_38_1771358489681.png";
+import trophyBooksImg from "@assets/ChatGPT_Image_17._feb_2026._u_21_00_25_1771358489681.png";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -143,8 +144,16 @@ function TopReadersSection() {
   const [period, setPeriod] = useState("week");
 
   return (
-    <section className="py-20 bg-card">
-      <div className="mx-auto max-w-7xl px-4">
+    <section className="py-20 bg-card relative overflow-hidden">
+      {/* Background Illustration */}
+      <div className="absolute -bottom-10 -left-10 w-64 h-64 opacity-20 grayscale pointer-events-none hidden lg:block">
+        <img src={kidsReadingImg} alt="" className="w-full h-full object-contain" />
+      </div>
+      <div className="absolute -top-10 -right-10 w-64 h-64 opacity-20 grayscale pointer-events-none hidden lg:block">
+        <img src={trophyBooksImg} alt="" className="w-full h-full object-contain" />
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 relative z-10">
         <motion.div
           className="text-center"
           initial="hidden"
@@ -221,8 +230,13 @@ function ChallengesSection() {
   }
 
   return (
-    <section className="py-20">
-      <div className="mx-auto max-w-7xl px-4">
+    <section className="py-20 relative overflow-hidden">
+      {/* Background Illustration */}
+      <div className="absolute bottom-0 right-0 w-96 h-96 opacity-10 grayscale pointer-events-none hidden xl:block">
+        <img src={kidsReadingImg} alt="" className="w-full h-full object-contain transform scale-x-[-1]" />
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 relative z-10">
         <motion.div
           className="text-center"
           initial="hidden"
