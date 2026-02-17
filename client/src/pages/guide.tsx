@@ -3,16 +3,15 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Users, GraduationCap, School as SchoolIcon } from "lucide-react";
+import { BookOpen, Users, GraduationCap, School as SchoolIcon, Printer, FileDown, PieChart, TrendingUp, Sparkles } from "lucide-react";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { Badge } from "@/components/ui/badge";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 }
 };
-
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { Badge } from "@/components/ui/badge";
 
 const mockStudents = [
   { name: "Ahmed Hodžić", points: 145, read: 12, trend: "+3" },
@@ -380,29 +379,6 @@ export default function GuidePage() {
             </TabsContent>
           </Tabs>
         </section>
-
-        {/* Contribution Section */}
-        <section className="max-w-4xl mx-auto px-4 mt-24 text-center">
-          <div className="p-10 rounded-3xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-2xl">
-            <h2 className="text-3xl font-bold mb-6">Postani dio naše priče</h2>
-            <p className="text-xl text-orange-50 mb-8">
-              Čitanje je projekat koji raste uz vašu pomoć. Podržite nas kroz sponzorstva nagrada ili jednostavno podijelite našu misiju sa drugima.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button variant="secondary" size="lg" className="rounded-full px-8" asChild>
-                <Link href="/kontakt">Postani sponzor</Link>
-              </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-8 bg-white/10 border-white/20 hover:bg-white/20" asChild>
-                <Link href="/kontakt">Podijeli sadržaj</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </div>
-  );
-}
 
         {/* Contribution Section */}
         <section className="max-w-4xl mx-auto px-4 mt-24 text-center">

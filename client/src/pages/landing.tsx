@@ -75,11 +75,6 @@ const steps = [
   },
 ];
 
-const stats = [
-  { value: "500+", label: "knjiga" },
-  { value: "10,000+", label: "učenika" },
-  { value: "1,000+", label: "kvizova" },
-];
 
 interface TopReader {
   userId: string;
