@@ -474,14 +474,14 @@ function AboutSection() {
           </div>
 
           {/* Contribution */}
-          <div className="mt-16 p-8 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white text-center shadow-xl">
+          <div className="mt-16 p-8 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white text-center shadow-xl" id="kontakt-sekcija">
             <h2 className="text-2xl font-bold mb-4">Postani dio naše priče</h2>
             <p className="text-orange-50 mb-6 text-lg">
               Čitanje je projekat zajednice. Možete doprinijeti razvoju platforme kroz <strong>sponzorstva nagrada</strong> za najuspješnije čitaoce ili jednostavno <strong>dijeljenjem sadržaja</strong> i pozivanjem prijatelja da nam se pridruže.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button variant="secondary" size="lg" asChild>
-                <Link href="/kontakt">Kontaktiraj nas za sponzorstvo</Link>
+                <Link href="/kontakt">Kontaktiraj nas</Link>
               </Button>
             </div>
           </div>
@@ -689,7 +689,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative bg-[hsl(28,95%,45%)]">
+      <section className="relative bg-[hsl(28,95%,45%)]" id="kontakt-sekcija">
         <div className="relative mx-auto max-w-7xl px-4 py-16">
           <motion.div
             className="text-center"
@@ -709,7 +709,7 @@ export default function LandingPage() {
             <p className="mt-4 text-white/90">
               Pridruži se hiljadama učenika koji već čitaju i osvajaju bodove!
             </p>
-            <div className="mt-8">
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link href="/registracija">
                 <Button
                   size="lg"
@@ -717,6 +717,15 @@ export default function LandingPage() {
                   data-testid="button-cta-bottom-register"
                 >
                   Započni besplatno
+                </Button>
+              </Link>
+              <Link href="/kontakt">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-white border-white hover:bg-white/10"
+                >
+                  Kontaktiraj nas
                 </Button>
               </Link>
             </div>

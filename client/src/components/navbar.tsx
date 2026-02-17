@@ -21,11 +21,10 @@ import { useAuth } from "@/hooks/use-auth";
 
 const navLinks = [
   { href: "/", label: "Početna" },
-  { href: "/vodic", label: "Vodič" },
   { href: "/biblioteka", label: "Biblioteka" },
   { href: "/blog", label: "Blog" },
   { href: "/cijene", label: "Cijene" },
-  { href: "/kontakt", label: "Kontakt" },
+  { href: "/vodic", label: "Vodič" },
 ];
 
 function getDashboardPath(role?: string) {
