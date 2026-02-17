@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { BookOpen, Brain, TrendingUp, Users, UserPlus, BookText, ClipboardCheck, Sparkles, Rocket, Trophy, Medal, Award, Calendar, Gift, ExternalLink, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -143,16 +143,25 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
 
 function TopReadersSection() {
   const [period, setPeriod] = useState("week");
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 2000], [0, 200]);
+  const y2 = useTransform(scrollY, [0, 2000], [0, -150]);
 
   return (
     <section className="py-20 bg-card relative overflow-hidden">
-      {/* Background Illustration */}
-      <div className="absolute -bottom-10 -left-10 w-[500px] h-[500px] opacity-100 pointer-events-none hidden lg:block">
-        <img src={kidsReadingImg} alt="" className="w-full h-full object-contain" />
-      </div>
-      <div className="absolute -top-10 -right-10 w-[500px] h-[500px] opacity-100 pointer-events-none hidden lg:block">
-        <img src={trophyBooksImg} alt="" className="w-full h-full object-contain" />
-      </div>
+      {/* Background Illustration Paralax */}
+      <motion.div 
+        style={{ y: y1 }}
+        className="absolute bottom-0 left-0 w-full h-full opacity-10 pointer-events-none hidden lg:block"
+      >
+        <img src={kidsReadingImg} alt="" className="w-[800px] h-auto object-contain absolute -bottom-20 -left-20" />
+      </motion.div>
+      <motion.div 
+        style={{ y: y2 }}
+        className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none hidden lg:block"
+      >
+        <img src={trophyBooksImg} alt="" className="w-[800px] h-auto object-contain absolute -top-20 -right-20" />
+      </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
         <motion.div
@@ -223,6 +232,8 @@ function ChallengesSection() {
   const { data: challengesList } = useQuery<Challenge[]>({
     queryKey: ["/api/challenges"],
   });
+  const { scrollY } = useScroll();
+  const yKids = useTransform(scrollY, [1000, 3000], [0, 100]);
 
   if (!challengesList || challengesList.length === 0) return null;
 
@@ -232,10 +243,13 @@ function ChallengesSection() {
 
   return (
     <section className="py-20 relative overflow-hidden">
-      {/* Background Illustration */}
-      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] opacity-100 pointer-events-none hidden xl:block">
-        <img src={kidsReadingImg} alt="" className="w-full h-full object-contain transform scale-x-[-1]" />
-      </div>
+      {/* Background Illustration Paralax */}
+      <motion.div 
+        style={{ y: yKids }}
+        className="absolute bottom-0 right-0 w-full h-full opacity-10 pointer-events-none hidden xl:block"
+      >
+        <img src={kidsReadingImg} alt="" className="w-[900px] h-auto object-contain absolute -bottom-40 -right-40 transform scale-x-[-1]" />
+      </motion.div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
         <motion.div
