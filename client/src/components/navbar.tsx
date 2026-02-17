@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, LogOut, LayoutDashboard } from "lucide-react";
-import logoImg from "@assets/logo_citanje_1771243846968.png";
+import logoImg from "@assets/logo_citanje_tr_1771366023473.png";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -49,7 +49,7 @@ export function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-1">
         <Link href="/" data-testid="link-logo">
           <span className="flex items-center gap-2 text-xl font-bold">
-            <img src={logoImg} alt="Čitanje logo" className="h-14 w-14 mix-blend-multiply dark:mix-blend-screen" />
+            <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
             Čitanje
           </span>
         </Link>
@@ -137,7 +137,7 @@ export function Navbar() {
             <SheetContent side="right">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <img src={logoImg} alt="Čitanje logo" className="h-6 w-6 mix-blend-multiply dark:mix-blend-screen" />
+                  <img src={logoImg} alt="Čitanje logo" className="h-6 w-6" />
                   Čitanje
                 </SheetTitle>
               </SheetHeader>
