@@ -147,10 +147,10 @@ function TopReadersSection() {
   return (
     <section className="py-20 bg-card relative overflow-hidden">
       {/* Background Illustration */}
-      <div className="absolute -bottom-4 -left-4 w-72 h-72 opacity-40 pointer-events-none hidden lg:block">
+      <div className="absolute -bottom-10 -left-10 w-[500px] h-[500px] opacity-100 pointer-events-none hidden lg:block">
         <img src={kidsReadingImg} alt="" className="w-full h-full object-contain" />
       </div>
-      <div className="absolute -top-4 -right-4 w-72 h-72 opacity-40 pointer-events-none hidden lg:block">
+      <div className="absolute -top-10 -right-10 w-[500px] h-[500px] opacity-100 pointer-events-none hidden lg:block">
         <img src={trophyBooksImg} alt="" className="w-full h-full object-contain" />
       </div>
 
@@ -233,7 +233,7 @@ function ChallengesSection() {
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Background Illustration */}
-      <div className="absolute bottom-0 right-0 w-[450px] h-[450px] opacity-30 pointer-events-none hidden xl:block">
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] opacity-100 pointer-events-none hidden xl:block">
         <img src={kidsReadingImg} alt="" className="w-full h-full object-contain transform scale-x-[-1]" />
       </div>
 
