@@ -159,7 +159,7 @@ function TopReadersSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yTrophy }}
-        className="absolute top-1/2 -translate-y-1/2 -right-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden lg:block"
+        className="absolute top-1/2 -translate-y-1/2 -right-48 w-[1024px] h-[1024px] opacity-100 pointer-events-none hidden lg:block"
       >
         <img src={trophyBooksImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
@@ -257,7 +257,7 @@ function ChallengesSection() {
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yKids }}
-        className="absolute top-1/2 -translate-y-1/2 -left-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden xl:block"
+        className="absolute top-1/2 -translate-y-1/2 -left-48 w-[1024px] h-[1024px] opacity-100 pointer-events-none hidden xl:block"
       >
         <img src={kidsReadingImg} alt="" className="w-full h-full object-contain" />
       </motion.div>
@@ -414,9 +414,10 @@ export default function LandingPage() {
             variants={fadeIn}
             transition={{ duration: 0.6 }}
           >
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <BookOpen className="h-14 w-14 sm:h-16 sm:w-16 text-white/90" />
-              <Sparkles className="h-10 w-10 sm:h-12 sm:w-12 text-yellow-300" />
+            <div className="flex flex-col items-center justify-center gap-4 mb-4">
+              <div className="bg-white/20 p-6 rounded-full backdrop-blur-md">
+                <img src={trophyBooksImg} alt="" className="h-32 w-auto" />
+              </div>
             </div>
             <h1
               className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl"
@@ -453,8 +454,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4">
+      <section className="py-20 relative overflow-hidden">
+        {/* Background Illustration */}
+        <div className="absolute inset-0 opacity-100 pointer-events-none flex items-center justify-center overflow-hidden">
+          <img 
+            src={kidsReadingImg} 
+            alt="" 
+            className="w-[1024px] h-[1024px] object-contain opacity-100" 
+          />
+        </div>
+        <div className="mx-auto max-w-7xl px-4 relative z-10">
           <motion.div
             className="text-center"
             initial="hidden"
