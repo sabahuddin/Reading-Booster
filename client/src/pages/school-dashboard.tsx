@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { DashboardLayout } from "@/components/dashboard-layout";
+import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, GraduationCap, School as SchoolIcon, TrendingUp } from "lucide-react";
 

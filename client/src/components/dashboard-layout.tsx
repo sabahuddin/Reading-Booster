@@ -32,6 +32,8 @@ import {
   Handshake,
   Award,
   UserCheck,
+  TrendingUp,
+  School as SchoolIcon,
 } from "lucide-react";
 
 type Role = "student" | "teacher" | "parent" | "admin" | "school";
@@ -39,7 +41,7 @@ type Role = "student" | "teacher" | "parent" | "admin" | "school";
 interface MenuItem {
   title: string;
   url: string;
-  icon: typeof Home;
+  icon: any;
 }
 
 const menusByRole: Record<Role, MenuItem[]> = {
@@ -89,7 +91,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ role, children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
-  const items = menusByRole[role];
+  const items = menusByRole[role] || [];
 
   const style = { "--sidebar-width": "16rem", "--sidebar-width-icon": "3rem" };
 
@@ -175,3 +177,4 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
     </SidebarProvider>
   );
 }
+
