@@ -14,8 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Star, BookOpen, Trophy, Target, TrendingUp } from "lucide-react";
-import type { QuizResult } from "@shared/schema";
+import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame } from "lucide-react";
+import type { QuizResult, Challenge } from "@shared/schema";
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -24,37 +24,42 @@ export default function StudentDashboard() {
     queryKey: ["/api/quiz-results/my"],
   });
 
+  const { data: challenges } = useQuery<Challenge[]>({
+    queryKey: ["/api/challenges"],
+  });
+
   const totalQuizzes = results?.length ?? 0;
-  const totalPoints = results?.reduce((sum, r) => sum + r.score, 0) ?? 0;
+  const totalPoints = user?.points ?? 0;
   const avgScore = totalQuizzes > 0
     ? Math.round((results!.reduce((sum, r) => sum + (r.correctAnswers / r.totalQuestions) * 100, 0)) / totalQuizzes)
     : 0;
+  const bestScore = results && results.length > 0
+    ? Math.max(...results.map((r) => r.score))
+    : 0;
+
+  const activeChallenges = challenges?.filter((c) => c.active) ?? [];
 
   return (
     <DashboardLayout role="student">
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-welcome">
-            Dobrodošli, {user?.fullName || "Učeniče"}!
+            Dobrodošli, {user?.fullName || "Čitaoče"}!
           </h1>
           <p className="text-muted-foreground">
             Nastavi čitati i osvajaj bodove.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ukupno bodova</CardTitle>
               <Star className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-20" />
-              ) : (
-                <div className="text-3xl font-bold" data-testid="text-total-points">
-                  {user?.points ?? totalPoints}
-                </div>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-total-points">{totalPoints}</div>
               )}
             </CardContent>
           </Card>
@@ -65,32 +70,67 @@ export default function StudentDashboard() {
               <Target className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-20" />
-              ) : (
-                <div className="text-3xl font-bold" data-testid="text-total-quizzes">
-                  {totalQuizzes}
-                </div>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-total-quizzes">{totalQuizzes}</div>
               )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Prosječna točnost</CardTitle>
+              <CardTitle className="text-sm font-medium">Prosječna tačnost</CardTitle>
               <TrendingUp className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-20" />
-              ) : (
-                <div className="text-3xl font-bold" data-testid="text-avg-score">
-                  {avgScore}%
-                </div>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-avg-score">{avgScore}%</div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Najbolji rezultat</CardTitle>
+              <Award className="text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-best-score">{bestScore}</div>
               )}
             </CardContent>
           </Card>
         </div>
+
+        {activeChallenges.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Flame className="text-muted-foreground" />
+                Aktivni izazovi
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {activeChallenges.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-start gap-3 p-3 rounded-md bg-muted"
+                  data-testid={`card-challenge-${c.id}`}
+                >
+                  <Trophy className="text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium">{c.title}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>
+                    {c.prizes && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Nagrade: {c.prizes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="hover-elevate">
@@ -133,9 +173,7 @@ export default function StudentDashboard() {
           <CardContent>
             {isLoading ? (
               <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
               </div>
             ) : !results || results.length === 0 ? (
               <div className="text-center py-8">
@@ -150,8 +188,8 @@ export default function StudentDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Kviz</TableHead>
-                    <TableHead>Točno</TableHead>
-                    <TableHead>Netočno</TableHead>
+                    <TableHead>Tačno</TableHead>
+                    <TableHead>Netačno</TableHead>
                     <TableHead>Bodovi</TableHead>
                   </TableRow>
                 </TableHeader>

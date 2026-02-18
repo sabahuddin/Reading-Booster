@@ -1403,6 +1403,84 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== SCHOOL DASHBOARD ====================
+
+  app.get("/api/school/stats", requireAuth, async (req, res) => {
+    try {
+      const userRole = req.session.userRole;
+      if (userRole !== "school" && userRole !== "admin") {
+        return res.status(403).json({ message: "Pristup odbijen" });
+      }
+      const user = await storage.getUser(req.session.userId!);
+      if (!user || !user.schoolName) {
+        return res.status(403).json({ message: "Pristup odbijen" });
+      }
+
+      const allSchoolUsers = await storage.getUsersBySchoolName(user.schoolName);
+      const students = allSchoolUsers.filter((u) => u.role === "student");
+      const teachers = allSchoolUsers.filter((u) => u.role === "teacher" || u.institutionRole === "muallim");
+
+      const totalStudents = students.length;
+      const totalTeachers = teachers.length;
+      const totalPoints = students.reduce((sum, s) => sum + s.points, 0);
+      const avgPoints = totalStudents > 0 ? Math.round(totalPoints / totalStudents) : 0;
+
+      let totalQuizzes = 0;
+      const studentQuizCounts: Record<string, number> = {};
+      for (const s of students) {
+        const count = await storage.getQuizResultsCountByUserId(s.id);
+        studentQuizCounts[s.id] = count;
+        totalQuizzes += count;
+      }
+
+      const classCounts: Record<string, { students: number; points: number; quizzes: number }> = {};
+      for (const s of students) {
+        const cls = s.className || "Bez razreda";
+        if (!classCounts[cls]) classCounts[cls] = { students: 0, points: 0, quizzes: 0 };
+        classCounts[cls].students++;
+        classCounts[cls].points += s.points;
+        classCounts[cls].quizzes += studentQuizCounts[s.id] || 0;
+      }
+
+      const classes = Object.entries(classCounts)
+        .map(([name, data]) => ({ name, ...data }))
+        .sort((a, b) => b.points - a.points);
+
+      const topStudents = [...students]
+        .sort((a, b) => b.points - a.points)
+        .slice(0, 10)
+        .map((s) => ({
+          id: s.id,
+          fullName: s.fullName,
+          className: s.className,
+          points: s.points,
+          quizzes: studentQuizCounts[s.id] || 0,
+        }));
+
+      const teacherList = teachers.map((t) => ({
+        id: t.id,
+        fullName: t.fullName,
+        className: t.className,
+        studentCount: students.filter((s) => s.createdByTeacherId === t.id || s.className === t.className).length,
+      }));
+
+      res.json({
+        schoolName: user.schoolName,
+        totalStudents,
+        totalTeachers,
+        totalPoints,
+        totalQuizzes,
+        avgPoints,
+        classes,
+        topStudents,
+        teachers: teacherList,
+      });
+    } catch (error) {
+      console.error("Error fetching school stats:", error);
+      res.status(500).json({ message: "Greška pri preuzimanju statistike" });
+    }
+  });
+
   // ==================== ADULT LEADERBOARD ====================
 
   app.get("/api/leaderboard/adults", async (req, res) => {

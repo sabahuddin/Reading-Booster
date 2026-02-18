@@ -4,32 +4,44 @@ import { Link } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Baby, Star, Trophy, GraduationCap, Users } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Baby, Star, Trophy, Users, Target, TrendingUp, BookOpen } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
 type ChildUser = Omit<User, "password">;
 
-function ChildCard({ child }: { child: ChildUser }) {
-  const { data: results, isLoading: resultsLoading } = useQuery<QuizResult[]>({
+function ChildSummaryCard({ child }: { child: ChildUser }) {
+  const { data: results, isLoading } = useQuery<QuizResult[]>({
     queryKey: ["/api/quiz-results/user", child.id],
   });
 
   const totalQuizzes = results?.length ?? 0;
   const totalScore = results?.reduce((sum, r) => sum + r.score, 0) ?? 0;
   const avgAccuracy = totalQuizzes > 0
-    ? Math.round(
-        results!.reduce((sum, r) => sum + (r.correctAnswers / r.totalQuestions) * 100, 0) / totalQuizzes
-      )
+    ? Math.round(results!.reduce((sum, r) => sum + (r.correctAnswers / r.totalQuestions) * 100, 0) / totalQuizzes)
     : 0;
+
+  const recentResults = results?.slice(0, 3) ?? [];
 
   return (
     <Card data-testid={`card-child-${child.id}`}>
       <CardHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <CardTitle className="text-lg" data-testid={`text-child-name-${child.id}`}>
-            {child.fullName}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Baby className="text-muted-foreground" />
+            <CardTitle className="text-lg" data-testid={`text-child-name-${child.id}`}>
+              {child.fullName}
+            </CardTitle>
+          </div>
           <Badge variant="default">
             <Star className="mr-1" />
             {child.points} bodova
@@ -48,13 +60,14 @@ function ChildCard({ child }: { child: ChildUser }) {
               {child.className}
             </Badge>
           )}
+          {child.ageGroup && (
+            <Badge variant="outline">Grupa: {child.ageGroup}</Badge>
+          )}
         </div>
 
-        {resultsLoading ? (
+        {isLoading ? (
           <div className="grid grid-cols-3 gap-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-3">
@@ -68,8 +81,36 @@ function ChildCard({ child }: { child: ChildUser }) {
             </div>
             <div className="text-center p-3 rounded-md bg-muted">
               <p className="text-xl font-bold" data-testid={`text-child-accuracy-${child.id}`}>{avgAccuracy}%</p>
-              <p className="text-xs text-muted-foreground">Točnost</p>
+              <p className="text-xs text-muted-foreground">Tačnost</p>
             </div>
+          </div>
+        )}
+
+        {recentResults.length > 0 && (
+          <div>
+            <p className="text-sm font-medium mb-2 text-muted-foreground">Nedavni kvizovi:</p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kviz</TableHead>
+                  <TableHead>Tačno</TableHead>
+                  <TableHead>Bodovi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentResults.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.quizId}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{r.correctAnswers}/{r.totalQuestions}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="default">{r.score}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </CardContent>
@@ -84,6 +125,9 @@ export default function ParentDashboard() {
     queryKey: ["/api/parent/children"],
   });
 
+  const totalChildPoints = children?.reduce((sum, c) => sum + c.points, 0) ?? 0;
+  const totalChildren = children?.length ?? 0;
+
   return (
     <DashboardLayout role="parent">
       <div className="space-y-6">
@@ -92,25 +136,77 @@ export default function ParentDashboard() {
             Dobrodošli, {user?.fullName || "Roditelju"}!
           </h1>
           <p className="text-muted-foreground">
-            Pratite napredak svoje djece.
+            Pratite napredak i rezultate svoje djece.
           </p>
         </div>
 
-        <Card className="hover-elevate">
-          <Link href="/roditelj/djeca" data-testid="link-children-card">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Baby className="text-muted-foreground" />
-                <CardTitle className="text-lg">Djeca</CardTitle>
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Djece</CardTitle>
+              <Baby className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Pogledajte detaljne rezultate i napredak vaše djece.
-              </p>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-total-children">{totalChildren}</div>
+              )}
             </CardContent>
-          </Link>
-        </Card>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ukupno bodova</CardTitle>
+              <Star className="text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-total-points">{totalChildPoints}</div>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Vaši bodovi</CardTitle>
+              <Trophy className="text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold" data-testid="text-parent-points">{user?.points ?? 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">Porodično takmičenje</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="hover-elevate">
+            <Link href="/roditelj/djeca" data-testid="link-children-detail">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Baby className="text-muted-foreground" />
+                  <CardTitle className="text-lg">Detalji o djeci</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Detaljni pregled rezultata i napretka vaše djece.
+                </p>
+              </CardContent>
+            </Link>
+          </Card>
+          <Card className="hover-elevate">
+            <Link href="/biblioteka" data-testid="link-library">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <BookOpen className="text-muted-foreground" />
+                  <CardTitle className="text-lg">Biblioteka</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Pregledajte knjige dostupne vašoj djeci.
+                </p>
+              </CardContent>
+            </Link>
+          </Card>
+        </div>
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,9 +216,7 @@ export default function ParentDashboard() {
                   <Skeleton className="h-6 w-1/2" />
                   <Skeleton className="h-4 w-1/3" />
                   <div className="grid grid-cols-3 gap-3">
-                    {[1, 2, 3].map((j) => (
-                      <Skeleton key={j} className="h-16 w-full" />
-                    ))}
+                    {[1, 2, 3].map((j) => <Skeleton key={j} className="h-16 w-full" />)}
                   </div>
                 </CardContent>
               </Card>
@@ -139,10 +233,13 @@ export default function ParentDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {children.map((child) => (
-              <ChildCard key={child.id} child={child} />
-            ))}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Pregled djece</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {children.map((child) => (
+                <ChildSummaryCard key={child.id} child={child} />
+              ))}
+            </div>
           </div>
         )}
       </div>

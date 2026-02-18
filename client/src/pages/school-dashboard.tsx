@@ -1,103 +1,236 @@
-import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, GraduationCap, School as SchoolIcon, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Users, GraduationCap, Star, TrendingUp, Trophy, Target, BookOpen } from "lucide-react";
+
+interface SchoolStats {
+  schoolName: string;
+  totalStudents: number;
+  totalTeachers: number;
+  totalPoints: number;
+  totalQuizzes: number;
+  avgPoints: number;
+  classes: Array<{ name: string; students: number; points: number; quizzes: number }>;
+  topStudents: Array<{ id: string; fullName: string; className: string | null; points: number; quizzes: number }>;
+  teachers: Array<{ id: string; fullName: string; className: string | null; studentCount: number }>;
+}
 
 export default function SchoolDashboard() {
   const { user } = useAuth();
 
-  // Adjusted to handle both 'school' and 'admin' for preview/testing
   if (!user || (user.role !== "school" && user.role !== "admin")) {
     return <Redirect to="/" />;
   }
 
+  const { data: stats, isLoading } = useQuery<SchoolStats>({
+    queryKey: ["/api/school/stats"],
+  });
+
   return (
-    <DashboardLayout role={user.role as any}>
-      <div className="space-y-8 p-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-2"
-        >
-          <h1 className="text-4xl font-bold">Kontrolna tabla ustanove</h1>
-          <p className="text-muted-foreground text-lg">
-            Dobrodošli, {user.fullName}. Pregled statistike za {user.schoolName || "vašu ustanovu"}.
+    <DashboardLayout role="school">
+      <div className="space-y-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-school-title">
+            {stats?.schoolName || user.schoolName || "Ustanova"}
+          </h1>
+          <p className="text-muted-foreground">
+            Kontrolna tabla ustanove — pregled statistike i napretka.
           </p>
-        </motion.div>
+        </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="hover-elevate">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ukupno učenika</CardTitle>
-              <Users className="h-4 w-4 text-primary" />
+              <Users className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">300</div>
-              <p className="text-xs text-muted-foreground">+12 novih ovog mjeseca</p>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-stat-students">{stats?.totalStudents ?? 0}</div>
+              )}
             </CardContent>
           </Card>
-          
-          <Card className="hover-elevate">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Nastavnici</CardTitle>
-              <GraduationCap className="h-4 w-4 text-primary" />
+              <GraduationCap className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">10</div>
-              <p className="text-xs text-muted-foreground">Aktivni u sistemu</p>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-stat-teachers">{stats?.totalTeachers ?? 0}</div>
+              )}
             </CardContent>
           </Card>
-
-          <Card className="hover-elevate">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pročitane knjige</CardTitle>
-              <SchoolIcon className="h-4 w-4 text-primary" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Riješeno kvizova</CardTitle>
+              <Target className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,245</div>
-              <p className="text-xs text-muted-foreground">Ukupan broj za cijelu školu</p>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-stat-quizzes">{stats?.totalQuizzes ?? 0}</div>
+              )}
             </CardContent>
           </Card>
-
-          <Card className="hover-elevate">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Prosjek bodova</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Prosječni bodovi</CardTitle>
+              <TrendingUp className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">84.2</div>
-              <p className="text-xs text-muted-foreground">Po učeniku</p>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <div className="text-3xl font-bold" data-testid="text-stat-avg">{stats?.avgPoints ?? 0}</div>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Upravljanje nastavnim kadrom</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="text-muted-foreground" />
+                Top 10 učenika
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-4">Pregled svih nastavnika i njihovih razreda.</p>
-              <div className="text-sm text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
-                Lista nastavnika i pripadajućih učenika će biti prikazana ovdje.
-              </div>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+                </div>
+              ) : !stats?.topStudents?.length ? (
+                <div className="text-center py-8">
+                  <Trophy className="mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-muted-foreground">Nema podataka o učenicima.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rang</TableHead>
+                      <TableHead>Ime</TableHead>
+                      <TableHead>Razred</TableHead>
+                      <TableHead>Bodovi</TableHead>
+                      <TableHead>Kvizovi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stats.topStudents.map((s, i) => (
+                      <TableRow key={s.id} data-testid={`row-top-student-${i}`}>
+                        <TableCell>
+                          <Badge variant={i < 3 ? "default" : "secondary"}>#{i + 1}</Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{s.fullName}</TableCell>
+                        <TableCell>{s.className || "/"}</TableCell>
+                        <TableCell>
+                          <Badge variant="default">
+                            <Star className="mr-1" />
+                            {s.points}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{s.quizzes}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Mjesečni izvještaj</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="text-muted-foreground" />
+                Nastavnici
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-4">Statistika čitanja po odjeljenjima.</p>
-              <div className="text-sm text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
-                Grafički prikaz napretka ustanove.
-              </div>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+                </div>
+              ) : !stats?.teachers?.length ? (
+                <div className="text-center py-8">
+                  <GraduationCap className="mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-muted-foreground">Nema nastavnika u sistemu.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ime</TableHead>
+                      <TableHead>Razred</TableHead>
+                      <TableHead>Broj učenika</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stats.teachers.map((t) => (
+                      <TableRow key={t.id} data-testid={`row-teacher-${t.id}`}>
+                        <TableCell className="font-medium">{t.fullName}</TableCell>
+                        <TableCell>{t.className || "/"}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{t.studentCount}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>
+
+        {stats?.classes && stats.classes.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="text-muted-foreground" />
+                Statistika po razredima
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Razred</TableHead>
+                    <TableHead>Učenika</TableHead>
+                    <TableHead>Ukupno bodova</TableHead>
+                    <TableHead>Kvizova</TableHead>
+                    <TableHead>Prosječni bodovi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.classes.map((c) => (
+                    <TableRow key={c.name} data-testid={`row-class-${c.name}`}>
+                      <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell>{c.students}</TableCell>
+                      <TableCell>
+                        <Badge variant="default">
+                          <Star className="mr-1" />
+                          {c.points}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{c.quizzes}</TableCell>
+                      <TableCell>{c.students > 0 ? Math.round(c.points / c.students) : 0}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );
