@@ -1145,9 +1145,13 @@ export async function registerRoutes(
   // ==================== CSV TEMPLATE & IMPORT ROUTES ====================
 
   app.get("/api/admin/templates/books", requireAdmin, (_req, res) => {
-    const headers = "title;author;description;coverImage;content;ageGroup;genre;readingDifficulty;pageCount;pdfUrl;purchaseUrl;weeklyPick;publisher;publicationYear;publicationCity;isbn;cobissId";
-    const example = '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"D";"avantura_fantasy";"lako";"96";"";"";"";"Izdavač";"2023";"Sarajevo";"1234567890123";"123456"';
-    const csv = headers + "\n" + example;
+    const headers = "title;author;description;coverImage;content;ageGroup;genre;readingDifficulty;pageCount;pdfUrl;purchaseUrl;weeklyPick;publisher;publicationYear;publicationCity;isbn;cobissId;language;bookFormat";
+    const exampleRows = [
+      '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"D";"avantura_fantasy";"lako";"96";"";"";"ne";"Svjetlost";"2023";"Sarajevo";"9789958111234";"123456";"bosanski";"meki uvez"',
+      '"Ježeva kućica";"Branko Ćopić";"Priča o ježevoj kućici";"https://example.com/jez.jpg";"Sadržaj...";"M";"bajke_basne";"lako";"48";"";"";"ne";"Veselin Masleša";"2020";"Sarajevo";"";"";"";"tvrdi uvez"',
+      '"Tvrđava";"Meša Selimović";"Roman o derviš Ahmetu Nurudinu";"https://example.com/tvrdjava.jpg";"Sadržaj...";"A";"beletristika";"tesko";"432";"";"";"ne";"Svjetlost";"2019";"Sarajevo";"9789958101234";"";"bosanski";""',
+    ];
+    const csv = headers + "\n" + exampleRows.join("\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=knjige_template.csv");
     return res.send("\uFEFF" + csv);
@@ -1192,6 +1196,13 @@ export async function registerRoutes(
             pdfUrl: row.pdfUrl || null,
             purchaseUrl: row.purchaseUrl || null,
             weeklyPick: row.weeklyPick === "true" || row.weeklyPick === "1" || row.weeklyPick === "da",
+            publisher: row.publisher || null,
+            publicationYear: row.publicationYear ? parseInt(row.publicationYear) : null,
+            publicationCity: row.publicationCity || null,
+            isbn: row.isbn || null,
+            cobissId: row.cobissId || null,
+            language: row.language || "bosanski",
+            bookFormat: row.bookFormat || null,
           });
           created.push(row.title);
         } catch (err: any) {

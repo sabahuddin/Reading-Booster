@@ -552,7 +552,8 @@ export default function LandingPage() {
           <img 
             src={kidsReadingImg} 
             alt="" 
-            className="w-[1024px] h-[1024px] object-contain opacity-100" 
+            className="w-[1024px] h-[1024px] object-contain opacity-30" 
+            style={{ mixBlendMode: "multiply" }}
           />
         </motion.div>
         <div className="mx-auto max-w-7xl px-4 relative z-10">
