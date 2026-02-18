@@ -513,7 +513,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-white backdrop-blur-sm bg-white/10 border-2 border-white hover:bg-white/20"
+                  className="text-white backdrop-blur-sm bg-white/10 border-[3px] border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:bg-white/20"
                   data-testid="button-cta-learn-more"
                 >
                   Pogledaj knjige
@@ -660,50 +660,6 @@ export default function LandingPage() {
               <Users className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-2xl font-bold mb-2">Zajednica čitalaca</h3>
               <p className="text-muted-foreground">Pridruži se vršnjacima, takmiči se i dijeli radost čitanja.</p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${iLoveReadingImg})` }} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/70" />
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:py-28">
-          <motion.div
-            className="text-center"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeIn}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
-              Ja volim čitanje!
-            </h2>
-            <p className="mt-4 text-white/90 text-lg max-w-2xl mx-auto">
-              Pridruži se zajednici mladih čitalaca koji otkrivaju svijet kroz knjige.
-              Čitaj, uči i zabavi se uz nas!
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <Link href="/biblioteka">
-                <Button
-                  size="lg"
-                  className="bg-white text-[hsl(24,85%,40%)] border-white/80"
-                  data-testid="button-cta-library"
-                >
-                  Istraži biblioteku
-                </Button>
-              </Link>
-              <Link href="/registracija">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-white backdrop-blur-sm bg-white/10 border-2 border-white hover:bg-white/20"
-                  data-testid="button-cta-register-mid"
-                >
-                  Pridruži se
-                </Button>
-              </Link>
             </div>
           </motion.div>
         </div>
