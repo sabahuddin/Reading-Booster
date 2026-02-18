@@ -29,6 +29,7 @@ import Library from "@/pages/library";
 import BookDetail from "@/pages/book-detail";
 import QuizPage from "@/pages/quiz-page";
 import StudentResults from "@/pages/student-results";
+import StudentProPage from "@/pages/student-pro";
 import PublicLibrary from "@/pages/public-library";
 import PublicBookDetail from "@/pages/public-book-detail";
 
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/ucenik/knjiga/:id" component={BookDetail} />
       <Route path="/ucenik/kviz/:id" component={QuizPage} />
       <Route path="/ucenik/rezultati" component={StudentResults} />
+      <Route path="/ucenik/pro" component={StudentProPage} />
       <Route path="/ucitelj" component={TeacherDashboard} />
       <Route path="/ucitelj/ucenici" component={TeacherStudents} />
       <Route path="/ucitelj/biblioteka" component={TeacherLibrary} />

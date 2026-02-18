@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ import {
   UserCheck,
   TrendingUp,
   School as SchoolIcon,
+  Sparkles,
 } from "lucide-react";
 
 type Role = "student" | "teacher" | "parent" | "admin" | "school";
@@ -76,7 +78,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
 };
 
 const roleLabels: Record<Role, string> = {
-  student: "Učenik",
+  student: "Čitalac",
   teacher: "Učitelj",
   parent: "Roditelj",
   admin: "Administrator",
@@ -92,6 +94,21 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const items = menusByRole[role] || [];
+
+  interface SubscriptionStatus {
+    subscriptionType: string;
+    isFree: boolean;
+    quizLimit: number | null;
+    quizzesUsed: number;
+    quizzesRemaining: number | null;
+  }
+
+  const { data: subscription } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/subscription/status"],
+    enabled: role === "student",
+  });
+
+  const isPro = subscription && !subscription.isFree;
 
   const style = { "--sidebar-width": "16rem", "--sidebar-width-icon": "3rem" };
 
@@ -139,6 +156,42 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            {role === "student" && (
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <div className="px-2">
+                    <Link href="/ucenik/pro" data-testid="link-nav-pro">
+                      <div className={`p-3 rounded-md border ${isPro ? "border-primary/30 bg-primary/5" : "border-dashed border-primary/40 bg-primary/5"}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                          <span className="font-bold text-sm">Čitalac Pro</span>
+                          {isPro ? (
+                            <Badge variant="default" className="ml-auto text-[10px] px-1.5 py-0">Aktivan</Badge>
+                          ) : (
+                            <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 border-primary text-primary">Upgrade</Badge>
+                          )}
+                        </div>
+                        {!isPro && subscription && (
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
+                              <span>Kvizovi: {subscription.quizzesUsed}/{subscription.quizLimit}</span>
+                              <span>{subscription.quizzesRemaining} preostalo</span>
+                            </div>
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all"
+                                style={{ width: `${(subscription.quizzesUsed / (subscription.quizLimit || 3)) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  </div>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
           </SidebarContent>
           <SidebarFooter className="p-4 flex flex-col gap-1">
             <Link href="/">

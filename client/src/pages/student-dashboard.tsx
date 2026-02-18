@@ -14,8 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame } from "lucide-react";
+import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles } from "lucide-react";
 import type { QuizResult, Challenge } from "@shared/schema";
+
+interface SubscriptionStatus {
+  subscriptionType: string;
+  isFree: boolean;
+  quizLimit: number | null;
+  quizzesUsed: number;
+  quizzesRemaining: number | null;
+}
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -28,6 +36,10 @@ export default function StudentDashboard() {
     queryKey: ["/api/challenges"],
   });
 
+  const { data: subscription } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/subscription/status"],
+  });
+
   const totalQuizzes = results?.length ?? 0;
   const totalPoints = user?.points ?? 0;
   const avgScore = totalQuizzes > 0
@@ -38,6 +50,7 @@ export default function StudentDashboard() {
     : 0;
 
   const activeChallenges = challenges?.filter((c) => c.active) ?? [];
+  const isFree = subscription?.isFree ?? true;
 
   return (
     <DashboardLayout role="student">
@@ -50,6 +63,34 @@ export default function StudentDashboard() {
             Nastavi čitati i osvajaj bodove.
           </p>
         </div>
+
+        {isFree && subscription && (
+          <Card className="border-dashed border-primary/40 bg-primary/5">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Sparkles className="w-5 h-5 text-primary shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm" data-testid="text-quiz-usage">
+                      Besplatni paket: {subscription.quizzesUsed} od {subscription.quizLimit} kviza iskorišteno
+                    </p>
+                    {subscription.quizzesRemaining === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nadogradi na Pro za neograničen pristup kvizovima.</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Još {subscription.quizzesRemaining} besplatna kviza preostalo.</p>
+                    )}
+                  </div>
+                </div>
+                <Button size="sm" asChild data-testid="button-dashboard-upgrade">
+                  <Link href="/ucenik/pro">
+                    <Sparkles className="mr-1" />
+                    Čitalac Pro
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>

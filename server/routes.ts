@@ -541,6 +541,32 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/subscription/status", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const completedCount = await storage.getQuizResultsCountByUserId(userId);
+      const isExpired = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) < new Date();
+      const effectiveType = (user.subscriptionType !== "free" && isExpired) ? "free" : user.subscriptionType;
+      const isFree = effectiveType === "free";
+      const quizLimit = isFree ? 3 : null;
+      const quizzesRemaining = isFree ? Math.max(0, 3 - completedCount) : null;
+
+      return res.json({
+        subscriptionType: effectiveType,
+        isFree,
+        quizLimit,
+        quizzesUsed: completedCount,
+        quizzesRemaining,
+        expiresAt: user.subscriptionExpiresAt,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/quiz-results/my", requireAuth, async (req, res) => {
     try {
       const results = await storage.getQuizResultsByUserId(req.session.userId!);
