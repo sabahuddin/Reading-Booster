@@ -171,7 +171,7 @@ export default function PricingPage() {
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-2" data-testid="text-school-pricing">Paket za škole i institucije</h3>
                 <p className="text-muted-foreground text-sm mb-4">
-                  Za škole, mektebe i obrazovne ustanove nudimo posebne uvjete. 
+                  Za škole i obrazovne ustanove nudimo posebne uvjete. 
                   Kontaktirajte nas za prilagođenu ponudu koja uključuje upravljanje razredima, 
                   izvještaje i grupne pretplate.
                 </p>

@@ -58,10 +58,10 @@ const plans = [
     variant: "outline",
   },
   {
-    name: "Ustanova",
+    name: "Škola",
     price: "Po dogovoru",
     period: "",
-    description: "Za škole, mektebe i biblioteke.",
+    description: "Za škole i obrazovne ustanove.",
     icon: School,
     features: [
       "Neograničen broj učenika",

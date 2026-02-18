@@ -424,7 +424,7 @@ function AboutSection() {
               
               <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
                 <h3 className="text-lg font-bold text-orange-900 mb-2">Koji je cilj?</h3>
-                <p className="text-muted-foreground">Naš cilj je stvoriti zajednicu čitalaca, povezati škole, biblioteke i porodice, te kroz pozitivno takmičenje podići nivo pismenosti i ljubavi prema knjizi na našem govornom području.</p>
+                <p className="text-muted-foreground">Naš cilj je stvoriti zajednicu čitalaca, povezati škole i porodice, te kroz pozitivno takmičenje podići nivo pismenosti i ljubavi prema knjizi na našem govornom području.</p>
               </div>
               
               <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
@@ -461,8 +461,8 @@ function AboutSection() {
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">3</div>
                 <div>
-                  <h4 className="font-bold text-xl mb-1">Mektebski modul</h4>
-                  <p className="text-muted-foreground">Poseban fokus na islamsku literaturu omogućava muallimima da motivišu polaznike mekteba na čitanje priča o poslanicima i islamske historije uz zabavne kvizove.</p>
+                  <h4 className="font-bold text-xl mb-1">Islamski modul</h4>
+                  <p className="text-muted-foreground">Poseban fokus na islamsku literaturu omogućava učiteljima da motivišu učenike na čitanje priča o poslanicima i islamske historije uz zabavne kvizove.</p>
                 </div>
               </div>
             </div>

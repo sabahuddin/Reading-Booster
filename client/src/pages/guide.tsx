@@ -281,7 +281,7 @@ export default function GuidePage() {
                 <CardHeader>
                   <CardTitle className="text-2xl flex items-center gap-3">
                     <GraduationCap className="w-8 h-8 text-primary" />
-                    Korisnički vodič za učitelje i muallime
+                    Korisnički vodič za učitelje
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -330,7 +330,7 @@ export default function GuidePage() {
                 <CardHeader>
                   <CardTitle className="text-2xl flex items-center gap-3">
                     <SchoolIcon className="w-8 h-8 text-primary" />
-                    Vodič za škole i medžlise
+                    Vodič za škole
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">

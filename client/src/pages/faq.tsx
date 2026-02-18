@@ -20,7 +20,7 @@ const faqs = [
   },
   {
     question: "Koji je cilj?",
-    answer: "Naš cilj je stvoriti zajednicu čitalaca, povezati škole, biblioteke i porodice, te kroz pozitivno takmičenje podići nivo pismenosti i ljubavi prema knjizi na našem govornom području."
+    answer: "Naš cilj je stvoriti zajednicu čitalaca, povezati škole i porodice, te kroz pozitivno takmičenje podići nivo pismenosti i ljubavi prema knjizi na našem govornom području."
   },
   {
     question: "Kako to uraditi?",
