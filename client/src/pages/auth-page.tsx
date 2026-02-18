@@ -43,8 +43,6 @@ const registerSchema = insertUserSchema.extend({
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
   role: z.enum(["student", "parent"]),
   ageGroup: z.enum(["M", "D", "O", "A"]).default("M"),
-  schoolName: z.string().optional().nullable(),
-  className: z.string().optional().nullable(),
   pricingPlan: z.string().optional(),
   captchaAnswer: z.string().min(1, "Odgovorite na sigurnosno pitanje"),
 });
@@ -134,8 +132,6 @@ export default function AuthPage() {
       fullName: "",
       role: "student",
       ageGroup: "M",
-      schoolName: "",
-      className: "",
       pricingPlan: "free",
       captchaAnswer: "",
     },
@@ -187,10 +183,6 @@ export default function AuthPage() {
 
     try {
       const { captchaAnswer, ...submitData } = data;
-      if (data.role === "parent" && data.pricingPlan === "free") {
-        submitData.schoolName = null;
-        submitData.className = null;
-      }
       await register.mutateAsync(submitData);
     } catch (error: any) {
       toast({
@@ -460,47 +452,6 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-
-                      {selectedRole === "student" && (
-                        <>
-                          <FormField
-                            control={registerForm.control}
-                            name="schoolName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Naziv škole (opcionalno)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Unesite naziv škole"
-                                    data-testid="input-register-school"
-                                    {...field}
-                                    value={field.value ?? ""}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={registerForm.control}
-                            name="className"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Razred (opcionalno)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Unesite razred"
-                                    data-testid="input-register-class"
-                                    {...field}
-                                    value={field.value ?? ""}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
 
                       {selectedRole === "parent" && (
                         <div className="space-y-4">
