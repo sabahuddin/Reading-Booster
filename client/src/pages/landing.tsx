@@ -221,7 +221,7 @@ function ChallengesSection() {
   const { data: challengesList } = useQuery<Challenge[]>({
     queryKey: ["/api/challenges"],
   });
-  if (!challengesList || challengesList.length === 0) return null;
+  const hasChallenges = challengesList && challengesList.length > 0;
 
   function formatDate(d: Date | string) {
     return new Date(d).toLocaleDateString("bs-BA", { day: "numeric", month: "long", year: "numeric" });
@@ -258,48 +258,66 @@ function ChallengesSection() {
           </p>
         </motion.div>
 
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {challengesList.map((challenge) => (
-            <motion.div
-              key={challenge.id}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={fadeIn}
-              transition={{ duration: 0.5 }}
-            >
-              <Card className="h-full border-2 border-orange-200 dark:border-orange-900" data-testid={`card-challenge-${challenge.id}`}>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-amber-500" />
-                    <CardTitle className="text-lg">{challenge.title}</CardTitle>
-                  </div>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm">{challenge.description}</p>
-                  <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-md">
-                    <div className="flex items-center gap-1 mb-2">
-                      <Gift className="h-4 w-4 text-amber-600" />
-                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Nagrade:</p>
+        {hasChallenges ? (
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {challengesList.map((challenge) => (
+              <motion.div
+                key={challenge.id}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={fadeIn}
+                transition={{ duration: 0.5 }}
+              >
+                <Card className="h-full border-2 border-orange-200 dark:border-orange-900" data-testid={`card-challenge-${challenge.id}`}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-amber-500" />
+                      <CardTitle className="text-lg">{challenge.title}</CardTitle>
                     </div>
-                    {challenge.prizes.split("|").map((prize: string, i: number) => (
-                      <p key={i} className="text-sm text-amber-700 dark:text-amber-300 ml-5">{prize.trim()}</p>
-                    ))}
-                  </div>
-                  <Link href="/registracija">
-                    <Button size="sm" variant="outline" className="w-full mt-2" data-testid={`button-join-challenge-${challenge.id}`}>
-                      Pridruži se izazovu
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm">{challenge.description}</p>
+                    <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-md">
+                      <div className="flex items-center gap-1 mb-2">
+                        <Gift className="h-4 w-4 text-amber-600" />
+                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Nagrade:</p>
+                      </div>
+                      {challenge.prizes.split("|").map((prize: string, i: number) => (
+                        <p key={i} className="text-sm text-amber-700 dark:text-amber-300 ml-5">{prize.trim()}</p>
+                      ))}
+                    </div>
+                    <Link href="/registracija">
+                      <Button size="sm" variant="outline" className="w-full mt-2" data-testid={`button-join-challenge-${challenge.id}`}>
+                        Pridruži se izazovu
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <motion.div
+            className="mt-10 text-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="text-muted-foreground">Uskoro objavljujemo nove izazove. Ostanite s nama!</p>
+            <Link href="/registracija">
+              <Button size="lg" className="mt-6" data-testid="button-register-challenges">
+                Registriraj se i budi prvi
+              </Button>
+            </Link>
+          </motion.div>
+        )}
       </div>
     </section>
   );
