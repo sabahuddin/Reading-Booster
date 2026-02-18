@@ -46,10 +46,10 @@ export function Navbar() {
       className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       data-testid="navbar"
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-1">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2">
         <Link href="/" data-testid="link-logo">
-          <span className="flex items-center gap-2 text-xl font-bold">
-            <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
+          <span className="flex items-center gap-3 text-2xl font-bold">
+            <img src={logoImg} alt="Čitanje logo" className="h-20 w-20" />
             Čitanje
           </span>
         </Link>
@@ -59,11 +59,12 @@ export function Navbar() {
             <Link key={link.href} href={link.href}>
               <Button
                 variant="ghost"
-                className={
+                size="lg"
+                className={`text-base font-semibold ${
                   location === link.href
                     ? "bg-accent text-accent-foreground"
                     : ""
-                }
+                }`}
                 data-testid={`link-nav-${link.label.toLowerCase()}`}
               >
                 {link.label}
@@ -72,17 +73,18 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center gap-2"
+                  size="lg"
+                  className="flex items-center gap-2 text-base"
                   data-testid="button-user-menu"
                 >
-                  <Avatar className="h-7 w-7">
-                    <AvatarFallback className="text-xs">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="text-sm">
                       {user.fullName
                         ?.split(" ")
                         .map((n: string) => n[0])
@@ -90,21 +92,22 @@ export function Navbar() {
                         .toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{user.fullName}</span>
+                  <span className="text-base">{user.fullName}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="text-base">
                   <Link href={getDashboardPath(user.role)} data-testid="link-dashboard">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <LayoutDashboard className="mr-2 h-5 w-5" />
                     Dashboard
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => logout.mutate()}
                   data-testid="button-logout"
+                  className="text-base"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-2 h-5 w-5" />
                   Odjavi se
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -112,12 +115,12 @@ export function Navbar() {
           ) : (
             <>
               <Link href="/prijava">
-                <Button variant="ghost" data-testid="link-login">
+                <Button variant="ghost" size="lg" className="text-base font-semibold" data-testid="link-login">
                   Prijava
                 </Button>
               </Link>
               <Link href="/registracija">
-                <Button data-testid="link-register">Registracija</Button>
+                <Button size="lg" className="text-base font-semibold" data-testid="link-register">Registracija</Button>
               </Link>
             </>
           )}
@@ -131,13 +134,13 @@ export function Navbar() {
                 size="icon"
                 data-testid="button-mobile-menu"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <img src={logoImg} alt="Čitanje logo" className="h-6 w-6" />
+                <SheetTitle className="flex items-center gap-2 text-lg">
+                  <img src={logoImg} alt="Čitanje logo" className="h-10 w-10" />
                   Čitanje
                 </SheetTitle>
               </SheetHeader>
@@ -146,7 +149,8 @@ export function Navbar() {
                   <Link key={link.href} href={link.href}>
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start ${
+                      size="lg"
+                      className={`w-full justify-start text-base ${
                         location === link.href
                           ? "bg-accent text-accent-foreground"
                           : ""
@@ -164,24 +168,26 @@ export function Navbar() {
                     <Link href={getDashboardPath(user.role)}>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start"
+                        size="lg"
+                        className="w-full justify-start text-base"
                         onClick={() => setMobileOpen(false)}
                         data-testid="link-mobile-dashboard"
                       >
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <LayoutDashboard className="mr-2 h-5 w-5" />
                         Dashboard
                       </Button>
                     </Link>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start"
+                      size="lg"
+                      className="w-full justify-start text-base"
                       onClick={() => {
                         logout.mutate();
                         setMobileOpen(false);
                       }}
                       data-testid="button-mobile-logout"
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
+                      <LogOut className="mr-2 h-5 w-5" />
                       Odjavi se
                     </Button>
                   </>
@@ -190,7 +196,8 @@ export function Navbar() {
                     <Link href="/prijava">
                       <Button
                         variant="ghost"
-                        className="w-full justify-start"
+                        size="lg"
+                        className="w-full justify-start text-base"
                         onClick={() => setMobileOpen(false)}
                         data-testid="link-mobile-login"
                       >
@@ -199,7 +206,8 @@ export function Navbar() {
                     </Link>
                     <Link href="/registracija">
                       <Button
-                        className="w-full"
+                        size="lg"
+                        className="w-full text-base"
                         onClick={() => setMobileOpen(false)}
                         data-testid="link-mobile-register"
                       >

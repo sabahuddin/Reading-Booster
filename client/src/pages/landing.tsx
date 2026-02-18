@@ -98,7 +98,7 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
   if (leaderboard.length === 0) {
     return (
       <Card>
-        <CardContent className="pt-6 text-center text-muted-foreground">
+        <CardContent className="pt-6 text-center text-lg text-muted-foreground">
           Nema podataka za ovaj period
         </CardContent>
       </Card>
@@ -111,10 +111,10 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">Rang</TableHead>
-              <TableHead>Korisničko ime</TableHead>
-              {ageGroup !== "A" && <TableHead>Razred</TableHead>}
-              <TableHead className="text-right">Bodovi</TableHead>
+              <TableHead className="w-16 text-base">Rang</TableHead>
+              <TableHead className="text-base">Korisničko ime</TableHead>
+              {ageGroup !== "A" && <TableHead className="text-base">Razred</TableHead>}
+              <TableHead className="text-right text-base">Bodovi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,9 +125,9 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
                     #{index + 1}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-medium">{user.username}</TableCell>
-                {ageGroup !== "A" && <TableCell>{user.className}</TableCell>}
-                <TableCell className="text-right">{user.totalScore || user.points}</TableCell>
+                <TableCell className="font-medium text-base">{user.username}</TableCell>
+                {ageGroup !== "A" && <TableCell className="text-base">{user.className}</TableCell>}
+                <TableCell className="text-right text-base">{user.totalScore || user.points}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -162,12 +162,12 @@ function TopReadersSection() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Trophy className="h-8 w-8 text-yellow-500" />
+            <Trophy className="h-10 w-10 text-yellow-500" />
           </div>
-          <h2 className="text-3xl font-bold sm:text-4xl" data-testid="text-leaderboard-title">
+          <h2 className="text-4xl font-bold sm:text-5xl" data-testid="text-leaderboard-title">
             Top čitaoci
           </h2>
-          <p className="mt-2 text-muted-foreground text-lg">
+          <p className="mt-2 text-muted-foreground text-xl">
             Pogledaj ko najviše čita!
           </p>
         </motion.div>
@@ -248,12 +248,12 @@ function ChallengesSection() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Award className="h-8 w-8 text-orange-500" />
+            <Award className="h-10 w-10 text-orange-500" />
           </div>
-          <h2 className="text-3xl font-bold sm:text-4xl" data-testid="text-challenges-title">
+          <h2 className="text-4xl font-bold sm:text-5xl" data-testid="text-challenges-title">
             Izazovi i nagrade
           </h2>
-          <p className="mt-2 text-muted-foreground text-lg">
+          <p className="mt-2 text-muted-foreground text-xl">
             Učestvuj u izazovima i osvoji nagrade!
           </p>
         </motion.div>
@@ -272,23 +272,23 @@ function ChallengesSection() {
                 <Card className="h-full border-2 border-orange-200 dark:border-orange-900" data-testid={`card-challenge-${challenge.id}`}>
                   <CardHeader>
                     <div className="flex items-center gap-2">
-                      <Trophy className="h-5 w-5 text-amber-500" />
-                      <CardTitle className="text-lg">{challenge.title}</CardTitle>
+                      <Trophy className="h-6 w-6 text-amber-500" />
+                      <CardTitle className="text-xl">{challenge.title}</CardTitle>
                     </div>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                      <Calendar className="h-3 w-3" />
+                    <p className="text-base text-muted-foreground flex items-center gap-1 mt-1">
+                      <Calendar className="h-4 w-4" />
                       {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <p className="text-sm">{challenge.description}</p>
-                    <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-md">
+                    <p className="text-base">{challenge.description}</p>
+                    <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-md">
                       <div className="flex items-center gap-1 mb-2">
-                        <Gift className="h-4 w-4 text-amber-600" />
-                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Nagrade:</p>
+                        <Gift className="h-5 w-5 text-amber-600" />
+                        <p className="text-base font-semibold text-amber-800 dark:text-amber-200">Nagrade:</p>
                       </div>
                       {challenge.prizes.split("|").map((prize: string, i: number) => (
-                        <p key={i} className="text-sm text-amber-700 dark:text-amber-300 ml-5">{prize.trim()}</p>
+                        <p key={i} className="text-base text-amber-700 dark:text-amber-300 ml-5">{prize.trim()}</p>
                       ))}
                     </div>
                     <Link href="/registracija">
@@ -508,12 +508,12 @@ export default function LandingPage() {
               <img src={bookIconImg} alt="" className="h-32 w-auto opacity-90" />
             </div>
             <h1
-              className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl"
+              className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl"
               data-testid="text-hero-title"
             >
               Čitaj, uči, osvajaj!
             </h1>
-            <p className="mt-6 text-lg text-white/90 sm:text-xl">
+            <p className="mt-6 text-xl text-white/90 sm:text-2xl">
               Zabavna platforma za mlade čitaoce! Čitaj knjige, rješavaj kvizove
               i sakupljaj bodove. Tvoja čitalačka avantura počinje ovdje!
             </p>
@@ -568,12 +568,12 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
           >
             <h2
-              className="text-3xl font-bold sm:text-4xl"
+              className="text-4xl font-bold sm:text-5xl"
               data-testid="text-features-title"
             >
               Zašto je Čitanje super?
             </h2>
-            <p className="mt-4 text-muted-foreground text-lg">
+            <p className="mt-4 text-muted-foreground text-xl">
               Pogledaj šta te sve čeka!
             </p>
           </motion.div>
@@ -590,13 +590,13 @@ export default function LandingPage() {
               >
                 <Card className="h-full" data-testid={`card-feature-${index}`}>
                   <CardContent className="flex flex-col items-center p-6 text-center">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-primary/10">
-                      <feature.icon className="h-6 w-6 text-primary" />
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-md bg-primary/10">
+                      <feature.icon className="h-7 w-7 text-primary" />
                     </div>
-                    <h3 className="mb-2 text-lg font-semibold">
+                    <h3 className="mb-2 text-xl font-semibold">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base text-muted-foreground">
                       {feature.description}
                     </p>
                   </CardContent>
@@ -622,12 +622,12 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
           >
             <h2
-              className="text-3xl font-bold sm:text-4xl"
+              className="text-4xl font-bold sm:text-5xl"
               data-testid="text-how-it-works-title"
             >
               Kako početi?
             </h2>
-            <p className="mt-4 text-muted-foreground text-lg">
+            <p className="mt-4 text-muted-foreground text-xl">
               Super lahko - samo tri koraka!
             </p>
           </motion.div>
@@ -643,14 +643,14 @@ export default function LandingPage() {
                 variants={fadeIn}
                 transition={{ duration: 0.5, delay: index * 0.15 }}
               >
-                <div className="relative mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <step.icon className="h-7 w-7" />
-                  <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-bold text-foreground border">
+                <div className="relative mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <step.icon className="h-9 w-9" />
+                  <span className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background text-sm font-bold text-foreground border">
                     {step.step}
                   </span>
                 </div>
-                <h3 className="mb-2 text-xl font-semibold">{step.title}</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="mb-2 text-2xl font-semibold">{step.title}</h3>
+                <p className="text-base text-muted-foreground">
                   {step.description}
                 </p>
               </motion.div>
@@ -670,14 +670,14 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
           >
             <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
-              <BookOpen className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="text-2xl font-bold mb-2">Bogata biblioteka</h3>
-              <p className="text-muted-foreground">Stotine naslova prilagođenih svim uzrastima i interesovanjima.</p>
+              <BookOpen className="h-14 w-14 text-primary mx-auto mb-4" />
+              <h3 className="text-3xl font-bold mb-3">Bogata biblioteka</h3>
+              <p className="text-lg text-muted-foreground">Stotine naslova prilagođenih svim uzrastima i interesovanjima.</p>
             </div>
             <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
-              <Users className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="text-2xl font-bold mb-2">Zajednica čitalaca</h3>
-              <p className="text-muted-foreground">Pridruži se vršnjacima, takmiči se i dijeli radost čitanja.</p>
+              <Users className="h-14 w-14 text-primary mx-auto mb-4" />
+              <h3 className="text-3xl font-bold mb-3">Zajednica čitalaca</h3>
+              <p className="text-lg text-muted-foreground">Pridruži se vršnjacima, takmiči se i dijeli radost čitanja.</p>
             </div>
           </motion.div>
         </div>
@@ -697,10 +697,10 @@ export default function LandingPage() {
               <Rocket className="h-10 w-10 sm:h-12 sm:w-12 text-yellow-300" />
               <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 text-white/80" />
             </div>
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+            <h2 className="text-4xl font-bold text-white sm:text-5xl">
               Spreman za avanturu?
             </h2>
-            <p className="mt-4 text-white/90">
+            <p className="mt-4 text-xl text-white/90">
               Pridruži se hiljadama učenika koji već čitaju i osvajaju bodove!
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
