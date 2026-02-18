@@ -221,9 +221,6 @@ function ChallengesSection() {
   const { data: challengesList } = useQuery<Challenge[]>({
     queryKey: ["/api/challenges"],
   });
-  const { scrollY } = useScroll();
-  const yKids = useTransform(scrollY, [1500, 3000], [200, -200]);
-
   if (!challengesList || challengesList.length === 0) return null;
 
   function formatDate(d: Date | string) {
@@ -232,13 +229,14 @@ function ChallengesSection() {
 
   return (
     <section className="py-20 relative overflow-hidden">
-      {/* Background Illustration Paralax */}
-      <motion.div 
-        style={{ y: yKids }}
-        className="absolute top-1/2 -translate-y-1/2 -left-48 w-[1024px] h-[1024px] opacity-10 pointer-events-none hidden xl:block"
-      >
-        <img src={bookIconImg} alt="" className="w-full h-full object-contain" />
-      </motion.div>
+      {/* Background "I love reading" illustration */}
+      <div className="absolute inset-0 pointer-events-none">
+        <img 
+          src={iLoveReadingImg} 
+          alt="" 
+          className="w-full h-full object-cover opacity-10"
+        />
+      </div>
 
       <div className="mx-auto max-w-7xl px-4 relative z-10">
         <motion.div
