@@ -84,12 +84,12 @@ export default function PricingPage() {
             transition={{ duration: 0.5 }}
           >
             <h1
-              className="text-3xl font-bold sm:text-4xl"
+              className="text-4xl font-bold sm:text-5xl"
               data-testid="text-pricing-title"
             >
               Cijene i paketi
             </h1>
-            <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
               Odaberite paket koji najbolje odgovara vašim potrebama. Započnite besplatno ili nadogradite za više mogućnosti.
             </p>
           </motion.div>
@@ -128,16 +128,16 @@ export default function PricingPage() {
                     )}
                     <CardHeader className="text-center pb-2">
                       <div className="mx-auto mb-2">
-                        <Icon className="h-8 w-8 text-primary" />
+                        <Icon className="h-10 w-10 text-primary" />
                       </div>
-                      <CardTitle className="text-xl">{plan.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
+                      <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                      <p className="text-base text-muted-foreground">
                         {plan.description}
                       </p>
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col p-6 pt-0">
                       <div className="my-6 text-center">
-                        <span className="text-4xl font-bold">{plan.price}</span>
+                        <span className="text-5xl font-bold">{plan.price}</span>
                         <span className="ml-1 text-muted-foreground">
                           {plan.period}
                         </span>
@@ -147,9 +147,9 @@ export default function PricingPage() {
                         {plan.features.map((feature) => (
                           <li
                             key={feature}
-                            className="flex items-center gap-2 text-sm"
+                            className="flex items-center gap-2 text-base"
                           >
-                            <Check className="h-4 w-4 shrink-0 text-primary" />
+                            <Check className="h-5 w-5 shrink-0 text-primary" />
                             <span>{feature}</span>
                           </li>
                         ))}
@@ -157,9 +157,9 @@ export default function PricingPage() {
 
                       {plan.familyOptions && (
                         <div className="mt-4 p-3 bg-muted/50 rounded-md space-y-1.5">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Opcije</p>
+                          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Opcije</p>
                           {plan.familyOptions.map((opt) => (
-                            <div key={opt.label} className="flex items-center justify-between text-sm gap-2">
+                            <div key={opt.label} className="flex items-center justify-between text-base gap-2">
                               <span>{opt.label}</span>
                               <span className="font-semibold whitespace-nowrap">{opt.price}</span>
                             </div>
@@ -188,8 +188,8 @@ export default function PricingPage() {
           <div className="mt-12 text-center">
             <Card className="max-w-2xl mx-auto">
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-2" data-testid="text-school-pricing">Paket za škole</h3>
-                <p className="text-muted-foreground text-sm mb-4">
+                <h3 className="text-xl font-semibold mb-2" data-testid="text-school-pricing">Paket za škole</h3>
+                <p className="text-muted-foreground text-base mb-4">
                   Za škole i obrazovne ustanove nudimo posebne uvjete. 
                   Kontaktirajte nas za prilagođenu ponudu koja uključuje upravljanje razredima, 
                   izvještaje i grupne pretplate.

@@ -43,9 +43,9 @@ export default function FAQPage() {
             variants={fadeIn}
             className="text-center mb-16"
           >
-            <HelpCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-            <h1 className="text-4xl font-bold mb-4">Često postavljana pitanja</h1>
-            <p className="text-xl text-muted-foreground">
+            <HelpCircle className="w-20 h-20 text-primary mx-auto mb-4" />
+            <h1 className="text-5xl font-bold mb-4">Često postavljana pitanja</h1>
+            <p className="text-2xl text-muted-foreground">
               Sve što trebate znati o platformi Čitanje na jednom mjestu.
             </p>
           </motion.div>
@@ -61,11 +61,11 @@ export default function FAQPage() {
               >
                 <Card className="hover-elevate">
                   <CardContent className="p-6">
-                    <h3 className="text-xl font-bold text-primary mb-3 flex items-center gap-2">
-                      <ChevronRight className="w-5 h-5" />
+                    <h3 className="text-2xl font-bold text-primary mb-3 flex items-center gap-2">
+                      <ChevronRight className="w-6 h-6" />
                       {faq.question}
                     </h3>
-                    <p className="text-muted-foreground leading-relaxed">
+                    <p className="text-lg text-muted-foreground leading-relaxed">
                       {faq.answer}
                     </p>
                   </CardContent>
@@ -75,8 +75,8 @@ export default function FAQPage() {
           </div>
 
           <div className="mt-20 p-8 rounded-2xl bg-primary/5 border-2 border-primary/10 text-center">
-            <h2 className="text-2xl font-bold mb-4">Imate još pitanja?</h2>
-            <p className="text-muted-foreground mb-6">
+            <h2 className="text-3xl font-bold mb-4">Imate još pitanja?</h2>
+            <p className="text-lg text-muted-foreground mb-6">
               Naš tim je tu da vam pomogne. Kontaktirajte nas direktno i odgovorićemo u najkraćem roku.
             </p>
             <Button size="lg" asChild>

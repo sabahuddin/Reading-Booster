@@ -45,12 +45,12 @@ export default function BlogPage() {
             transition={{ duration: 0.5 }}
           >
             <h1
-              className="text-3xl font-bold sm:text-4xl"
+              className="text-4xl font-bold sm:text-5xl"
               data-testid="text-blog-title"
             >
               Blog
             </h1>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 text-xl text-muted-foreground">
               Savjeti, vijesti i inspiracija za bolje čitanje
             </p>
           </motion.div>
@@ -75,12 +75,12 @@ export default function BlogPage() {
             >
               <Calendar className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <h2
-                className="mt-4 text-xl font-semibold"
+                className="mt-4 text-2xl font-semibold"
                 data-testid="text-blog-empty"
               >
                 Još nema objava
               </h2>
-              <p className="mt-2 text-muted-foreground">
+              <p className="mt-2 text-lg text-muted-foreground">
                 Uskoro objavljujemo nove članke. Pratite nas!
               </p>
             </motion.div>
@@ -108,8 +108,8 @@ export default function BlogPage() {
                         />
                       )}
                       <CardContent className="flex flex-1 flex-col p-6">
-                        <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
+                        <div className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
                           <span>
                             {new Date(post.publishedAt).toLocaleDateString(
                               "hr-HR",
@@ -121,13 +121,13 @@ export default function BlogPage() {
                             )}
                           </span>
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold">
+                        <h3 className="mb-2 text-xl font-semibold">
                           {post.title}
                         </h3>
-                        <p className="flex-1 text-sm text-muted-foreground">
+                        <p className="flex-1 text-base text-muted-foreground">
                           {post.excerpt}
                         </p>
-                        <p className="mt-3 text-xs text-muted-foreground">
+                        <p className="mt-3 text-sm text-muted-foreground">
                           {post.author}
                         </p>
                       </CardContent>

@@ -246,7 +246,7 @@ export default function AuthPage() {
         <div className="flex flex-1 items-center justify-center p-4 lg:p-8">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-2xl" data-testid="text-auth-title">
+              <CardTitle className="text-3xl" data-testid="text-auth-title">
                 Dobrodošli
               </CardTitle>
               <CardDescription data-testid="text-auth-description">
@@ -530,7 +530,7 @@ export default function AuthPage() {
 
                 <TabsContent value="school">
                   <div className="mt-2 mb-4 p-3 bg-muted rounded-md border-l-4 border-orange-500">
-                    <p className="text-sm font-medium">
+                    <p className="text-base font-medium">
                       Registracija za škole. Nakon što pošaljete zahtjev, administrator će odobriti vaš račun.
                     </p>
                   </div>

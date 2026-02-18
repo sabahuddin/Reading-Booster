@@ -105,12 +105,12 @@ export default function ContactPage() {
             transition={{ duration: 0.5 }}
           >
             <h1
-              className="text-3xl font-bold sm:text-4xl"
+              className="text-4xl font-bold sm:text-5xl"
               data-testid="text-contact-title"
             >
               Kontakt
             </h1>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 text-lg text-muted-foreground">
               Imate pitanje ili prijedlog? Javite nam se!
             </p>
           </motion.div>
@@ -130,12 +130,12 @@ export default function ContactPage() {
               {contactInfo.map((item) => (
                 <Card key={item.label} data-testid={`card-contact-${item.label.toLowerCase()}`}>
                   <CardContent className="flex items-start gap-4 p-6">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                      <item.icon className="h-5 w-5 text-primary" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                      <item.icon className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium">{item.label}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-lg font-medium">{item.label}</p>
+                      <p className="text-base text-muted-foreground">
                         {item.value}
                       </p>
                     </div>

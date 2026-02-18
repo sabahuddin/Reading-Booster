@@ -30,7 +30,7 @@ export default function BlogDetail() {
         <div className="mx-auto max-w-3xl px-4">
           <Button variant="ghost" asChild className="mb-8" data-testid="button-back-blog">
             <Link href="/blog">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 h-5 w-5" />
               Nazad na blog
             </Link>
           </Button>
@@ -51,7 +51,7 @@ export default function BlogDetail() {
             </div>
           ) : !post ? (
             <div className="text-center py-20">
-              <h2 className="text-2xl font-bold">Objava nije pronađena</h2>
+              <h2 className="text-3xl font-bold">Objava nije pronađena</h2>
               <p className="mt-2 text-muted-foreground">Žao nam je, tražena objava ne postoji ili je uklonjena.</p>
             </div>
           ) : (
@@ -72,7 +72,7 @@ export default function BlogDetail() {
               )}
 
               <header className="mb-8">
-                <div className="mb-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <div className="mb-4 flex flex-wrap items-center gap-4 text-base text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     <span>
@@ -88,7 +88,7 @@ export default function BlogDetail() {
                     <span>{post.author}</span>
                   </div>
                 </div>
-                <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl" data-testid="text-blog-title">
+                <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl" data-testid="text-blog-title">
                   {post.title}
                 </h1>
               </header>

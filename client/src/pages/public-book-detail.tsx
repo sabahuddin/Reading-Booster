@@ -78,7 +78,7 @@ export default function PublicBookDetail() {
           ) : !book ? (
             <div className="text-center py-16">
               <BookOpen className="mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium">Knjiga nije pronađena</p>
+              <p className="text-xl font-medium">Knjiga nije pronađena</p>
             </div>
           ) : (
             <>
@@ -92,10 +92,10 @@ export default function PublicBookDetail() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <h1 className="text-3xl md:text-4xl font-bold" data-testid="text-book-title">
+                  <h1 className="text-4xl md:text-5xl font-bold" data-testid="text-book-title">
                     {book.title}
                   </h1>
-                  <p className="text-xl text-muted-foreground" data-testid="text-book-author">
+                  <p className="text-2xl text-muted-foreground" data-testid="text-book-author">
                     {book.author}
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -121,7 +121,7 @@ export default function PublicBookDetail() {
                     )}
                   </div>
                   {book.description && (
-                    <p className="text-muted-foreground leading-relaxed" data-testid="text-book-description">
+                    <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-book-description">
                       {book.description}
                     </p>
                   )}
@@ -133,7 +133,7 @@ export default function PublicBookDetail() {
                   <CardTitle>Detalji o knjizi</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
                     <div>
                       <strong>Autor:</strong> {book.author}
                     </div>
@@ -179,14 +179,14 @@ export default function PublicBookDetail() {
                   </div>
 
                   <div className="pt-6 border-t space-y-4" data-testid="card-where-to-find">
-                    <h3 className="font-bold text-lg">Gdje pronaći ovu knjigu?</h3>
+                    <h3 className="font-bold text-xl">Gdje pronaći ovu knjigu?</h3>
                     <p className="text-muted-foreground">
                       Knjigu potražite u vašoj školskoj ili gradskoj biblioteci.
                     </p>
                     
                     {book.purchaseUrl && (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <p className="text-sm">Za kupovinu knjige kontaktirajte našeg partnera:</p>
+                        <p className="text-base">Za kupovinu knjige kontaktirajte našeg partnera:</p>
                         <Button size="sm" asChild data-testid="button-buy-book">
                           <a href={book.purchaseUrl} target="_blank" rel="noopener noreferrer">
                             <ShoppingCart className="mr-2 h-4 w-4" />
@@ -198,7 +198,7 @@ export default function PublicBookDetail() {
 
                     {book.pdfUrl && (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-base text-muted-foreground">
                           Možeš pogledati prvih nekoliko stranica:
                         </p>
                         <Button variant="outline" size="sm" asChild data-testid="button-preview-pdf">

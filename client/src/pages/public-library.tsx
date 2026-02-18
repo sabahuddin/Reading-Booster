@@ -53,10 +53,10 @@ function BookCard({ book }: { book: Book }) {
             />
           </div>
           <div>
-            <h3 className="font-semibold line-clamp-2" data-testid={`text-book-title-${book.id}`}>
+            <h3 className="font-semibold text-base line-clamp-2" data-testid={`text-book-title-${book.id}`}>
               {book.title}
             </h3>
-            <p className="text-sm text-muted-foreground">{book.author}</p>
+            <p className="text-base text-muted-foreground">{book.author}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary">{book.ageGroup}</Badge>
@@ -109,8 +109,8 @@ export default function PublicLibrary() {
       <main className="flex-1">
         <div className="mx-auto max-w-7xl px-4 py-8 space-y-8">
           <div>
-            <h1 className="text-3xl font-bold" data-testid="text-library-title">Biblioteka</h1>
-            <p className="text-muted-foreground">Pregledaj knjige i testiraj svoje znanje.</p>
+            <h1 className="text-4xl font-bold" data-testid="text-library-title">Biblioteka</h1>
+            <p className="text-lg text-muted-foreground">Pregledaj knjige i testiraj svoje znanje.</p>
           </div>
 
           {!hasActiveFilters && !isLoading && books && books.length > 0 && (
@@ -120,7 +120,7 @@ export default function PublicLibrary() {
                   {weeklyPick && (
                     <Card className="border-2 border-yellow-400/50 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20" data-testid="card-weekly-pick">
                       <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-lg">
+                        <CardTitle className="flex items-center gap-2 text-xl">
                           <Star className="h-5 w-5 text-yellow-500" />
                           Prijedlog sedmice
                         </CardTitle>
@@ -132,9 +132,9 @@ export default function PublicLibrary() {
                               <img src={weeklyPick.coverImage || defaultBookCover} alt={weeklyPick.title} className="w-full h-full object-cover" />
                             </div>
                             <div className="space-y-1">
-                              <h3 className="font-bold text-lg">{weeklyPick.title}</h3>
-                              <p className="text-sm text-muted-foreground">{weeklyPick.author}</p>
-                              <p className="text-sm line-clamp-2">{weeklyPick.description}</p>
+                              <h3 className="font-bold text-xl">{weeklyPick.title}</h3>
+                              <p className="text-base text-muted-foreground">{weeklyPick.author}</p>
+                              <p className="text-base line-clamp-2">{weeklyPick.description}</p>
                               <div className="flex gap-2 pt-1">
                                 <Badge variant="secondary">{weeklyPick.ageGroup}</Badge>
                                 <Badge variant="outline">{genreLabel(weeklyPick.genre)}</Badge>
@@ -149,7 +149,7 @@ export default function PublicLibrary() {
                   {mostRead && (
                     <Card className="border-2 border-primary/30 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20" data-testid="card-most-read">
                       <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-lg">
+                        <CardTitle className="flex items-center gap-2 text-xl">
                           <TrendingUp className="h-5 w-5 text-primary" />
                           Najčitanija knjiga
                         </CardTitle>
@@ -161,9 +161,9 @@ export default function PublicLibrary() {
                               <img src={mostRead.coverImage || defaultBookCover} alt={mostRead.title} className="w-full h-full object-cover" />
                             </div>
                             <div className="space-y-1">
-                              <h3 className="font-bold text-lg">{mostRead.title}</h3>
-                              <p className="text-sm text-muted-foreground">{mostRead.author}</p>
-                              <p className="text-sm line-clamp-2">{mostRead.description}</p>
+                              <h3 className="font-bold text-xl">{mostRead.title}</h3>
+                              <p className="text-base text-muted-foreground">{mostRead.author}</p>
+                              <p className="text-base line-clamp-2">{mostRead.description}</p>
                               <div className="flex gap-2 pt-1">
                                 <Badge variant="secondary">{mostRead.ageGroup}</Badge>
                                 <Badge variant="outline">{mostRead.timesRead}x pročitano</Badge>
@@ -179,13 +179,13 @@ export default function PublicLibrary() {
 
               {recommendedByGenre.length > 0 && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
                     <Heart className="h-5 w-5 text-red-400" />
                     Čitaoci preporučuju
                   </h2>
                   {recommendedByGenre.map(({ genre, label, books: genreBooks }) => (
                     <div key={genre} className="space-y-3">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <h3 className="text-xl font-semibold flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-yellow-500" />
                         {label}
                       </h3>
@@ -202,7 +202,7 @@ export default function PublicLibrary() {
           )}
 
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">Sve knjige</h2>
+            <h2 className="text-2xl font-bold">Sve knjige</h2>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -269,7 +269,7 @@ export default function PublicLibrary() {
           ) : !filtered || filtered.length === 0 ? (
             <div className="text-center py-16">
               <BookOpen className="mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium">Nema knjiga</p>
+              <p className="text-xl font-medium">Nema knjiga</p>
               <p className="text-muted-foreground">
                 {hasActiveFilters ? "Nema rezultata za tvoju pretragu." : "Knjige još nisu dodane."}
               </p>
