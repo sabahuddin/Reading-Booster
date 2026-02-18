@@ -131,12 +131,17 @@ function generateUsername(fullName: string): string {
 }
 
 function generatePassword(): string {
-  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  const lower = "abcdefghjkmnpqrstuvwxyz";
+  const upper = "ABCDEFGHJKMNPQRSTUVWXYZ";
+  const digits = "23456789";
+  const all = lower + upper + digits;
   let pw = "";
-  for (let i = 0; i < 8; i++) {
-    pw += chars[Math.floor(Math.random() * chars.length)];
+  pw += upper[Math.floor(Math.random() * upper.length)];
+  pw += digits[Math.floor(Math.random() * digits.length)];
+  for (let i = 2; i < 8; i++) {
+    pw += all[Math.floor(Math.random() * all.length)];
   }
-  return pw;
+  return pw.split("").sort(() => Math.random() - 0.5).join("");
 }
 
 export async function registerRoutes(
@@ -988,6 +993,91 @@ export async function registerRoutes(
 
       const { password, ...studentData } = student;
       return res.status(201).json({ ...studentData, generatedPassword: plainPassword });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/teacher/reset-student-password", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const { studentId } = req.body;
+      if (!studentId) {
+        return res.status(400).json({ message: "ID učenika je obavezan." });
+      }
+
+      const student = await storage.getUser(studentId);
+      if (!student || student.createdByTeacherId !== teacherId) {
+        return res.status(403).json({ message: "Nemate pristup ovom učeniku." });
+      }
+
+      const newPassword = generatePassword();
+      const hashedPw = await hashPassword(newPassword);
+      await storage.updateUser(studentId, { password: hashedPw } as any);
+
+      return res.json({ username: student.username, fullName: student.fullName, newPassword });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/teacher/create-students-bulk", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const teacher = await storage.getUser(teacherId);
+      if (!teacher) {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+
+      if (teacher.institutionType && teacher.approved !== true) {
+        return res.status(403).json({ message: "Vaš račun nije odobren." });
+      }
+
+      const { students: studentNames } = req.body;
+      if (!Array.isArray(studentNames) || studentNames.length === 0) {
+        return res.status(400).json({ message: "Lista učenika je obavezna." });
+      }
+
+      const validNames = studentNames.filter((n: string) => n && n.trim().length >= 2);
+      if (validNames.length === 0) {
+        return res.status(400).json({ message: "Nema validnih imena učenika." });
+      }
+
+      const currentStudents = await storage.getStudentsByTeacherId(teacherId);
+      if (teacher.maxStudentAccounts && currentStudents.length + validNames.length > teacher.maxStudentAccounts) {
+        return res.status(400).json({
+          message: `Možete dodati još ${teacher.maxStudentAccounts - currentStudents.length} učenika (limit: ${teacher.maxStudentAccounts}).`,
+        });
+      }
+
+      const results = [];
+      for (const fullName of validNames) {
+        let username = generateUsername(fullName.trim());
+        let attempts = 0;
+        while (await storage.getUserByUsername(username) && attempts < 10) {
+          username = generateUsername(fullName.trim());
+          attempts++;
+        }
+
+        const plainPassword = generatePassword();
+        const hashedPw = await hashPassword(plainPassword);
+
+        const student = await storage.createUser({
+          username,
+          email: `${username}@citaj.ba`,
+          password: hashedPw,
+          role: "student",
+          fullName: fullName.trim(),
+          schoolName: teacher.schoolName,
+          className: teacher.className,
+          createdByTeacherId: teacherId,
+        });
+
+        const { password, ...studentData } = student;
+        results.push({ ...studentData, generatedPassword: plainPassword });
+      }
+
+      return res.status(201).json(results);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

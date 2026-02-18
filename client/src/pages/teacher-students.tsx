@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Star, Eye, Trophy, Target, UserPlus, Download, Copy, Check } from "lucide-react";
+import { Users, Star, Eye, Trophy, Target, UserPlus, Download, Copy, Check, KeyRound, UsersRound } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
 type StudentUser = Omit<User, "password">;
@@ -46,6 +46,12 @@ type CreateStudentValues = z.infer<typeof createStudentSchema>;
 
 interface CreatedStudentResult extends StudentUser {
   generatedPassword: string;
+}
+
+interface ResetPasswordResult {
+  username: string;
+  fullName: string;
+  newPassword: string;
 }
 
 function StudentResultsDialog({
@@ -90,7 +96,7 @@ function StudentResultsDialog({
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold" data-testid="text-dialog-accuracy">{avgAccuracy}%</p>
-            <p className="text-xs text-muted-foreground">Točnost</p>
+            <p className="text-xs text-muted-foreground">Tačnost</p>
           </div>
         </div>
 
@@ -110,8 +116,8 @@ function StudentResultsDialog({
             <TableHeader>
               <TableRow>
                 <TableHead>Kviz</TableHead>
-                <TableHead>Točno</TableHead>
-                <TableHead>Netočno</TableHead>
+                <TableHead>Tačno</TableHead>
+                <TableHead>Netačno</TableHead>
                 <TableHead>Bodovi</TableHead>
               </TableRow>
             </TableHeader>
@@ -136,21 +142,72 @@ function StudentResultsDialog({
   );
 }
 
-function CreatedStudentDialog({
-  student,
+function CredentialsDisplay({
+  items,
+  title,
   open,
   onClose,
 }: {
-  student: CreatedStudentResult | null;
+  items: CreatedStudentResult[];
+  title: string;
   open: boolean;
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
-  if (!student) return null;
+  function copyAll() {
+    const text = items
+      .map((s) => `${s.fullName} | ${s.username} | ${s.generatedPassword}`)
+      .join("\n");
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <p className="text-sm text-muted-foreground">
+            Zapišite ili kopirajte podatke za prijavu. Lozinke se ne mogu ponovo pregledati.
+          </p>
+          <div className="bg-muted p-3 rounded-md space-y-1.5 font-mono text-xs max-h-[40vh] overflow-y-auto">
+            {items.map((s) => (
+              <div key={s.id} className="flex flex-wrap gap-x-3" data-testid={`text-credentials-${s.id}`}>
+                <span className="font-semibold min-w-[120px]">{s.fullName}</span>
+                <span>{s.username}</span>
+                <span className="font-bold">{s.generatedPassword}</span>
+              </div>
+            ))}
+          </div>
+          <Button onClick={copyAll} variant="outline" className="w-full" data-testid="button-copy-all-credentials">
+            {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+            {copied ? "Kopirano!" : "Kopiraj sve podatke"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ResetPasswordDialog({
+  result,
+  open,
+  onClose,
+}: {
+  result: ResetPasswordResult | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  if (!result) return null;
 
   function copyCredentials() {
-    const text = `Korisničko ime: ${student!.username}\nLozinka: ${student!.generatedPassword}`;
+    const text = `Korisničko ime: ${result!.username}\nNova lozinka: ${result!.newPassword}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -160,19 +217,110 @@ function CreatedStudentDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Učenički račun kreiran</DialogTitle>
+          <DialogTitle>Nova lozinka</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Račun za <strong>{student.fullName}</strong> je uspješno kreiran. Zapišite podatke za prijavu:
+            Nova lozinka za <strong>{result.fullName}</strong>:
           </p>
           <div className="bg-muted p-4 rounded-md space-y-2 font-mono text-sm">
-            <p data-testid="text-created-username">Korisničko ime: <strong>{student.username}</strong></p>
-            <p data-testid="text-created-password">Lozinka: <strong>{student.generatedPassword}</strong></p>
+            <p data-testid="text-reset-username">Korisničko ime: <strong>{result.username}</strong></p>
+            <p data-testid="text-reset-password">Nova lozinka: <strong>{result.newPassword}</strong></p>
           </div>
-          <Button onClick={copyCredentials} variant="outline" className="w-full" data-testid="button-copy-credentials">
+          <Button onClick={copyCredentials} variant="outline" className="w-full" data-testid="button-copy-reset-password">
             {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
             {copied ? "Kopirano!" : "Kopiraj podatke"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const BULK_ROWS = 30;
+
+function BulkAddDialog({
+  open,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: (results: CreatedStudentResult[]) => void;
+}) {
+  const { toast } = useToast();
+  const [names, setNames] = useState<string[]>(Array(BULK_ROWS).fill(""));
+
+  const bulkMutation = useMutation({
+    mutationFn: async (studentNames: string[]) => {
+      const res = await apiRequest("POST", "/api/teacher/create-students-bulk", { students: studentNames });
+      return res.json();
+    },
+    onSuccess: (data: CreatedStudentResult[]) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      setNames(Array(BULK_ROWS).fill(""));
+      onClose();
+      onSuccess(data);
+      toast({ title: `${data.length} učenika uspješno kreirano` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const filledCount = names.filter((n) => n.trim().length >= 2).length;
+
+  function handleSubmit() {
+    const validNames = names.filter((n) => n.trim().length >= 2);
+    if (validNames.length === 0) {
+      toast({ title: "Unesite barem jedno ime", variant: "destructive" });
+      return;
+    }
+    bulkMutation.mutate(validNames);
+  }
+
+  function updateName(index: number, value: string) {
+    setNames((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); } }}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Dodaj više učenika odjednom</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground mb-4">
+          Unesite ime i prezime svakog učenika. Korisničko ime i lozinka će biti automatski generirani.
+          Popunite samo polja za učenike koje želite dodati.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+          {names.map((name, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-6 text-right shrink-0">{i + 1}.</span>
+              <Input
+                placeholder={`Ime i prezime`}
+                value={name}
+                onChange={(e) => updateName(i, e.target.value)}
+                data-testid={`input-bulk-student-${i}`}
+                
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            Popunjeno: <strong>{filledCount}</strong> / {BULK_ROWS}
+          </p>
+          <Button
+            onClick={handleSubmit}
+            disabled={filledCount === 0 || bulkMutation.isPending}
+            data-testid="button-submit-bulk-students"
+          >
+            {bulkMutation.isPending ? "Kreiranje..." : `Kreiraj ${filledCount} računa`}
           </Button>
         </div>
       </DialogContent>
@@ -184,7 +332,10 @@ export default function TeacherStudents() {
   const { toast } = useToast();
   const [selectedStudent, setSelectedStudent] = useState<StudentUser | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkResults, setBulkResults] = useState<CreatedStudentResult[]>([]);
   const [createdStudent, setCreatedStudent] = useState<CreatedStudentResult | null>(null);
+  const [resetResult, setResetResult] = useState<ResetPasswordResult | null>(null);
 
   const form = useForm<CreateStudentValues>({
     resolver: zodResolver(createStudentSchema),
@@ -212,6 +363,20 @@ export default function TeacherStudents() {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (studentId: string) => {
+      const res = await apiRequest("POST", "/api/teacher/reset-student-password", { studentId });
+      return res.json();
+    },
+    onSuccess: (data: ResetPasswordResult) => {
+      setResetResult(data);
+      toast({ title: "Lozinka resetovana" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    },
+  });
+
   function handleExport() {
     window.open("/api/teacher/export", "_blank");
   }
@@ -230,10 +395,14 @@ export default function TeacherStudents() {
             <h1 className="text-2xl font-bold" data-testid="text-students-title">Učenici</h1>
             <p className="text-muted-foreground">Upravljajte učenicima i pratite njihov napredak.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleExport} data-testid="button-export-csv">
               <Download className="mr-2 h-4 w-4" />
               Izvezi CSV
+            </Button>
+            <Button variant="outline" onClick={() => setBulkOpen(true)} data-testid="button-bulk-add">
+              <UsersRound className="mr-2 h-4 w-4" />
+              Dodaj više (30)
             </Button>
             <Button onClick={() => setCreateOpen(true)} data-testid="button-create-student">
               <UserPlus className="mr-2 h-4 w-4" />
@@ -316,14 +485,27 @@ export default function TeacherStudents() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSelectedStudent(s)}
-                          data-testid={`button-view-results-${s.id}`}
-                        >
-                          <Eye />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedStudent(s)}
+                            title="Pogledaj rezultate"
+                            data-testid={`button-view-results-${s.id}`}
+                          >
+                            <Eye />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => resetPasswordMutation.mutate(s.id)}
+                            disabled={resetPasswordMutation.isPending}
+                            title="Resetuj lozinku"
+                            data-testid={`button-reset-password-${s.id}`}
+                          >
+                            <KeyRound />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -366,10 +548,34 @@ export default function TeacherStudents() {
           </DialogContent>
         </Dialog>
 
-        <CreatedStudentDialog
-          student={createdStudent}
-          open={!!createdStudent}
-          onClose={() => setCreatedStudent(null)}
+        {createdStudent && (
+          <CredentialsDisplay
+            items={[createdStudent]}
+            title="Učenički račun kreiran"
+            open={!!createdStudent}
+            onClose={() => setCreatedStudent(null)}
+          />
+        )}
+
+        <BulkAddDialog
+          open={bulkOpen}
+          onClose={() => setBulkOpen(false)}
+          onSuccess={(results) => setBulkResults(results)}
+        />
+
+        {bulkResults.length > 0 && (
+          <CredentialsDisplay
+            items={bulkResults}
+            title={`Kreirano ${bulkResults.length} učenika`}
+            open={bulkResults.length > 0}
+            onClose={() => setBulkResults([])}
+          />
+        )}
+
+        <ResetPasswordDialog
+          result={resetResult}
+          open={!!resetResult}
+          onClose={() => setResetResult(null)}
         />
       </div>
     </DashboardLayout>
