@@ -18,7 +18,6 @@ import {
   ArrowLeft,
   FileText,
   Users,
-  BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { Book, Quiz, QuizResult } from "@shared/schema";
@@ -31,9 +30,7 @@ const GENRES: Record<string, string> = {
   poezija: "Poezija", islam: "Islam",
 };
 
-const DIFFICULTY_LABELS: Record<string, string> = {
-  lako: "Lako", srednje: "Srednje", tesko: "Teško",
-};
+import { DifficultyIcon, DIFFICULTY_LABELS } from "@/components/difficulty-icon";
 
 export default function PublicBookDetail() {
   const [, params] = useRoute("/knjiga/:id");
@@ -114,10 +111,7 @@ export default function PublicBookDetail() {
                       </Badge>
                     )}
                     {book.readingDifficulty && (
-                      <Badge variant="secondary" data-testid="badge-difficulty">
-                        <BarChart3 className="mr-1 h-3 w-3" />
-                        {DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}
-                      </Badge>
+                      <DifficultyIcon difficulty={book.readingDifficulty} size="sm" />
                     )}
                     {book.pageCount && (
                       <Badge variant="outline">
@@ -162,8 +156,9 @@ export default function PublicBookDetail() {
                       </div>
                     </div>
                     {book.readingDifficulty && (
-                      <div>
-                        <strong>Težina čitanja:</strong> {DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}
+                      <div className="flex items-center gap-2">
+                        <strong>Težina čitanja:</strong>
+                        <DifficultyIcon difficulty={book.readingDifficulty} size="md" />
                       </div>
                     )}
                     {book.publicationYear && (

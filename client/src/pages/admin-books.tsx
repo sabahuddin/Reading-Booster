@@ -49,11 +49,7 @@ const AGE_GROUPS = [
   { value: "A", label: "A – Odrasli (18+)" },
 ];
 
-const DIFFICULTY_LABELS: Record<string, string> = {
-  lako: "Lako",
-  srednje: "Srednje",
-  tesko: "Teško",
-};
+import { DifficultyIcon, DIFFICULTY_LABELS } from "@/components/difficulty-icon";
 
 const bookFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
@@ -365,7 +361,7 @@ export default function AdminBooks() {
                         <TableCell>{book.author}</TableCell>
                         <TableCell>{ageLabel(book.ageGroup)}</TableCell>
                         <TableCell><Badge variant="secondary">{genreLabel(book.genre)}</Badge></TableCell>
-                        <TableCell>{DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}</TableCell>
+                        <TableCell><DifficultyIcon difficulty={book.readingDifficulty} size="sm" /></TableCell>
                         <TableCell>{book.pageCount}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">

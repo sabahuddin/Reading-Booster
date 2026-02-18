@@ -33,11 +33,7 @@ const AGE_GROUPS = [
   { value: "A", label: "A – Odrasli (18+)" },
 ];
 
-const DIFFICULTY_LABELS: Record<string, string> = {
-  lako: "Lako",
-  srednje: "Srednje",
-  tesko: "Teško",
-};
+import { DifficultyIcon, DIFFICULTY_LABELS } from "@/components/difficulty-icon";
 
 function genreLabel(v: string) {
   return GENRES.find((g) => g.value === v)?.label ?? v;
@@ -65,9 +61,7 @@ function BookCard({ book }: { book: Book }) {
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary">{book.ageGroup}</Badge>
             <Badge variant="outline">{genreLabel(book.genre)}</Badge>
-            <Badge variant="outline" className="text-xs">
-              {DIFFICULTY_LABELS[book.readingDifficulty] ?? book.readingDifficulty}
-            </Badge>
+            <DifficultyIcon difficulty={book.readingDifficulty} size="sm" showLabel={false} />
           </div>
         </CardContent>
       </Card>
