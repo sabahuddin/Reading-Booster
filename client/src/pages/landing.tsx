@@ -234,7 +234,7 @@ function ChallengesSection() {
         <img 
           src={iLoveReadingImg} 
           alt="" 
-          className="w-full h-full object-cover opacity-10"
+          className="w-full h-full object-cover opacity-[0.15]"
         />
       </div>
 
