@@ -825,7 +825,12 @@ export async function registerRoutes(
 
   app.post("/api/challenges", requireAdmin, async (req, res) => {
     try {
-      const parsed = insertChallengeSchema.safeParse(req.body);
+      const body = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      };
+      const parsed = insertChallengeSchema.safeParse(body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
       }
@@ -838,7 +843,12 @@ export async function registerRoutes(
 
   app.put("/api/challenges/:id", requireAdmin, async (req, res) => {
     try {
-      const challenge = await storage.updateChallenge(req.params.id as string, req.body);
+      const body = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      };
+      const challenge = await storage.updateChallenge(req.params.id as string, body);
       if (!challenge) {
         return res.status(404).json({ message: "Challenge not found" });
       }
