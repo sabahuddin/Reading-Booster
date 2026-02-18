@@ -21,6 +21,7 @@ import type { Partner, Challenge } from "@shared/schema";
 import heroBg from "@assets/background_1771243573729.png";
 import kidsReadingImg from "@assets/ChatGPT_Image_17._feb_2026._u_20_56_38_1771358489681.png";
 import bookIconImg from "@assets/book_icon_1771363420815.png";
+import iLoveReadingImg from "@assets/i_love_reading_1771429877371.png";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -143,14 +144,6 @@ function TopReadersSection() {
 
   return (
     <section className="py-20 bg-card relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
-           style={{ 
-             backgroundImage: `radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 0)`,
-             backgroundSize: '32px 32px' 
-           }} 
-      />
-      
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yTrophy }}
@@ -239,16 +232,6 @@ function ChallengesSection() {
 
   return (
     <section className="py-20 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.04] pointer-events-none" 
-           style={{ 
-             backgroundImage: `linear-gradient(45deg, hsl(var(--primary)) 25%, transparent 25%, transparent 75%, hsl(var(--primary)) 75%, hsl(var(--primary))), 
-                               linear-gradient(45deg, hsl(var(--primary)) 25%, transparent 25%, transparent 75%, hsl(var(--primary)) 75%, hsl(var(--primary)))`,
-             backgroundSize: '60px 60px',
-             backgroundPosition: '0 0, 30px 30px'
-           }} 
-      />
-
       {/* Background Illustration Paralax */}
       <motion.div 
         style={{ y: yKids }}
@@ -552,8 +535,11 @@ export default function LandingPage() {
           <img 
             src={kidsReadingImg} 
             alt="" 
-            className="w-[1024px] h-[1024px] object-contain opacity-30" 
-            style={{ mixBlendMode: "multiply" }}
+            className="w-[900px] h-[900px] object-contain opacity-[0.15]"
+            style={{ 
+              maskImage: "radial-gradient(ellipse 60% 60% at center, black 30%, transparent 75%)",
+              WebkitMaskImage: "radial-gradient(ellipse 60% 60% at center, black 30%, transparent 75%)"
+            }}
           />
         </motion.div>
         <div className="mx-auto max-w-7xl px-4 relative z-10">
@@ -676,6 +662,50 @@ export default function LandingPage() {
               <Users className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-2xl font-bold mb-2">Zajednica čitalaca</h3>
               <p className="text-muted-foreground">Pridruži se vršnjacima, takmiči se i dijeli radost čitanja.</p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${iLoveReadingImg})` }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/70" />
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:py-28">
+          <motion.div
+            className="text-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeIn}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
+              Ja volim čitanje!
+            </h2>
+            <p className="mt-4 text-white/90 text-lg max-w-2xl mx-auto">
+              Pridruži se zajednici mladih čitalaca koji otkrivaju svijet kroz knjige.
+              Čitaj, uči i zabavi se uz nas!
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Link href="/biblioteka">
+                <Button
+                  size="lg"
+                  className="bg-white text-[hsl(24,85%,40%)] border-white/80"
+                  data-testid="button-cta-library"
+                >
+                  Istraži biblioteku
+                </Button>
+              </Link>
+              <Link href="/registracija">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-white backdrop-blur-sm bg-white/10 border-2 border-white hover:bg-white/20"
+                  data-testid="button-cta-register-mid"
+                >
+                  Pridruži se
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </div>
