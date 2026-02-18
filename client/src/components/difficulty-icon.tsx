@@ -1,6 +1,6 @@
-import lightImg from "@assets/light_1_1771376256456.png";
-import normalImg from "@assets/normal_2_1771376256456.png";
-import hardImg from "@assets/hard_3_1771376256456.png";
+import lightImg from "@assets/difficulty_easy.png";
+import normalImg from "@assets/difficulty_medium.png";
+import hardImg from "@assets/difficulty_hard.png";
 
 const DIFFICULTY_MAP: Record<string, { src: string; label: string }> = {
   lako: { src: lightImg, label: "Lako" },
@@ -15,17 +15,17 @@ interface DifficultyIconProps {
 }
 
 const SIZES = {
-  sm: "h-6",
-  md: "h-8",
-  lg: "h-10",
+  sm: "h-4",
+  md: "h-5",
+  lg: "h-6",
 };
 
-export function DifficultyIcon({ difficulty, size = "md", showLabel = true }: DifficultyIconProps) {
+export function DifficultyIcon({ difficulty, size = "md", showLabel = false }: DifficultyIconProps) {
   const entry = DIFFICULTY_MAP[difficulty];
   if (!entry) return null;
 
   return (
-    <span className="inline-flex items-center gap-1.5" data-testid={`difficulty-icon-${difficulty}`}>
+    <span className="inline-flex items-center gap-1" data-testid={`difficulty-icon-${difficulty}`} title={entry.label}>
       <img
         src={entry.src}
         alt={entry.label}
