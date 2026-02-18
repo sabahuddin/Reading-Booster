@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Check, Crown, Star, BookOpen } from "lucide-react";
+import { Check, Star, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,52 +14,59 @@ const fadeIn = {
 
 const plans = [
   {
-    name: "Besplatni",
+    name: "Čitatelj",
     price: "0",
     period: "KM",
     description: "Savršen za početak",
-    icon: BookOpen,
+    icon: Star,
     features: [
-      "3 kviza besplatno",
-      "Pristup biblioteci",
-      "Osnovne statistike",
+      "Pristup javnoj biblioteci",
+      "Rješavanje kvizova",
+      "Sakupljanje bodova",
+      "Prisustvo na tabeli čitača",
     ],
     cta: "Započni besplatno",
     featured: false,
-    href: "/registracija",
+    href: "/prijava",
   },
   {
-    name: "Standard",
+    name: "Čitatelj Pro",
     price: "10",
     period: "KM/godišnje",
-    description: "Za redovne čitatelje",
-    icon: Star,
+    description: "Za strastvene čitaoce",
+    icon: Sparkles,
     features: [
+      "Sve iz besplatnog paketa",
       "Neograničen broj kvizova",
-      "Pristup svim knjigama",
-      "Detaljne statistike",
-      "Praćenje napretka",
-    ],
-    cta: "Odaberi Standard",
-    featured: true,
-    href: "/kontakt",
-  },
-  {
-    name: "Full",
-    price: "20",
-    period: "KM/godišnje",
-    description: "Kompletno iskustvo",
-    icon: Crown,
-    features: [
-      "Sve iz Standard paketa",
-      "Učešće u takmičenjima",
-      "Učešće u izvlačenjima nagrada",
-      "Učešće u izazovima",
+      "Detaljne statistike čitanja",
+      "Digitalne diplome za postignuća",
       "Prioritetna podrška",
     ],
-    cta: "Odaberi Full",
+    cta: "Odaberi Čitatelj Pro",
+    featured: true,
+    href: "/prijava",
+  },
+  {
+    name: "Porodični",
+    price: "Od 15",
+    period: "KM/godišnje",
+    description: "Zajedničko čitanje i takmičenje",
+    icon: Users,
+    features: [
+      "Sve iz Čitatelj Pro paketa",
+      "Više povezanih računa",
+      "Roditeljski nadzor i praćenje",
+      "Porodična rang lista",
+      "Učešće u porodičnim izazovima",
+    ],
+    cta: "Odaberi porodični paket",
     featured: false,
-    href: "/kontakt",
+    href: "/prijava",
+    familyOptions: [
+      { label: "1 roditelj + 1 dijete", price: "15 KM/godišnje" },
+      { label: "1 roditelj + 3 djece", price: "20 KM/godišnje" },
+      { label: "2 roditelja + 3 djece", price: "25 KM/godišnje" },
+    ],
   },
 ];
 
@@ -83,7 +90,7 @@ export default function PricingPage() {
               Cijene i paketi
             </h1>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              Odaberite paket koji najbolje odgovara vašim potrebama. Započnite besplatno sa 3 kviza, ili nadogradite za neograničen pristup.
+              Odaberite paket koji najbolje odgovara vašim potrebama. Započnite besplatno ili nadogradite za više mogućnosti.
             </p>
           </motion.div>
         </div>
@@ -110,7 +117,7 @@ export default function PricingPage() {
                         ? "border-primary ring-2 ring-primary/20"
                         : ""
                     }`}
-                    data-testid={`card-pricing-${plan.name.toLowerCase()}`}
+                    data-testid={`card-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     {plan.featured && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -148,12 +155,24 @@ export default function PricingPage() {
                         ))}
                       </ul>
 
+                      {plan.familyOptions && (
+                        <div className="mt-4 p-3 bg-muted/50 rounded-md space-y-1.5">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Opcije</p>
+                          {plan.familyOptions.map((opt) => (
+                            <div key={opt.label} className="flex items-center justify-between text-sm gap-2">
+                              <span>{opt.label}</span>
+                              <span className="font-semibold whitespace-nowrap">{opt.price}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="mt-8">
                         <Link href={plan.href}>
                           <Button
                             className="w-full"
                             variant={plan.featured ? "default" : "outline"}
-                            data-testid={`button-pricing-${plan.name.toLowerCase()}`}
+                            data-testid={`button-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
                           >
                             {plan.cta}
                           </Button>
@@ -169,7 +188,7 @@ export default function PricingPage() {
           <div className="mt-12 text-center">
             <Card className="max-w-2xl mx-auto">
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-2" data-testid="text-school-pricing">Paket za škole i institucije</h3>
+                <h3 className="text-lg font-semibold mb-2" data-testid="text-school-pricing">Paket za škole</h3>
                 <p className="text-muted-foreground text-sm mb-4">
                   Za škole i obrazovne ustanove nudimo posebne uvjete. 
                   Kontaktirajte nas za prilagođenu ponudu koja uključuje upravljanje razredima, 
