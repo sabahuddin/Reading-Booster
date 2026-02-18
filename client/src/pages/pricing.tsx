@@ -14,7 +14,7 @@ const fadeIn = {
 
 const plans = [
   {
-    name: "Čitatelj",
+    name: "Čitalac",
     price: "0",
     period: "KM",
     description: "Savršen za početak",
@@ -23,14 +23,14 @@ const plans = [
       "Pristup javnoj biblioteci",
       "Rješavanje kvizova",
       "Sakupljanje bodova",
-      "Prisustvo na tabeli čitača",
+      "Prisustvo na tabeli čitalaca",
     ],
     cta: "Započni besplatno",
     featured: false,
     href: "/prijava",
   },
   {
-    name: "Čitatelj Pro",
+    name: "Čitalac Pro",
     price: "10",
     period: "KM/godišnje",
     description: "Za strastvene čitaoce",
@@ -42,7 +42,7 @@ const plans = [
       "Digitalne diplome za postignuća",
       "Prioritetna podrška",
     ],
-    cta: "Odaberi Čitatelj Pro",
+    cta: "Odaberi Čitalac Pro",
     featured: true,
     href: "/prijava",
   },
@@ -53,7 +53,7 @@ const plans = [
     description: "Zajedničko čitanje i takmičenje",
     icon: Users,
     features: [
-      "Sve iz Čitatelj Pro paketa",
+      "Sve iz Čitalac Pro paketa",
       "Više povezanih računa",
       "Roditeljski nadzor i praćenje",
       "Porodična rang lista",

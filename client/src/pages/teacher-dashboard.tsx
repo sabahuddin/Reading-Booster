@@ -191,7 +191,7 @@ export default function TeacherDashboard() {
         {topStudents.length > 0 && (
           <Card data-testid="card-top-readers">
             <CardHeader>
-              <CardTitle>Top 5 čitača ovog mjeseca</CardTitle>
+              <CardTitle>Top 5 čitalaca ovog mjeseca</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>

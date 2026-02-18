@@ -50,7 +50,7 @@ const features = [
     icon: Users,
     title: "Zajedno učimo",
     description:
-      "Tvoji učitelji i roditelji mogu pratiti tvoj napredak i pomoći ti da postaneš bolji čitač!",
+      "Tvoji učitelji i roditelji mogu pratiti tvoj napredak i pomoći ti da postaneš bolji čitalac!",
   },
 ];
 
@@ -515,7 +515,7 @@ export default function LandingPage() {
               Čitaj, uči, osvajaj!
             </h1>
             <p className="mt-6 text-lg text-white/90 sm:text-xl">
-              Zabavna platforma za mlade čitatelje! Čitaj knjige, rješavaj kvizove
+              Zabavna platforma za mlade čitaoce! Čitaj knjige, rješavaj kvizove
               i sakupljaj bodove. Tvoja čitalačka avantura počinje ovdje!
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">

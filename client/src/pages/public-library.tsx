@@ -187,7 +187,7 @@ export default function PublicLibrary() {
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <Heart className="h-5 w-5 text-red-400" />
-                    Čitatelji preporučuju
+                    Čitaoci preporučuju
                   </h2>
                   {recommendedByGenre.map(({ genre, label, books: genreBooks }) => (
                     <div key={genre} className="space-y-3">

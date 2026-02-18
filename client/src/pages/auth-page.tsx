@@ -422,7 +422,7 @@ export default function AuthPage() {
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="student" data-testid="select-role-student">
-                                  Čitatelj (samo ja)
+                                  Čitalac (samo ja)
                                 </SelectItem>
                                 <SelectItem value="parent" data-testid="select-role-parent">
                                   Roditelj / Porodica
@@ -517,8 +517,8 @@ export default function AuthPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="free">Čitatelj (Besplatno)</SelectItem>
-                                    <SelectItem value="pro">Čitatelj Pro (10 KM/godišnje)</SelectItem>
+                                    <SelectItem value="free">Čitalac (Besplatno)</SelectItem>
+                                    <SelectItem value="pro">Čitalac Pro (10 KM/godišnje)</SelectItem>
                                     <SelectItem value="family_1_1">Porodica 15 KM (1 roditelj + 1 dijete)</SelectItem>
                                     <SelectItem value="family_1_3">Porodica 20 KM (1 roditelj + 3 djece)</SelectItem>
                                     <SelectItem value="family_2_3">Porodica 25 KM (2 roditelja + 3 djece)</SelectItem>
