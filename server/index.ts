@@ -12,6 +12,7 @@ import { runMigrations } from "./migrate";
 import { seedDatabase, ensureUsersSeeded } from "./seed";
 import { ensureAllBooks } from "./seed-all-books";
 import { seedMissingQuizzes } from "./seed-quizzes";
+import { fetchBookCovers } from "./fetch-covers";
 
 declare module "express-session" {
   interface SessionData {
@@ -215,6 +216,7 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
         .then(() => seedDatabase())
         .then(() => ensureAllBooks())
         .then(() => seedMissingQuizzes())
+        .then(() => fetchBookCovers())
         .catch(console.error);
     },
   );
