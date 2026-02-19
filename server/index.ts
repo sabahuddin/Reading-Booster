@@ -4,6 +4,7 @@ import connectPgSimple from "connect-pg-simple";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
+import pg from "pg";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -41,25 +42,47 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+async function ensureSessionTable() {
+  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL COLLATE "default",
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL,
+        CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+      );
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+    `);
+    console.log("Session table ensured.");
+  } catch (err) {
+    console.error("Error creating session table:", err);
+  } finally {
+    await pool.end();
+  }
+}
+
 const PgStore = connectPgSimple(session);
 
-app.use(
-  session({
-    store: new PgStore({
-      conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
+function setupSession() {
+  app.use(
+    session({
+      store: new PgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: false,
+      }),
+      secret: process.env.SESSION_SECRET || "reading-platform-secret-key",
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      },
     }),
-    secret: process.env.SESSION_SECRET || "reading-platform-secret-key",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-    },
-  }),
-);
+  );
+}
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -153,6 +176,9 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
 }
 
 (async () => {
+  await ensureSessionTable();
+  setupSession();
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
