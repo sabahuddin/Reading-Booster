@@ -33,6 +33,7 @@ const blogFormSchema = z.object({
   content: z.string().min(1, "Sadržaj je obavezan"),
   author: z.string().min(1, "Autor je obavezan"),
   coverImage: z.string().min(1, "URL slike je obavezan"),
+  keywordsText: z.string().optional(),
 });
 
 type BlogFormValues = z.infer<typeof blogFormSchema>;
@@ -49,12 +50,20 @@ export default function AdminBlog() {
 
   const form = useForm<BlogFormValues>({
     resolver: zodResolver(blogFormSchema),
-    defaultValues: { title: "", excerpt: "", content: "", author: "", coverImage: "" },
+    defaultValues: { title: "", excerpt: "", content: "", author: "", coverImage: "", keywordsText: "" },
   });
+
+  function prepareData(data: BlogFormValues) {
+    const { keywordsText, ...rest } = data;
+    const keywords = keywordsText
+      ? keywordsText.split(",").map((k) => k.trim()).filter(Boolean)
+      : [];
+    return { ...rest, keywords };
+  }
 
   const createMutation = useMutation({
     mutationFn: async (data: BlogFormValues) => {
-      await apiRequest("POST", "/api/blog", data);
+      await apiRequest("POST", "/api/blog", prepareData(data));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
@@ -68,7 +77,7 @@ export default function AdminBlog() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: BlogFormValues) => {
-      await apiRequest("PUT", `/api/blog/${editingPost!.id}`, data);
+      await apiRequest("PUT", `/api/blog/${editingPost!.id}`, prepareData(data));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
@@ -96,7 +105,7 @@ export default function AdminBlog() {
 
   function openCreate() {
     setEditingPost(null);
-    form.reset({ title: "", excerpt: "", content: "", author: "", coverImage: "" });
+    form.reset({ title: "", excerpt: "", content: "", author: "", coverImage: "", keywordsText: "" });
     setDialogOpen(true);
   }
 
@@ -108,6 +117,7 @@ export default function AdminBlog() {
       content: post.content,
       author: post.author,
       coverImage: post.coverImage,
+      keywordsText: post.keywords ? post.keywords.join(", ") : "",
     });
     setDialogOpen(true);
   }
@@ -232,6 +242,13 @@ export default function AdminBlog() {
                   <FormItem>
                     <FormLabel>URL naslovne slike</FormLabel>
                     <FormControl><Input {...field} data-testid="input-blog-coverImage" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="keywordsText" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ključne riječi (odvojene zarezom)</FormLabel>
+                    <FormControl><Input {...field} placeholder="čitanje, savjeti, škola" data-testid="input-blog-keywords" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

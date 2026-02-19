@@ -1,9 +1,12 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Calendar } from "lucide-react";
+import { Calendar, Search, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import type { BlogPost } from "@shared/schema";
@@ -28,9 +31,44 @@ function BlogSkeleton() {
 }
 
 export default function BlogPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
+
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog"],
   });
+
+  const allKeywords = useMemo(() => {
+    if (!posts) return [];
+    const kwSet = new Set<string>();
+    posts.forEach((p) => {
+      if (p.keywords && Array.isArray(p.keywords)) {
+        p.keywords.forEach((kw) => kwSet.add(kw));
+      }
+    });
+    return Array.from(kwSet).sort();
+  }, [posts]);
+
+  const filteredPosts = useMemo(() => {
+    if (!posts) return [];
+    let result = posts;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.excerpt.toLowerCase().includes(q) ||
+          p.author.toLowerCase().includes(q) ||
+          (p.keywords && p.keywords.some((kw) => kw.toLowerCase().includes(q)))
+      );
+    }
+    if (selectedKeyword) {
+      result = result.filter(
+        (p) => p.keywords && p.keywords.includes(selectedKeyword)
+      );
+    }
+    return result;
+  }, [posts, searchQuery, selectedKeyword]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -59,13 +97,53 @@ export default function BlogPage() {
 
       <section className="flex-1 py-12">
         <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-8 space-y-4">
+            <div className="relative max-w-md mx-auto">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Pretraži blog..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="input-blog-search"
+              />
+            </div>
+
+            {allKeywords.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                <Badge
+                  variant={selectedKeyword === null ? "default" : "secondary"}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedKeyword(null)}
+                  data-testid="badge-keyword-all"
+                >
+                  Sve
+                </Badge>
+                {allKeywords.map((kw) => (
+                  <Badge
+                    key={kw}
+                    variant={selectedKeyword === kw ? "default" : "secondary"}
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setSelectedKeyword(selectedKeyword === kw ? null : kw)
+                    }
+                    data-testid={`badge-keyword-${kw}`}
+                  >
+                    {kw}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
           {isLoading ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <BlogSkeleton key={i} />
               ))}
             </div>
-          ) : !posts || posts.length === 0 ? (
+          ) : filteredPosts.length === 0 ? (
             <motion.div
               className="py-20 text-center"
               initial="hidden"
@@ -78,15 +156,19 @@ export default function BlogPage() {
                 className="mt-4 text-2xl font-semibold"
                 data-testid="text-blog-empty"
               >
-                Još nema objava
+                {searchQuery || selectedKeyword
+                  ? "Nema rezultata pretrage"
+                  : "Još nema objava"}
               </h2>
               <p className="mt-2 text-lg text-muted-foreground">
-                Uskoro objavljujemo nove članke. Pratite nas!
+                {searchQuery || selectedKeyword
+                  ? "Pokušajte s drugim pojmom ili ključnom riječju."
+                  : "Uskoro objavljujemo nove članke. Pratite nas!"}
               </p>
             </motion.div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post, index) => (
+              {filteredPosts.map((post, index) => (
                 <motion.div
                   key={post.id}
                   initial="hidden"
@@ -127,6 +209,20 @@ export default function BlogPage() {
                         <p className="flex-1 text-base text-muted-foreground">
                           {post.excerpt}
                         </p>
+                        {post.keywords &&
+                          post.keywords.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1">
+                              {post.keywords.map((kw) => (
+                                <Badge
+                                  key={kw}
+                                  variant="secondary"
+                                  className="text-xs no-default-hover-elevate no-default-active-elevate"
+                                >
+                                  {kw}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         <p className="mt-3 text-sm text-muted-foreground">
                           {post.author}
                         </p>
