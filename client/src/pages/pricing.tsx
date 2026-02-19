@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Check, Star, Sparkles, Users, School } from "lucide-react";
@@ -27,12 +28,12 @@ const plans = [
     ],
     cta: "Započni besplatno",
     featured: false,
-    href: "/prijava",
+    href: "/prijava?tab=register",
   },
   {
     name: "Čitalac Pro",
     price: "10",
-    period: "KM/godišnje",
+    period: "KM",
     description: "Za strastvene čitaoce",
     icon: Sparkles,
     features: [
@@ -44,12 +45,12 @@ const plans = [
     ],
     cta: "Odaberi Čitalac Pro",
     featured: true,
-    href: "/prijava",
+    href: "/prijava?tab=register",
   },
   {
     name: "Porodični",
-    price: "Od 15",
-    period: "KM/godišnje",
+    price: "",
+    period: "",
     description: "Zajedničko čitanje i takmičenje",
     icon: Users,
     features: [
@@ -61,11 +62,11 @@ const plans = [
     ],
     cta: "Odaberi porodični paket",
     featured: false,
-    href: "/prijava",
+    href: "/prijava?tab=register",
     familyOptions: [
-      { label: "1 roditelj + 1 dijete", price: "15 KM/godišnje" },
-      { label: "1 roditelj + 3 djece", price: "20 KM/godišnje" },
-      { label: "2 roditelja + 3 djece", price: "25 KM/godišnje" },
+      { label: "1 roditelj + 1 dijete", price: "15 KM" },
+      { label: "1 roditelj + 3 djece", price: "20 KM" },
+      { label: "2 roditelja + 3 djece", price: "25 KM" },
     ],
   },
   {
@@ -91,6 +92,8 @@ const plans = [
 ];
 
 export default function PricingPage() {
+  const [showFamilyOptions, setShowFamilyOptions] = useState(false);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -111,6 +114,9 @@ export default function PricingPage() {
             </h1>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
               Odaberite paket koji najbolje odgovara vašim potrebama. Započnite besplatno ili nadogradite za više mogućnosti.
+            </p>
+            <p className="mt-3 text-base font-semibold text-primary">
+              Svi paketi su na godišnjem nivou
             </p>
           </motion.div>
         </div>
@@ -156,14 +162,16 @@ export default function PricingPage() {
                       </p>
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col p-6 pt-0">
-                      <div className="my-6 text-center">
-                        <span className={`font-bold ${plan.price.length > 5 ? "text-3xl" : "text-5xl"}`}>{plan.price}</span>
-                        {plan.period && (
-                          <span className="ml-1 text-muted-foreground">
-                            {plan.period}
-                          </span>
-                        )}
-                      </div>
+                      {plan.price && (
+                        <div className="my-6 text-center">
+                          <span className={`font-bold ${plan.price.length > 5 ? "text-3xl" : "text-5xl"}`}>{plan.price}</span>
+                          {plan.period && (
+                            <span className="ml-1 text-muted-foreground">
+                              {plan.period}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       <ul className="flex-1 space-y-3">
                         {plan.features.map((feature) => (
@@ -177,28 +185,43 @@ export default function PricingPage() {
                         ))}
                       </ul>
 
-                      {plan.familyOptions && (
+                      {plan.familyOptions && showFamilyOptions && (
                         <div className="mt-4 p-3 bg-muted/50 rounded-md space-y-1.5">
-                          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Opcije</p>
-                          {plan.familyOptions.map((opt) => (
-                            <div key={opt.label} className="flex items-center justify-between text-base gap-2">
-                              <span>{opt.label}</span>
-                              <span className="font-semibold whitespace-nowrap">{opt.price}</span>
-                            </div>
+                          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Odaberite paket</p>
+                          {plan.familyOptions.map((opt, i) => (
+                            <Link key={opt.label} href="/prijava?tab=register">
+                              <div className="flex items-center justify-between text-base gap-2 p-2 rounded-md hover-elevate cursor-pointer" data-testid={`link-family-option-${i}`}>
+                                <span>{opt.label}</span>
+                                <span className="font-semibold whitespace-nowrap">{opt.price}</span>
+                              </div>
+                            </Link>
                           ))}
                         </div>
                       )}
 
                       <div className="mt-8">
-                        <Link href={plan.href}>
-                          <Button
-                            className="w-full"
-                            variant={plan.featured ? "default" : "outline"}
-                            data-testid={`button-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
-                          >
-                            {plan.cta}
-                          </Button>
-                        </Link>
+                        {plan.familyOptions ? (
+                          showFamilyOptions ? null : (
+                            <Button
+                              className="w-full"
+                              variant="outline"
+                              onClick={() => setShowFamilyOptions(true)}
+                              data-testid={`button-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
+                            >
+                              {plan.cta}
+                            </Button>
+                          )
+                        ) : (
+                          <Link href={plan.href}>
+                            <Button
+                              className="w-full"
+                              variant={plan.featured ? "default" : "outline"}
+                              data-testid={`button-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
+                            >
+                              {plan.cta}
+                            </Button>
+                          </Link>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

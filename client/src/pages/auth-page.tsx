@@ -107,7 +107,11 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { user, isAuthenticated, login, register } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("login");
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get("tab");
+  const validTabs = ["login", "register", "school"];
+  const initialTab = tabParam && validTabs.includes(tabParam) ? tabParam : "login";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [captcha, setCaptcha] = useState(() => generateCaptcha());
   const [schoolCaptcha, setSchoolCaptcha] = useState(() => generateCaptcha());
 
