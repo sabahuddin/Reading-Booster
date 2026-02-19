@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { runMigrations } from "./migrate";
 import { seedDatabase } from "./seed";
 import { ensureAllBooks } from "./seed-all-books";
 import { seedMissingQuizzes } from "./seed-quizzes";
@@ -183,7 +184,7 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
     },
     () => {
       log(`serving on port ${port}`);
-      seedDatabase().then(() => ensureAllBooks()).then(() => seedMissingQuizzes()).catch(console.error);
+      runMigrations().then(() => seedDatabase()).then(() => ensureAllBooks()).then(() => seedMissingQuizzes()).catch(console.error);
     },
   );
 })();
