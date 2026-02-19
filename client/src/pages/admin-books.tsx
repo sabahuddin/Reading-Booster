@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +29,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 const GENRES = [
   { value: "lektira", label: "Lektira" },
@@ -73,6 +73,8 @@ const bookFormSchema = z.object({
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
 
+const BOOKS_PER_PAGE = 20;
+
 export default function AdminBooks() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -84,10 +86,32 @@ export default function AdminBooks() {
   const [coverUploading, setCoverUploading] = useState(false);
   const [bookFileUploading, setBookFileUploading] = useState(false);
   const [csvImporting, setCsvImporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: books, isLoading } = useQuery<Book[]>({
     queryKey: ["/api/books"],
   });
+
+  const filteredBooks = useMemo(() => {
+    if (!books) return [];
+    if (!searchQuery.trim()) return books;
+    const q = searchQuery.toLowerCase();
+    return books.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        b.author.toLowerCase().includes(q) ||
+        (b.genre && b.genre.toLowerCase().includes(q)) ||
+        (b.isbn && b.isbn.toLowerCase().includes(q))
+    );
+  }, [books, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / BOOKS_PER_PAGE));
+  const safePage = Math.max(1, Math.min(currentPage, totalPages));
+  const paginatedBooks = filteredBooks.slice(
+    (safePage - 1) * BOOKS_PER_PAGE,
+    safePage * BOOKS_PER_PAGE
+  );
 
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
@@ -327,6 +351,17 @@ export default function AdminBooks() {
           </div>
         </div>
 
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pretraži po naslovu, autoru, žanru ili ISBN-u..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            className="pl-9"
+            data-testid="input-search-books"
+          />
+        </div>
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -349,8 +384,8 @@ export default function AdminBooks() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {books && books.length > 0 ? (
-                    books.map((book) => (
+                  {paginatedBooks.length > 0 ? (
+                    paginatedBooks.map((book) => (
                       <TableRow key={book.id} data-testid={`row-book-${book.id}`}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -378,7 +413,7 @@ export default function AdminBooks() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Nema knjiga. Dodajte prvu knjigu.
+                        {searchQuery ? "Nema rezultata za vašu pretragu." : "Nema knjiga. Dodajte prvu knjigu."}
                       </TableCell>
                     </TableRow>
                   )}
@@ -387,6 +422,56 @@ export default function AdminBooks() {
             )}
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-muted-foreground" data-testid="text-books-count">
+              Prikazano {(safePage - 1) * BOOKS_PER_PAGE + 1}-{Math.min(safePage * BOOKS_PER_PAGE, filteredBooks.length)} od {filteredBooks.length} knjiga
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon"
+                variant="outline"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                data-testid="button-prev-page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">...</span>
+                  ) : (
+                    <Button
+                      key={p}
+                      size="sm"
+                      variant={safePage === p ? "default" : "outline"}
+                      onClick={() => setCurrentPage(p as number)}
+                      data-testid={`button-page-${p}`}
+                    >
+                      {p}
+                    </Button>
+                  )
+                )}
+              <Button
+                size="icon"
+                variant="outline"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                data-testid="button-next-page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">

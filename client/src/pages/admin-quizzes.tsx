@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +31,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Pencil, FileQuestion, Download, Upload } from "lucide-react";
+import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 const quizFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
@@ -300,12 +300,16 @@ function QuizQuestions({ quizId }: { quizId: string }) {
   );
 }
 
+const QUIZZES_PER_PAGE = 20;
+
 export default function AdminQuizzes() {
   const { toast } = useToast();
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
   const [deleteQuiz, setDeleteQuiz] = useState<Quiz | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<Quiz[]>({
     queryKey: ["/api/quizzes"],
@@ -412,6 +416,24 @@ export default function AdminQuizzes() {
     return book?.title ?? "Nepoznata knjiga";
   }
 
+  const filteredQuizzes = useMemo(() => {
+    if (!quizzes) return [];
+    if (!searchQuery.trim()) return quizzes;
+    const q = searchQuery.toLowerCase();
+    return quizzes.filter(
+      (quiz) =>
+        quiz.title.toLowerCase().includes(q) ||
+        getBookTitle(quiz.bookId).toLowerCase().includes(q)
+    );
+  }, [quizzes, searchQuery, books]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredQuizzes.length / QUIZZES_PER_PAGE));
+  const safePage = Math.max(1, Math.min(currentPage, totalPages));
+  const paginatedQuizzes = filteredQuizzes.slice(
+    (safePage - 1) * QUIZZES_PER_PAGE,
+    safePage * QUIZZES_PER_PAGE
+  );
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
@@ -453,15 +475,26 @@ export default function AdminQuizzes() {
           </div>
         </div>
 
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pretraži po naslovu kviza ili knjige..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            className="pl-9"
+            data-testid="input-search-quizzes"
+          />
+        </div>
+
         <Card>
           <CardContent className="p-4">
             {quizzesLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
               </div>
-            ) : quizzes && quizzes.length > 0 ? (
+            ) : paginatedQuizzes.length > 0 ? (
               <Accordion type="multiple">
-                {quizzes.map((quiz) => (
+                {paginatedQuizzes.map((quiz) => (
                   <AccordionItem key={quiz.id} value={quiz.id}>
                     <AccordionTrigger className="gap-2" data-testid={`accordion-quiz-${quiz.id}`}>
                       <div className="flex items-center gap-3 flex-wrap text-left flex-1">
@@ -485,10 +518,62 @@ export default function AdminQuizzes() {
                 ))}
               </Accordion>
             ) : (
-              <p className="text-center text-muted-foreground py-8">Nema kvizova. Dodajte prvi kviz.</p>
+              <p className="text-center text-muted-foreground py-8">
+                {searchQuery ? "Nema rezultata za vašu pretragu." : "Nema kvizova. Dodajte prvi kviz."}
+              </p>
             )}
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-muted-foreground" data-testid="text-quizzes-count">
+              Prikazano {(safePage - 1) * QUIZZES_PER_PAGE + 1}-{Math.min(safePage * QUIZZES_PER_PAGE, filteredQuizzes.length)} od {filteredQuizzes.length} kvizova
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon"
+                variant="outline"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                data-testid="button-prev-page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">...</span>
+                  ) : (
+                    <Button
+                      key={p}
+                      size="sm"
+                      variant={safePage === p ? "default" : "outline"}
+                      onClick={() => setCurrentPage(p as number)}
+                      data-testid={`button-page-${p}`}
+                    >
+                      {p}
+                    </Button>
+                  )
+                )}
+              <Button
+                size="icon"
+                variant="outline"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                data-testid="button-next-page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Dialog open={quizDialogOpen} onOpenChange={setQuizDialogOpen}>
           <DialogContent>
