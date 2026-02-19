@@ -1641,7 +1641,7 @@ export async function registerRoutes(
 
       const allSchoolUsers = await storage.getUsersBySchoolName(user.schoolName);
       const students = allSchoolUsers.filter((u) => u.role === "student");
-      const teachers = allSchoolUsers.filter((u) => u.role === "teacher" || u.institutionRole === "muallim");
+      const teachers = allSchoolUsers.filter((u) => u.role === "teacher");
 
       const totalStudents = students.length;
       const totalTeachers = teachers.length;

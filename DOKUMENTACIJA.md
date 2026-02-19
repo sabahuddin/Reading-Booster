@@ -32,7 +32,7 @@ Platforma podržava četiri korisničke uloge (učenici, učitelji, roditelji i 
 - Upravljanje kontakt porukama
 - Upravljanje partnerima (dodavanje logotipa, adrese, web stranice)
 - Upravljanje izazovima čitanja sa nagradama
-- Odobravanje institucionalnih registracija (škola/mekteb)
+- Odobravanje institucionalnih registracija (škola)
 - Pregled statistike platforme (ukupni korisnici, knjige, kvizovi, rezultati)
 - CSV bulk import knjiga i kvizova
 - Upload naslovnica knjiga, PDF fajlova, logotipova partnera
@@ -128,8 +128,8 @@ Platforma podržava četiri korisničke uloge (učenici, učitelji, roditelji i 
 | className | TEXT | Razred (opciono) |
 | points | INTEGER | Ukupni bodovi (default: 0) |
 | parentId | VARCHAR | ID roditelja (za učenike) |
-| institutionType | TEXT | school / mekteb |
-| institutionRole | TEXT | ucitelj / muallim / bibliotekar / sekretar |
+| institutionType | TEXT | school |
+| institutionRole | TEXT | ucitelj / bibliotekar / sekretar |
 | approved | BOOLEAN | Status odobravanja (za institucije) |
 | maxStudentAccounts | INTEGER | Maks. broj učeničkih računa |
 | createdByTeacherId | VARCHAR | ID učitelja koji je kreirao račun |
@@ -381,9 +381,9 @@ Stranica za autentifikaciju ima tri taba:
 
 1. **Prijava** - za postojeće korisnike (korisničko ime + lozinka)
 2. **Registracija** - samoregistracija za učenike i roditelje
-3. **Institucionalna registracija** - za škole i mektebe
-   - Izbor tipa institucije (škola/mekteb)
-   - Izbor uloge (učitelj/muallim/bibliotekar/sekretar)
+3. **Institucionalna registracija** - za škole
+   - Izbor tipa institucije (škola)
+   - Izbor uloge (učitelj/bibliotekar/sekretar)
    - Zahtijeva odobrenje administratora
 
 ### 9.2 Kreiranje učeničkih računa od strane učitelja

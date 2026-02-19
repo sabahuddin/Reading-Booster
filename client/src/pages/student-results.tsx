@@ -14,9 +14,13 @@ import {
 import { Trophy, Star } from "lucide-react";
 import type { QuizResult } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 
 export default function StudentResults() {
   const { user } = useAuth();
+  const [location] = useLocation();
+  const isReader = location.startsWith("/citanje");
+  const dashboardRole = isReader ? "reader" : "student";
 
   const { data: results, isLoading } = useQuery<QuizResult[]>({
     queryKey: ["/api/quiz-results/my"],
@@ -25,7 +29,7 @@ export default function StudentResults() {
   const totalPoints = results?.reduce((sum, r) => sum + r.score, 0) ?? 0;
 
   return (
-    <DashboardLayout role="student">
+    <DashboardLayout role={dashboardRole}>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-results-title">Moji rezultati</h1>

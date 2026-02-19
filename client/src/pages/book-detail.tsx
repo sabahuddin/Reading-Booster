@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,13 @@ const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. raz
 
 
 export default function BookDetail() {
-  const [, params] = useRoute("/ucenik/knjiga/:id");
-  const bookId = params?.id;
+  const [location] = useLocation();
+  const isReader = location.startsWith("/citanje");
+  const basePath = isReader ? "/citanje" : "/ucenik";
+  const dashboardRole = isReader ? "reader" : "student" as const;
+  const [, studentParams] = useRoute("/ucenik/knjiga/:id");
+  const [, readerParams] = useRoute("/citanje/knjiga/:id");
+  const bookId = studentParams?.id || readerParams?.id;
 
   const { data: book, isLoading: bookLoading } = useQuery<BookWithGenres>({
     queryKey: ["/api/books", bookId],
@@ -42,10 +47,10 @@ export default function BookDetail() {
   const quiz = quizzes?.[0];
 
   return (
-    <DashboardLayout role="student">
+    <DashboardLayout role={dashboardRole}>
       <div className="space-y-6 max-w-4xl">
         <Button variant="ghost" asChild data-testid="button-back-library">
-          <Link href="/ucenik/biblioteka">
+          <Link href={`${basePath}/biblioteka`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Nazad na biblioteku
           </Link>
@@ -122,7 +127,7 @@ export default function BookDetail() {
                     <div className="space-y-2">
                       <p className="text-muted-foreground">Već si riješio/la kviz za ovu knjigu.</p>
                       <Button variant="outline" asChild data-testid="button-view-results">
-                        <Link href="/ucenik/rezultati">
+                        <Link href={`${basePath}/rezultati`}>
                           <BookOpen className="mr-2 h-4 w-4" />
                           Pogledaj rezultate
                         </Link>
@@ -134,7 +139,7 @@ export default function BookDetail() {
                         Pročitao/la si knjigu? Testiraj svoje znanje i osvoji bodove!
                       </p>
                       <Button asChild data-testid="button-start-quiz">
-                        <Link href={`/ucenik/kviz/${quiz.id}`}>
+                        <Link href={`${basePath}/kviz/${quiz.id}`}>
                           <Brain className="mr-2 h-4 w-4" />
                           Pokreni kviz
                         </Link>

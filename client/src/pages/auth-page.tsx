@@ -41,7 +41,7 @@ const registerSchema = insertUserSchema.extend({
   email: z.string().email("Unesite ispravnu email adresu"),
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
-  role: z.enum(["student", "parent"]),
+  role: z.enum(["student", "parent", "reader"]),
   ageGroup: z.enum(["R1", "R4", "R7", "O", "A"]).default("R1"),
   pricingPlan: z.string().optional(),
   captchaAnswer: z.string().min(1, "Odgovorite na sigurnosno pitanje"),
@@ -94,6 +94,8 @@ function getDashboardPath(role: string): string {
       return "/ucitelj";
     case "parent":
       return "/roditelj";
+    case "reader":
+      return "/citanje";
     case "student":
       return "/ucenik";
     default:
@@ -130,7 +132,7 @@ export default function AuthPage() {
       email: "",
       password: "",
       fullName: "",
-      role: "student",
+      role: "reader",
       ageGroup: "R1",
       pricingPlan: "free",
       captchaAnswer: "",
@@ -413,8 +415,11 @@ export default function AuthPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="reader" data-testid="select-role-reader">
+                                  Čitalac
+                                </SelectItem>
                                 <SelectItem value="student" data-testid="select-role-student">
-                                  Čitalac (samo ja)
+                                  Učenik
                                 </SelectItem>
                                 <SelectItem value="parent" data-testid="select-role-parent">
                                   Roditelj / Porodica

@@ -1,7 +1,7 @@
 # Čitanje - Platforma za unapređenje čitanja
 
 ## Overview
-Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici čitaju knjige, rješavaju kvizove, skupljaju bodove i prate napredak. Platforma je namijenjena školama, bibliotekama, mektebima i porodicama na bosansko-hrvatskom govornom području. Naglasak je na otkrivanju fizičkih knjiga i integraciji sa školskim bibliotekama. Platforma je opća sa jakim islamskim modulom i mogućnošću porodičnog takmičenja.
+Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici čitaju knjige, rješavaju kvizove, skupljaju bodove i prate napredak. Platforma je namijenjena školama, bibliotekama i porodicama na bosansko-hrvatskom govornom području. Naglasak je na otkrivanju fizičkih knjiga i integraciji sa školskim bibliotekama. Platforma je opća sa mogućnošću porodičnog takmičenja.
 
 ## Tech Stack
 - **Frontend:** React + TypeScript + Tailwind CSS + shadcn/ui + Framer Motion
@@ -37,9 +37,10 @@ Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici
 
 ## User Roles
 - **Admin** — Upravljanje cijelom platformom (knjige, kvizovi, korisnici, blog, poruke, partneri, izazovi, institucionalna odobrenja)
-- **Učitelj (Teacher) / Muallim** — Pregled učenika, kreiranje učeničkih računa, CSV export, praćenje napretka, bonus bodovi, sedmični izazovi
+- **Učitelj (Teacher)** — Pregled učenika, kreiranje učeničkih računa, CSV export, praćenje napretka, bonus bodovi, sedmični izazovi
 - **Roditelj (Parent)** — Pregled napretka djece i rezultata kvizova, porodično takmičenje kroz kategoriju A
-- **Učenik (Student)** — Pregled biblioteke, rješavanje kvizova, skupljanje bodova
+- **Čitalac (Reader)** — Nezavisni korisnik biblioteke, čitanje knjiga, kvizovi, bodovi (bez školske pripadnosti)
+- **Učenik (Student)** — Školski korisnik, pregled biblioteke, rješavanje kvizova, skupljanje bodova
 
 ## Project Structure
 ```
@@ -60,6 +61,7 @@ shared/
 
 ## Key Routes
 ### Javne: /, /biblioteka, /knjiga/:id, /blog, /cijene, /kontakt, /prijava
+### Čitalac: /citanje, /citanje/biblioteka, /citanje/knjiga/:id, /citanje/kviz/:id, /citanje/rezultati, /citanje/pro
 ### Učenik: /ucenik, /ucenik/biblioteka, /ucenik/knjiga/:id, /ucenik/kviz/:id, /ucenik/rezultati
 ### Učitelj: /ucitelj, /ucitelj/ucenici, /ucitelj/biblioteka
 ### Roditelj: /roditelj, /roditelj/djeca
@@ -133,8 +135,8 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 
 ### Registracija
 - Tri taba: Prijava, Registracija, Institucija
-- Samoregistracija: učenik/roditelj sa izborom starosne skupine (R1/R4/R7/O/A)
-- Institucionalna registracija: škola/mekteb sa izborom uloge, zahtijeva admin odobrenje
+- Samoregistracija: čitalac/učenik/roditelj sa izborom starosne skupine (R1/R4/R7/O/A)
+- Institucionalna registracija: škola sa izborom uloge (učitelj/bibliotekar/sekretar), zahtijeva admin odobrenje
 - Polje ageGroup (R1/R4/R7/O/A) za odvajanje na leaderboardu i filtriranje biblioteke
 
 ### Blog

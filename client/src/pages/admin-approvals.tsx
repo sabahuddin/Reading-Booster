@@ -32,14 +32,12 @@ interface PendingTeacher {
 
 const roleLabels: Record<string, string> = {
   ucitelj: "Učitelj",
-  muallim: "Učitelj",
-  bibliotekar: "Učitelj",
+  bibliotekar: "Bibliotekar",
   sekretar: "Sekretar",
 };
 
 const typeLabels: Record<string, string> = {
   school: "Škola",
-  mekteb: "Škola",
 };
 
 export default function AdminApprovals() {

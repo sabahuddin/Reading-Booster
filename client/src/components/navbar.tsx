@@ -33,6 +33,7 @@ function getDashboardPath(role?: string) {
     case "admin": return "/admin";
     case "teacher": return "/ucitelj";
     case "parent": return "/roditelj";
+    case "reader": return "/citanje";
     default: return "/ucenik";
   }
 }

@@ -39,7 +39,7 @@ import {
   Tags,
 } from "lucide-react";
 
-type Role = "student" | "teacher" | "parent" | "admin" | "school";
+type Role = "student" | "teacher" | "parent" | "admin" | "school" | "reader";
 
 interface MenuItem {
   title: string;
@@ -62,6 +62,11 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Početna", url: "/roditelj", icon: Home },
     { title: "Djeca", url: "/roditelj/djeca", icon: Baby },
   ],
+  reader: [
+    { title: "Početna", url: "/citanje", icon: Home },
+    { title: "Biblioteka", url: "/citanje/biblioteka", icon: BookOpen },
+    { title: "Moji rezultati", url: "/citanje/rezultati", icon: Trophy },
+  ],
   school: [
     { title: "Početna", url: "/skola", icon: SchoolIcon },
   ],
@@ -80,11 +85,12 @@ const menusByRole: Record<Role, MenuItem[]> = {
 };
 
 const roleLabels: Record<Role, string> = {
-  student: "Čitalac",
+  student: "Učenik",
   teacher: "Učitelj",
   parent: "Roditelj",
   admin: "Administrator",
   school: "Ustanova",
+  reader: "Čitalac",
 };
 
 interface DashboardLayoutProps {
@@ -107,7 +113,7 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
 
   const { data: subscription } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
-    enabled: role === "student",
+    enabled: role === "student" || role === "reader",
   });
 
   const isPro = subscription && !subscription.isFree;
@@ -127,7 +133,7 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
                 <Badge variant="secondary" data-testid="badge-role">
                   {roleLabels[role]}
                 </Badge>
-                {role === "student" && (
+                {(role === "student" || role === "reader") && (
                   <Badge variant="default" data-testid="badge-points">
                     <Star className="mr-1" />
                     {user?.points ?? 0} bodova
@@ -159,11 +165,11 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {role === "student" && (
+            {(role === "student" || role === "reader") && (
               <SidebarGroup>
                 <SidebarGroupContent>
                   <div className="px-2">
-                    <Link href="/ucenik/pro" data-testid="link-nav-pro">
+                    <Link href={role === "reader" ? "/citanje/pro" : "/ucenik/pro"} data-testid="link-nav-pro">
                       <div className={`p-3 rounded-md border ${isPro ? "border-primary/30 bg-primary/5" : "border-dashed border-primary/40 bg-primary/5"}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <Sparkles className="w-4 h-4 text-primary shrink-0" />

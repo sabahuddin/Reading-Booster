@@ -35,6 +35,7 @@ import AdminChallenges from "@/pages/admin-challenges";
 import AdminApprovals from "@/pages/admin-approvals";
 import AdminGenres from "@/pages/admin-genres";
 import StudentDashboard from "@/pages/student-dashboard";
+import ReaderDashboard from "@/pages/reader-dashboard";
 import Library from "@/pages/library";
 import BookDetail from "@/pages/book-detail";
 import QuizPage from "@/pages/quiz-page";
@@ -67,6 +68,12 @@ function Router() {
       <Route path="/ucenik/kviz/:id" component={QuizPage} />
       <Route path="/ucenik/rezultati" component={StudentResults} />
       <Route path="/ucenik/pro" component={StudentProPage} />
+      <Route path="/citanje" component={ReaderDashboard} />
+      <Route path="/citanje/biblioteka" component={Library} />
+      <Route path="/citanje/knjiga/:id" component={BookDetail} />
+      <Route path="/citanje/kviz/:id" component={QuizPage} />
+      <Route path="/citanje/rezultati" component={StudentResults} />
+      <Route path="/citanje/pro" component={StudentProPage} />
       <Route path="/ucitelj" component={TeacherDashboard} />
       <Route path="/ucitelj/ucenici" component={TeacherStudents} />
       <Route path="/ucitelj/biblioteka" component={TeacherLibrary} />

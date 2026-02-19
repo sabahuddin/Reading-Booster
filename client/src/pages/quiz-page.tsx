@@ -33,10 +33,14 @@ type SubscriptionStatus = {
 };
 
 export default function QuizPage() {
-  const [, params] = useRoute("/ucenik/kviz/:id");
-  const quizId = params?.id;
+  const [location, navigate] = useLocation();
+  const isReader = location.startsWith("/citanje");
+  const basePath = isReader ? "/citanje" : "/ucenik";
+  const dashboardRole = isReader ? "reader" : "student" as const;
+  const [, studentParams] = useRoute("/ucenik/kviz/:id");
+  const [, readerParams] = useRoute("/citanje/kviz/:id");
+  const quizId = studentParams?.id || readerParams?.id;
   const { toast } = useToast();
-  const [, navigate] = useLocation();
 
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -115,7 +119,7 @@ export default function QuizPage() {
 
   if (showSubscriptionPrompt || (subStatus && !subStatus.canTakeQuiz)) {
     return (
-      <DashboardLayout role="student">
+      <DashboardLayout role={dashboardRole}>
         <div className="max-w-xl mx-auto space-y-6">
           <div className="text-center space-y-4">
             <Lock className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -158,7 +162,7 @@ export default function QuizPage() {
               <Link href="/cijene">Pogledaj pakete</Link>
             </Button>
             <Button variant="outline" asChild data-testid="button-back-library">
-              <Link href="/ucenik/biblioteka">Natrag u biblioteku</Link>
+              <Link href={`${basePath}/biblioteka`}>Natrag u biblioteku</Link>
             </Button>
           </div>
         </div>
@@ -168,7 +172,7 @@ export default function QuizPage() {
 
   if (submitted && result) {
     return (
-      <DashboardLayout role="student">
+      <DashboardLayout role={dashboardRole}>
         <div className="max-w-xl mx-auto space-y-6">
           <div className="text-center space-y-4">
             <Trophy className="mx-auto text-muted-foreground" />
@@ -210,10 +214,10 @@ export default function QuizPage() {
 
               <div className="flex gap-3 flex-wrap justify-center pt-2">
                 <Button asChild variant="outline" data-testid="link-back-library">
-                  <Link href="/ucenik/biblioteka">Natrag u biblioteku</Link>
+                  <Link href={`${basePath}/biblioteka`}>Natrag u biblioteku</Link>
                 </Button>
                 <Button asChild data-testid="link-my-results">
-                  <Link href="/ucenik/rezultati">Moji rezultati</Link>
+                  <Link href={`${basePath}/rezultati`}>Moji rezultati</Link>
                 </Button>
               </div>
             </CardContent>
@@ -224,10 +228,10 @@ export default function QuizPage() {
   }
 
   return (
-    <DashboardLayout role="student">
+    <DashboardLayout role={dashboardRole}>
       <div className="max-w-2xl mx-auto space-y-6">
         <Button variant="ghost" asChild data-testid="button-back">
-          <Link href="/ucenik/biblioteka">
+          <Link href={`${basePath}/biblioteka`}>
             <ArrowLeft />
             <span>Natrag</span>
           </Link>

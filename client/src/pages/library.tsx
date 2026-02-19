@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,10 @@ import defaultBookCover from "@assets/background_1771243573729.png";
 const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
 export default function Library() {
+  const [location] = useLocation();
+  const isReader = location.startsWith("/citanje");
+  const basePath = isReader ? "/citanje" : "/ucenik";
+  const dashboardRole = isReader ? "reader" : "student";
   const [search, setSearch] = useState("");
 
   const { data: books, isLoading } = useQuery<Book[]>({
@@ -26,7 +30,7 @@ export default function Library() {
   );
 
   return (
-    <DashboardLayout role="student">
+    <DashboardLayout role={dashboardRole}>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-library-title">Biblioteka</h1>
@@ -71,7 +75,7 @@ export default function Library() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((book) => (
-              <Link key={book.id} href={`/ucenik/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
+              <Link key={book.id} href={`${basePath}/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
                 <Card className="hover-elevate h-full">
                   <CardContent className="p-4 space-y-3">
                     <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">

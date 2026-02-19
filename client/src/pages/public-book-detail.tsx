@@ -26,6 +26,7 @@ export default function PublicBookDetail() {
   const [, params] = useRoute("/knjiga/:id");
   const bookId = params?.id;
   const { user, isAuthenticated } = useAuth();
+  const resultsPath = user?.role === "reader" ? "/citanje/rezultati" : "/ucenik/rezultati";
 
   const { data: book, isLoading: bookLoading } = useQuery<BookWithGenres>({
     queryKey: ["/api/books", bookId],
@@ -140,7 +141,7 @@ export default function PublicBookDetail() {
                       <div className="space-y-2">
                         <p className="text-lg text-muted-foreground">Već si riješio/la kviz za ovu knjigu.</p>
                         <Button variant="outline" asChild data-testid="button-view-results">
-                          <Link href="/ucenik/rezultati">
+                          <Link href={resultsPath}>
                             <BookOpen className="mr-2 h-4 w-4" />
                             Pogledaj rezultate
                           </Link>
@@ -152,7 +153,7 @@ export default function PublicBookDetail() {
                           Pročitao/la si knjigu? Testiraj svoje znanje i osvoji bodove!
                         </p>
                         <Button asChild data-testid="button-start-quiz">
-                          <Link href={`/ucenik/kviz/${quiz.id}`}>
+                          <Link href={`${user?.role === "reader" ? "/citanje" : "/ucenik"}/kviz/${quiz.id}`}>
                             <Brain className="mr-2 h-4 w-4" />
                             Pokreni kviz
                           </Link>
