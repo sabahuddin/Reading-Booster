@@ -9,6 +9,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { seedDatabase } from "./seed";
 import { ensureAllBooks } from "./seed-all-books";
+import { seedMissingQuizzes } from "./seed-quizzes";
 
 declare module "express-session" {
   interface SessionData {
@@ -182,7 +183,7 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
     },
     () => {
       log(`serving on port ${port}`);
-      seedDatabase().then(() => ensureAllBooks()).catch(console.error);
+      seedDatabase().then(() => ensureAllBooks()).then(() => seedMissingQuizzes()).catch(console.error);
     },
   );
 })();

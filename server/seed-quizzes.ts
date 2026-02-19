@@ -1,17 +1,20 @@
 import { db } from "./db";
-import { quizzes, questions } from "@shared/schema";
+import { books, quizzes, questions } from "@shared/schema";
+import { eq } from "drizzle-orm";
+
+interface QuizQuestion {
+  questionText: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctAnswer: "a" | "b" | "c" | "d";
+}
 
 interface QuizData {
   bookId: string;
   title: string;
-  questions: {
-    questionText: string;
-    optionA: string;
-    optionB: string;
-    optionC: string;
-    optionD: string;
-    correctAnswer: "a" | "b" | "c" | "d";
-  }[];
+  questions: QuizQuestion[];
 }
 
 const allQuizzes: QuizData[] = [
@@ -1920,24 +1923,48 @@ const allQuizzes: QuizData[] = [
   },
 ];
 
-async function seedQuizzes() {
-  console.log(`Seeding ${allQuizzes.length} quizzes...`);
+function extractBookTitle(quizTitle: string): string {
+  return quizTitle.replace(/^Kviz:\s*/, "");
+}
+
+const quizByTitle = new Map<string, QuizQuestion[]>();
+for (const q of allQuizzes) {
+  quizByTitle.set(extractBookTitle(q.title), q.questions);
+}
+
+export async function seedMissingQuizzes() {
+  const allBooks = await db.select().from(books);
+  const existingQuizzes = await db.select().from(quizzes);
+  const booksWithQuiz = new Set(existingQuizzes.map((q) => q.bookId));
+
+  const booksWithoutQuiz = allBooks.filter((b) => !booksWithQuiz.has(b.id));
+  if (booksWithoutQuiz.length === 0) {
+    console.log("All books already have quizzes, skipping quiz seed.");
+    return;
+  }
+
+  console.log(`Seeding quizzes for ${booksWithoutQuiz.length} books without quizzes...`);
   let quizCount = 0;
   let questionCount = 0;
 
-  for (const quizData of allQuizzes) {
+  for (const book of booksWithoutQuiz) {
+    const quizQuestions = quizByTitle.get(book.title);
+    if (!quizQuestions) {
+      continue;
+    }
+
     try {
       const [quiz] = await db
         .insert(quizzes)
         .values({
-          bookId: quizData.bookId,
-          title: quizData.title,
+          bookId: book.id,
+          title: `Kviz: ${book.title}`,
         })
         .returning();
 
       quizCount++;
 
-      for (const q of quizData.questions) {
+      for (const q of quizQuestions) {
         await db.insert(questions).values({
           quizId: quiz.id,
           questionText: q.questionText,
@@ -1951,12 +1978,14 @@ async function seedQuizzes() {
         questionCount++;
       }
     } catch (err: any) {
-      console.error(`Error seeding quiz for book ${quizData.bookId}: ${err.message}`);
+      console.error(`Error seeding quiz for "${book.title}": ${err.message}`);
     }
   }
 
-  console.log(`Done! Created ${quizCount} quizzes with ${questionCount} questions.`);
-  process.exit(0);
+  console.log(`Quiz seed done! Created ${quizCount} quizzes with ${questionCount} questions.`);
 }
 
-seedQuizzes();
+const isDirectRun = process.argv[1]?.includes("seed-quizzes");
+if (isDirectRun) {
+  seedMissingQuizzes().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
+}
