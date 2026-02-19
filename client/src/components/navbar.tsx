@@ -37,6 +37,14 @@ function getDashboardPath(role?: string) {
   }
 }
 
+function getInitials(fullName?: string) {
+  return fullName
+    ?.split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase() || "U";
+}
+
 export function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -47,21 +55,20 @@ export function Navbar() {
       className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       data-testid="navbar"
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-1">
         <Link href="/" data-testid="link-logo">
-          <span className="flex items-center gap-3 text-2xl font-bold">
-            <img src={logoImg} alt="Čitanje logo" className="h-20 w-20" />
+          <span className="flex items-center gap-2 text-2xl font-bold">
+            <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
             Čitanje
           </span>
         </Link>
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-0 md:flex">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}>
               <Button
                 variant="ghost"
-                size="lg"
-                className={`text-base font-semibold ${
+                className={`text-base font-semibold px-3 ${
                   location === link.href
                     ? "bg-accent text-accent-foreground"
                     : ""
@@ -74,33 +81,30 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="lg"
-                  className="flex items-center gap-2 text-base"
+                  className="flex items-center gap-2 px-2"
                   data-testid="button-user-menu"
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-sm">
-                      {user.fullName
-                        ?.split(" ")
-                        .map((n: string) => n[0])
-                        .join("")
-                        .toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-base">{user.fullName}</span>
-                  <Badge variant="secondary" className="ml-1 gap-1 text-sm no-default-hover-elevate no-default-active-elevate" data-testid="badge-points">
+                  <Badge variant="secondary" className="gap-1 text-sm no-default-hover-elevate no-default-active-elevate" data-testid="badge-points">
                     <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
                     {user.points ?? 0}
                   </Badge>
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="text-sm font-semibold">
+                      {getInitials(user.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <div className="px-3 py-2 text-sm font-medium border-b mb-1">
+                  {user.fullName}
+                </div>
                 <DropdownMenuItem asChild className="text-base">
                   <Link href={getDashboardPath(user.role)} data-testid="link-dashboard">
                     <LayoutDashboard className="mr-2 h-5 w-5" />
@@ -120,18 +124,24 @@ export function Navbar() {
           ) : (
             <>
               <Link href="/prijava">
-                <Button variant="ghost" size="lg" className="text-base font-semibold" data-testid="link-login">
+                <Button variant="ghost" className="text-base font-semibold px-3" data-testid="link-login">
                   Prijava
                 </Button>
               </Link>
               <Link href="/registracija">
-                <Button size="lg" className="text-base font-semibold" data-testid="link-register">Registracija</Button>
+                <Button className="text-base font-semibold" data-testid="link-register">Registracija</Button>
               </Link>
             </>
           )}
         </div>
 
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          {isAuthenticated && user && (
+            <Badge variant="secondary" className="gap-1 text-sm no-default-hover-elevate no-default-active-elevate" data-testid="badge-points-mobile">
+              <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+              {user.points ?? 0}
+            </Badge>
+          )}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button
@@ -154,7 +164,6 @@ export function Navbar() {
                   <Link key={link.href} href={link.href}>
                     <Button
                       variant="ghost"
-                      size="lg"
                       className={`w-full justify-start text-base ${
                         location === link.href
                           ? "bg-accent text-accent-foreground"
@@ -172,25 +181,16 @@ export function Navbar() {
                   <>
                     <div className="flex items-center gap-2 px-4 py-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-sm">
-                          {user.fullName
-                            ?.split(" ")
-                            .map((n: string) => n[0])
-                            .join("")
-                            .toUpperCase() || "U"}
+                        <AvatarFallback className="text-sm font-semibold">
+                          {getInitials(user.fullName)}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-base font-medium">{user.fullName}</span>
-                      <Badge variant="secondary" className="ml-auto gap-1 text-sm no-default-hover-elevate no-default-active-elevate" data-testid="badge-points-mobile">
-                        <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
-                        {user.points ?? 0}
-                      </Badge>
                     </div>
                     <div className="my-2 border-t" />
                     <Link href={getDashboardPath(user.role)}>
                       <Button
                         variant="ghost"
-                        size="lg"
                         className="w-full justify-start text-base"
                         onClick={() => setMobileOpen(false)}
                         data-testid="link-mobile-dashboard"
@@ -201,7 +201,6 @@ export function Navbar() {
                     </Link>
                     <Button
                       variant="ghost"
-                      size="lg"
                       className="w-full justify-start text-base"
                       onClick={() => {
                         logout.mutate();
@@ -218,7 +217,6 @@ export function Navbar() {
                     <Link href="/prijava">
                       <Button
                         variant="ghost"
-                        size="lg"
                         className="w-full justify-start text-base"
                         onClick={() => setMobileOpen(false)}
                         data-testid="link-mobile-login"
@@ -228,7 +226,6 @@ export function Navbar() {
                     </Link>
                     <Link href="/registracija">
                       <Button
-                        size="lg"
                         className="w-full text-base"
                         onClick={() => setMobileOpen(false)}
                         data-testid="link-mobile-register"

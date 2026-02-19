@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Calendar, Search, Tag } from "lucide-react";
+import { Calendar, Search, Tag, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import type { BlogPost } from "@shared/schema";
@@ -30,9 +31,12 @@ function BlogSkeleton() {
   );
 }
 
+const POSTS_PER_PAGE = 9;
+
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog"],
@@ -70,6 +74,9 @@ export default function BlogPage() {
     return result;
   }, [posts, searchQuery, selectedKeyword]);
 
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  const paginatedPosts = filteredPosts.slice((currentPage - 1) * POSTS_PER_PAGE, currentPage * POSTS_PER_PAGE);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -103,7 +110,7 @@ export default function BlogPage() {
               <Input
                 placeholder="Pretraži blog..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="pl-10"
                 data-testid="input-blog-search"
               />
@@ -115,7 +122,7 @@ export default function BlogPage() {
                 <Badge
                   variant={selectedKeyword === null ? "default" : "secondary"}
                   className="cursor-pointer"
-                  onClick={() => setSelectedKeyword(null)}
+                  onClick={() => { setSelectedKeyword(null); setCurrentPage(1); }}
                   data-testid="badge-keyword-all"
                 >
                   Sve
@@ -125,9 +132,10 @@ export default function BlogPage() {
                     key={kw}
                     variant={selectedKeyword === kw ? "default" : "secondary"}
                     className="cursor-pointer"
-                    onClick={() =>
-                      setSelectedKeyword(selectedKeyword === kw ? null : kw)
-                    }
+                    onClick={() => {
+                      setSelectedKeyword(selectedKeyword === kw ? null : kw);
+                      setCurrentPage(1);
+                    }}
                     data-testid={`badge-keyword-${kw}`}
                   >
                     {kw}
@@ -167,71 +175,106 @@ export default function BlogPage() {
               </p>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredPosts.map((post, index) => (
-                <motion.div
-                  key={post.id}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-50px" }}
-                  variants={fadeIn}
-                  transition={{ duration: 0.4, delay: index * 0.08 }}
-                >
-                  <Link href={`/blog/${post.id}`}>
-                    <Card
-                      className="overflow-visible h-full flex flex-col cursor-pointer transition-shadow hover:shadow-md"
-                      data-testid={`card-blog-${post.id}`}
-                    >
-                      {post.coverImage && (
-                        <img
-                          src={post.coverImage}
-                          alt={post.title}
-                          className="h-48 w-full rounded-t-xl object-cover"
-                        />
-                      )}
-                      <CardContent className="flex flex-1 flex-col p-6">
-                        <div className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {new Date(post.publishedAt).toLocaleDateString(
-                              "hr-HR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              }
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {paginatedPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-50px" }}
+                    variants={fadeIn}
+                    transition={{ duration: 0.4, delay: index * 0.08 }}
+                  >
+                    <Link href={`/blog/${post.id}`}>
+                      <Card
+                        className="overflow-visible h-full flex flex-col cursor-pointer transition-shadow hover:shadow-md"
+                        data-testid={`card-blog-${post.id}`}
+                      >
+                        {post.coverImage && (
+                          <img
+                            src={post.coverImage}
+                            alt={post.title}
+                            className="h-48 w-full rounded-t-xl object-cover"
+                          />
+                        )}
+                        <CardContent className="flex flex-1 flex-col p-6">
+                          <div className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              {new Date(post.publishedAt).toLocaleDateString(
+                                "hr-HR",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                }
+                              )}
+                            </span>
+                          </div>
+                          <h3 className="mb-2 text-xl font-semibold">
+                            {post.title}
+                          </h3>
+                          <p className="flex-1 text-base text-muted-foreground">
+                            {post.excerpt}
+                          </p>
+                          {post.keywords &&
+                            post.keywords.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-1">
+                                {post.keywords.map((kw) => (
+                                  <Badge
+                                    key={kw}
+                                    variant="secondary"
+                                    className="text-xs no-default-hover-elevate no-default-active-elevate"
+                                  >
+                                    {kw}
+                                  </Badge>
+                                ))}
+                              </div>
                             )}
-                          </span>
-                        </div>
-                        <h3 className="mb-2 text-xl font-semibold">
-                          {post.title}
-                        </h3>
-                        <p className="flex-1 text-base text-muted-foreground">
-                          {post.excerpt}
-                        </p>
-                        {post.keywords &&
-                          post.keywords.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-1">
-                              {post.keywords.map((kw) => (
-                                <Badge
-                                  key={kw}
-                                  variant="secondary"
-                                  className="text-xs no-default-hover-elevate no-default-active-elevate"
-                                >
-                                  {kw}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          {post.author}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                          <p className="mt-3 text-sm text-muted-foreground">
+                            {post.author}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-8">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-blog-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <Button
+                      key={p}
+                      variant={currentPage === p ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setCurrentPage(p)}
+                      data-testid={`button-blog-page-${p}`}
+                    >
+                      {p}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    data-testid="button-blog-next-page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

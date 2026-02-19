@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Navbar } from "@/components/navbar";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { BookOpen, Search, FileText, Star, TrendingUp, Heart, Sparkles } from "lucide-react";
+import { BookOpen, Search, FileText, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Book } from "@shared/schema";
 import defaultBookCover from "@assets/background_1771243573729.png";
 
@@ -69,11 +69,14 @@ function BookCard({ book }: { book: Book }) {
   );
 }
 
+const BOOKS_PER_PAGE = 20;
+
 export default function PublicLibrary() {
   const [search, setSearch] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("all");
   const [selectedAge, setSelectedAge] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: books, isLoading } = useQuery<Book[]>({
     queryKey: ["/api/books"],
@@ -91,15 +94,24 @@ export default function PublicLibrary() {
     books: books!.filter((b) => b.genre === genre).sort((a, b) => b.timesRead - a.timesRead).slice(0, 4),
   }));
 
-  const filtered = books?.filter((b) => {
-    const matchSearch =
-      b.title.toLowerCase().includes(search.toLowerCase()) ||
-      b.author.toLowerCase().includes(search.toLowerCase());
-    const matchGenre = selectedGenre === "all" || b.genre === selectedGenre;
-    const matchAge = selectedAge === "all" || b.ageGroup === selectedAge;
-    const matchDifficulty = selectedDifficulty === "all" || b.readingDifficulty === selectedDifficulty;
-    return matchSearch && matchGenre && matchAge && matchDifficulty;
-  });
+  const filtered = useMemo(() => {
+    return books?.filter((b) => {
+      const matchSearch =
+        b.title.toLowerCase().includes(search.toLowerCase()) ||
+        b.author.toLowerCase().includes(search.toLowerCase());
+      const matchGenre = selectedGenre === "all" || b.genre === selectedGenre;
+      const matchAge = selectedAge === "all" || b.ageGroup === selectedAge;
+      const matchDifficulty = selectedDifficulty === "all" || b.readingDifficulty === selectedDifficulty;
+      return matchSearch && matchGenre && matchAge && matchDifficulty;
+    });
+  }, [books, search, selectedGenre, selectedAge, selectedDifficulty]);
+
+  const totalPages = filtered ? Math.ceil(filtered.length / BOOKS_PER_PAGE) : 0;
+  const paginatedBooks = filtered?.slice((currentPage - 1) * BOOKS_PER_PAGE, currentPage * BOOKS_PER_PAGE);
+
+  function handleFilterChange() {
+    setCurrentPage(1);
+  }
 
   const hasActiveFilters = search || selectedGenre !== "all" || selectedAge !== "all" || selectedDifficulty !== "all";
 
@@ -209,12 +221,12 @@ export default function PublicLibrary() {
                 <Input
                   placeholder="Pretraži knjige..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); handleFilterChange(); }}
                   className="pl-10"
                   data-testid="input-search-books"
                 />
               </div>
-              <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+              <Select value={selectedGenre} onValueChange={(v) => { setSelectedGenre(v); handleFilterChange(); }}>
                 <SelectTrigger className="w-[160px]" data-testid="select-filter-genre">
                   <SelectValue placeholder="Žanr" />
                 </SelectTrigger>
@@ -225,7 +237,7 @@ export default function PublicLibrary() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={selectedAge} onValueChange={setSelectedAge}>
+              <Select value={selectedAge} onValueChange={(v) => { setSelectedAge(v); handleFilterChange(); }}>
                 <SelectTrigger className="w-[160px]" data-testid="select-filter-age">
                   <SelectValue placeholder="Dob" />
                 </SelectTrigger>
@@ -236,7 +248,7 @@ export default function PublicLibrary() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+              <Select value={selectedDifficulty} onValueChange={(v) => { setSelectedDifficulty(v); handleFilterChange(); }}>
                 <SelectTrigger className="w-[160px]" data-testid="select-filter-difficulty">
                   <SelectValue placeholder="Težina" />
                 </SelectTrigger>
@@ -290,11 +302,60 @@ export default function PublicLibrary() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map((book) => (
-                <BookCard key={book.id} book={book} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {paginatedBooks?.map((book) => (
+                  <BookCard key={book.id} book={book} />
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-8">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                    .reduce<(number | string)[]>((acc, p, i, arr) => {
+                      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      typeof p === "string" ? (
+                        <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground">...</span>
+                      ) : (
+                        <Button
+                          key={p}
+                          variant={currentPage === p ? "default" : "outline"}
+                          size="icon"
+                          onClick={() => setCurrentPage(p)}
+                          data-testid={`button-page-${p}`}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    data-testid="button-next-page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {filtered?.length} knjiga
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
