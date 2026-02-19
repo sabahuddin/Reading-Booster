@@ -2,6 +2,7 @@ import { db } from "./db";
 import { users, books, quizzes, questions, blogPosts } from "@shared/schema";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { eq } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
 
@@ -353,6 +354,22 @@ function generateQuestionsForBook(bookTitle: string, quizId: string) {
 export async function ensureUsersSeeded() {
   const existingUsers = await db.select().from(users).limit(1);
   if (existingUsers.length > 0) {
+    const [admin] = await db.select().from(users).where(eq(users.username, "admin")).limit(1);
+    if (admin) {
+      const adminPassword = await hashPassword("admin123");
+      await db.update(users).set({ password: adminPassword }).where(eq(users.id, admin.id));
+      console.log("Admin password reset to default.");
+    } else {
+      const adminPassword = await hashPassword("admin123");
+      await db.insert(users).values({
+        username: "admin",
+        email: "admin@citaj.ba",
+        password: adminPassword,
+        role: "admin",
+        fullName: "Admin Korisnik",
+      });
+      console.log("Admin user created.");
+    }
     console.log("Users already exist, skipping user seed...");
     return;
   }
