@@ -1,11 +1,11 @@
 import { BookOpen } from "lucide-react";
 
-const AGE_GROUP_COLORS: Record<string, { bg: string; accent: string; text: string }> = {
-  R1: { bg: "from-amber-400 to-orange-500", accent: "bg-amber-300/30", text: "text-amber-50" },
-  R4: { bg: "from-emerald-400 to-teal-600", accent: "bg-emerald-300/30", text: "text-emerald-50" },
-  R7: { bg: "from-blue-400 to-indigo-600", accent: "bg-blue-300/30", text: "text-blue-50" },
-  O: { bg: "from-purple-400 to-violet-600", accent: "bg-purple-300/30", text: "text-purple-50" },
-  A: { bg: "from-rose-400 to-red-600", accent: "bg-rose-300/30", text: "text-rose-50" },
+const AGE_GROUP_STYLES: Record<string, { gradientFrom: string; gradientTo: string; accentBg: string }> = {
+  R1: { gradientFrom: "#fbbf24", gradientTo: "#f97316", accentBg: "rgba(252,211,77,0.3)" },
+  R4: { gradientFrom: "#34d399", gradientTo: "#0d9488", accentBg: "rgba(110,231,183,0.3)" },
+  R7: { gradientFrom: "#60a5fa", gradientTo: "#4f46e5", accentBg: "rgba(147,197,253,0.3)" },
+  O: { gradientFrom: "#c084fc", gradientTo: "#7c3aed", accentBg: "rgba(192,132,252,0.3)" },
+  A: { gradientFrom: "#fb7185", gradientTo: "#dc2626", accentBg: "rgba(253,164,175,0.3)" },
 };
 
 const PATTERNS = [
@@ -53,14 +53,17 @@ export function BookCover({ title, author, ageGroup, coverImage, className = "" 
     );
   }
 
-  const colors = AGE_GROUP_COLORS[ageGroup || "R1"] || AGE_GROUP_COLORS.R1;
+  const colors = AGE_GROUP_STYLES[ageGroup || "R1"] || AGE_GROUP_STYLES.R1;
   const hash = hashString(title + author);
   const patternIndex = hash % PATTERNS.length;
   const pattern = PATTERNS[patternIndex];
   const rotation = (hash % 30) - 15;
 
   return (
-    <div className={`relative h-full w-full rounded-md overflow-hidden bg-gradient-to-br ${colors.bg} ${className}`}>
+    <div
+      className={`relative h-full w-full rounded-md overflow-hidden ${className}`}
+      style={{ background: `linear-gradient(to bottom right, ${colors.gradientFrom}, ${colors.gradientTo})` }}
+    >
       <svg
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
@@ -70,10 +73,13 @@ export function BookCover({ title, author, ageGroup, coverImage, className = "" 
         <path d={pattern} fill="white" />
       </svg>
 
-      <div className={`absolute top-3 left-3 right-3 ${colors.accent} rounded-md p-2`}>
+      <div
+        className="absolute top-3 left-3 right-3 rounded-md p-2"
+        style={{ backgroundColor: colors.accentBg }}
+      >
         <div className="flex items-center gap-1.5">
-          <BookOpen className="w-3.5 h-3.5 text-white/80 shrink-0" />
-          <span className="text-[10px] font-medium text-white/80 uppercase tracking-wider truncate">
+          <BookOpen className="w-3.5 h-3.5 shrink-0" style={{ color: "rgba(255,255,255,0.8)" }} />
+          <span className="text-[10px] font-medium uppercase tracking-wider truncate" style={{ color: "rgba(255,255,255,0.8)" }}>
             {ageGroup || ""}
           </span>
         </div>
@@ -81,16 +87,19 @@ export function BookCover({ title, author, ageGroup, coverImage, className = "" 
 
       <div className="absolute inset-0 flex flex-col justify-end p-4">
         <div className="space-y-1">
-          <h3 className={`font-bold text-sm leading-tight line-clamp-3 ${colors.text} drop-shadow-md`}>
+          <h3 className="font-bold text-sm leading-tight line-clamp-3 drop-shadow-md" style={{ color: "rgba(255,255,255,0.95)" }}>
             {title}
           </h3>
-          <p className="text-xs text-white/75 line-clamp-1 drop-shadow-sm">
+          <p className="text-xs line-clamp-1 drop-shadow-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
             {author}
           </p>
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent" />
+      <div
+        className="absolute bottom-0 left-0 right-0 h-1/3"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.3), transparent)" }}
+      />
     </div>
   );
 }
