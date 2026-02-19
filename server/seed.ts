@@ -350,7 +350,7 @@ function generateQuestionsForBook(bookTitle: string, quizId: string) {
   }));
 }
 
-async function ensureUsersSeeded() {
+export async function ensureUsersSeeded() {
   const existingUsers = await db.select().from(users).limit(1);
   if (existingUsers.length > 0) {
     console.log("Users already exist, skipping user seed...");

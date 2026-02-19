@@ -8,7 +8,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { runMigrations } from "./migrate";
-import { seedDatabase } from "./seed";
+import { seedDatabase, ensureUsersSeeded } from "./seed";
 import { ensureAllBooks } from "./seed-all-books";
 import { seedMissingQuizzes } from "./seed-quizzes";
 
@@ -184,7 +184,12 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
     },
     () => {
       log(`serving on port ${port}`);
-      runMigrations().then(() => seedDatabase()).then(() => ensureAllBooks()).then(() => seedMissingQuizzes()).catch(console.error);
+      runMigrations()
+        .then(() => ensureUsersSeeded())
+        .then(() => seedDatabase())
+        .then(() => ensureAllBooks())
+        .then(() => seedMissingQuizzes())
+        .catch(console.error);
     },
   );
 })();
