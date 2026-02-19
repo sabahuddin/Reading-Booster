@@ -27,15 +27,13 @@ Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici
 - **O** — Omladina / Young Adult (15-18 godina, srednja škola)
 - **A** — Odrasli (18+, roditelji i stariji korisnici)
 
-## Žanrovi (genre)
-- **lektira** — Svi obavezni naslovi za osnovne i srednje škole
-- **avantura_fantasy** — Dinamične knjige sa jasnom radnjom (Avantura i Fantasy)
-- **realisticni_roman** — Priče o stvarnom životu, odrastanju i školi
-- **beletristika** — Romani i pripovijetke za odrasle (A) i omladinu (O), omogućava porodično takmičenje
-- **bajke_basne** — Klasici namijenjeni prvenstveno kategoriji M
-- **zanimljiva_nauka** — Popularno-naučni sadržaji, enciklopedije i zanimljivosti
-- **poezija** — Zbirke pjesama za djecu i odrasle
-- **islam** — Vjerska literatura, priče o poslanicima, ahlak i historija (za sve uzraste i mektebe)
+## Žanrovi (dynamic genres)
+- Žanrovi su dinamički upravljani kroz `genres` tabelu (admin CRUD na /admin/zanrovi)
+- Knjige podržavaju više žanrova istovremeno putem `book_genres` junction tabele (many-to-many)
+- API: GET/POST /api/genres, PUT/DELETE /api/genres/:id (admin only)
+- Knjige vraćaju `genres: Genre[]` niz u API odgovorima
+- Default žanrovi: Lektira, Avantura i Fantasy, Roman, Beletristika, Bajke i Basne, Zanimljiva nauka, Poezija, Islam
+- Legacy `genre` kolona na knjigama zadržana za backward compatibility
 
 ## User Roles
 - **Admin** — Upravljanje cijelom platformom (knjige, kvizovi, korisnici, blog, poruke, partneri, izazovi, institucionalna odobrenja)
@@ -65,7 +63,7 @@ shared/
 ### Učenik: /ucenik, /ucenik/biblioteka, /ucenik/knjiga/:id, /ucenik/kviz/:id, /ucenik/rezultati
 ### Učitelj: /ucitelj, /ucitelj/ucenici, /ucitelj/biblioteka
 ### Roditelj: /roditelj, /roditelj/djeca
-### Admin: /admin, /admin/knjige, /admin/kvizovi, /admin/korisnici, /admin/blog, /admin/poruke, /admin/partneri, /admin/izazovi, /admin/odobrenja
+### Admin: /admin, /admin/knjige, /admin/kvizovi, /admin/korisnici, /admin/blog, /admin/poruke, /admin/partneri, /admin/izazovi, /admin/odobrenja, /admin/zanrovi
 
 ## API Prefix: /api
 Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
@@ -149,7 +147,7 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - API: /api/blog/:id/comments (GET/POST/DELETE), /api/blog/:id/rating (GET/POST)
 
 ## Database Tables
-- users, books, quizzes, questions, quiz_results, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges
+- users, books, genres, book_genres, quizzes, questions, quiz_results, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges
 
 ### Kontakt
 - Kontakt forma za poruke

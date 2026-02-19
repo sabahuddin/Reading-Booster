@@ -16,6 +16,8 @@ import {
   bookRecommendations,
   classChallenges,
   bookBorrowings,
+  genres,
+  bookGenres,
   type User,
   type InsertUser,
   type Book,
@@ -38,6 +40,10 @@ import {
   type InsertPartner,
   type Challenge,
   type InsertChallenge,
+  type Genre,
+  type InsertGenre,
+  type BookGenre,
+  type InsertBookGenre,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -124,6 +130,17 @@ export interface IStorage {
   createBookBorrowing(data: any): Promise<any>;
   getActiveBorrowings(librarianId?: string): Promise<any[]>;
   returnBook(borrowingId: string): Promise<void>;
+
+  getAllGenres(): Promise<Genre[]>;
+  getGenre(id: string): Promise<Genre | undefined>;
+  getGenreBySlug(slug: string): Promise<Genre | undefined>;
+  createGenre(genre: InsertGenre): Promise<Genre>;
+  updateGenre(id: string, data: Partial<InsertGenre>): Promise<Genre | undefined>;
+  deleteGenre(id: string): Promise<void>;
+
+  getBookGenres(bookId: string): Promise<Genre[]>;
+  setBookGenres(bookId: string, genreIds: string[]): Promise<void>;
+  getBooksByGenreId(genreId: string): Promise<Book[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -588,6 +605,63 @@ export class DatabaseStorage implements IStorage {
       .update(bookBorrowings)
       .set({ returnedAt: new Date() })
       .where(eq(bookBorrowings.id, borrowingId));
+  }
+
+  async getAllGenres(): Promise<Genre[]> {
+    return db.select().from(genres).orderBy(genres.sortOrder);
+  }
+
+  async getGenre(id: string): Promise<Genre | undefined> {
+    const [genre] = await db.select().from(genres).where(eq(genres.id, id));
+    return genre;
+  }
+
+  async getGenreBySlug(slug: string): Promise<Genre | undefined> {
+    const [genre] = await db.select().from(genres).where(eq(genres.slug, slug));
+    return genre;
+  }
+
+  async createGenre(genre: InsertGenre): Promise<Genre> {
+    const [created] = await db.insert(genres).values(genre).returning();
+    return created;
+  }
+
+  async updateGenre(id: string, data: Partial<InsertGenre>): Promise<Genre | undefined> {
+    const [updated] = await db.update(genres).set(data).where(eq(genres.id, id)).returning();
+    return updated;
+  }
+
+  async deleteGenre(id: string): Promise<void> {
+    await db.delete(bookGenres).where(eq(bookGenres.genreId, id));
+    await db.delete(genres).where(eq(genres.id, id));
+  }
+
+  async getBookGenres(bookId: string): Promise<Genre[]> {
+    const bgs = await db.select().from(bookGenres).where(eq(bookGenres.bookId, bookId));
+    if (bgs.length === 0) return [];
+    const genreList: Genre[] = [];
+    for (const bg of bgs) {
+      const [g] = await db.select().from(genres).where(eq(genres.id, bg.genreId));
+      if (g) genreList.push(g);
+    }
+    return genreList;
+  }
+
+  async setBookGenres(bookId: string, genreIds: string[]): Promise<void> {
+    await db.delete(bookGenres).where(eq(bookGenres.bookId, bookId));
+    if (genreIds.length > 0) {
+      await db.insert(bookGenres).values(genreIds.map(genreId => ({ bookId, genreId })));
+    }
+  }
+
+  async getBooksByGenreId(genreId: string): Promise<Book[]> {
+    const bgs = await db.select().from(bookGenres).where(eq(bookGenres.genreId, genreId));
+    const bookList: Book[] = [];
+    for (const bg of bgs) {
+      const [book] = await db.select().from(books).where(eq(books.id, bg.bookId));
+      if (book) bookList.push(book);
+    }
+    return bookList;
   }
 }
 

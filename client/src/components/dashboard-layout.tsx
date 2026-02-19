@@ -36,6 +36,7 @@ import {
   TrendingUp,
   School as SchoolIcon,
   Sparkles,
+  Tags,
 } from "lucide-react";
 
 type Role = "student" | "teacher" | "parent" | "admin" | "school";
@@ -67,6 +68,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
   admin: [
     { title: "Početna", url: "/admin", icon: Home },
     { title: "Knjige", url: "/admin/knjige", icon: BookOpen },
+    { title: "Žanrovi", url: "/admin/zanrovi", icon: Tags },
     { title: "Kvizovi", url: "/admin/kvizovi", icon: FileQuestion },
     { title: "Korisnici", url: "/admin/korisnici", icon: Users },
     { title: "Odobrenja", url: "/admin/odobrenja", icon: UserCheck },

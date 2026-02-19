@@ -291,3 +291,28 @@ export const insertBookBorrowingSchema = createInsertSchema(bookBorrowings).omit
 });
 export type InsertBookBorrowing = z.infer<typeof insertBookBorrowingSchema>;
 export type BookBorrowing = typeof bookBorrowings.$inferSelect;
+
+export const genres = pgTable("genres", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const insertGenreSchema = createInsertSchema(genres).omit({
+  id: true,
+});
+export type InsertGenre = z.infer<typeof insertGenreSchema>;
+export type Genre = typeof genres.$inferSelect;
+
+export const bookGenres = pgTable("book_genres", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookId: varchar("book_id").notNull(),
+  genreId: varchar("genre_id").notNull(),
+});
+
+export const insertBookGenreSchema = createInsertSchema(bookGenres).omit({
+  id: true,
+});
+export type InsertBookGenre = z.infer<typeof insertBookGenreSchema>;
+export type BookGenre = typeof bookGenres.$inferSelect;

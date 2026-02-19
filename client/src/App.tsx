@@ -33,6 +33,7 @@ import AdminMessages from "@/pages/admin-messages";
 import AdminPartners from "@/pages/admin-partners";
 import AdminChallenges from "@/pages/admin-challenges";
 import AdminApprovals from "@/pages/admin-approvals";
+import AdminGenres from "@/pages/admin-genres";
 import StudentDashboard from "@/pages/student-dashboard";
 import Library from "@/pages/library";
 import BookDetail from "@/pages/book-detail";
@@ -74,6 +75,7 @@ function Router() {
       <Route path="/skola" component={SchoolDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/knjige" component={AdminBooks} />
+      <Route path="/admin/zanrovi" component={AdminGenres} />
       <Route path="/admin/kvizovi" component={AdminQuizzes} />
       <Route path="/admin/korisnici" component={AdminUsers} />
       <Route path="/admin/blog" component={AdminBlog} />

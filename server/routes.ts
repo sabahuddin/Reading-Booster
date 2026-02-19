@@ -21,6 +21,7 @@ import {
   insertContactMessageSchema,
   insertPartnerSchema,
   insertChallengeSchema,
+  insertGenreSchema,
 } from "@shared/schema";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -295,7 +296,13 @@ export async function registerRoutes(
   app.get("/api/books", async (_req, res) => {
     try {
       const allBooks = await storage.getAllBooks();
-      return res.json(allBooks);
+      const booksWithGenres = await Promise.all(
+        allBooks.map(async (book) => {
+          const bookGenresList = await storage.getBookGenres(book.id);
+          return { ...book, genres: bookGenresList };
+        })
+      );
+      return res.json(booksWithGenres);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -307,7 +314,8 @@ export async function registerRoutes(
       if (!book) {
         return res.status(404).json({ message: "Book not found" });
       }
-      return res.json(book);
+      const bookGenresList = await storage.getBookGenres(book.id);
+      return res.json({ ...book, genres: bookGenresList });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -315,12 +323,17 @@ export async function registerRoutes(
 
   app.post("/api/books", requireAdmin, async (req, res) => {
     try {
-      const parsed = insertBookSchema.safeParse(req.body);
+      const { genreIds, ...bookData } = req.body;
+      const parsed = insertBookSchema.safeParse(bookData);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
       }
       const book = await storage.createBook(parsed.data);
-      return res.status(201).json(book);
+      if (Array.isArray(genreIds) && genreIds.length > 0) {
+        await storage.setBookGenres(book.id, genreIds);
+      }
+      const bookGenresList = await storage.getBookGenres(book.id);
+      return res.status(201).json({ ...book, genres: bookGenresList });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -328,11 +341,16 @@ export async function registerRoutes(
 
   app.put("/api/books/:id", requireAdmin, async (req, res) => {
     try {
-      const book = await storage.updateBook(req.params.id as string, req.body);
+      const { genreIds, ...bookData } = req.body;
+      const book = await storage.updateBook(req.params.id as string, bookData);
       if (!book) {
         return res.status(404).json({ message: "Book not found" });
       }
-      return res.json(book);
+      if (Array.isArray(genreIds)) {
+        await storage.setBookGenres(book.id, genreIds);
+      }
+      const bookGenresList = await storage.getBookGenres(book.id);
+      return res.json({ ...book, genres: bookGenresList });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -340,6 +358,7 @@ export async function registerRoutes(
 
   app.delete("/api/books/:id", requireAdmin, async (req, res) => {
     try {
+      await storage.setBookGenres(req.params.id as string, []);
       await storage.deleteBook(req.params.id as string);
       return res.json({ message: "Book deleted" });
     } catch (error: any) {
@@ -833,6 +852,74 @@ export async function registerRoutes(
     try {
       const messages = await storage.getAllContactMessages();
       return res.json(messages);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== GENRES ROUTES ====================
+
+  app.get("/api/genres", async (_req, res) => {
+    try {
+      const genresList = await storage.getAllGenres();
+      return res.json(genresList);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/genres", requireAdmin, async (req, res) => {
+    try {
+      const parsed = insertGenreSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+      }
+      const genre = await storage.createGenre(parsed.data);
+      return res.status(201).json(genre);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/genres/:id", requireAdmin, async (req, res) => {
+    try {
+      const genre = await storage.updateGenre(req.params.id as string, req.body);
+      if (!genre) {
+        return res.status(404).json({ message: "Genre not found" });
+      }
+      return res.json(genre);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/genres/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteGenre(req.params.id as string);
+      return res.json({ message: "Genre deleted" });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/books/:id/genres", async (req, res) => {
+    try {
+      const genresList = await storage.getBookGenres(req.params.id as string);
+      return res.json(genresList);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/books/:id/genres", requireAdmin, async (req, res) => {
+    try {
+      const { genreIds } = req.body;
+      if (!Array.isArray(genreIds)) {
+        return res.status(400).json({ message: "genreIds must be an array" });
+      }
+      await storage.setBookGenres(req.params.id as string, genreIds);
+      const updatedGenres = await storage.getBookGenres(req.params.id as string);
+      return res.json(updatedGenres);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

@@ -6,7 +6,8 @@ import { z } from "zod";
 import DashboardLayout from "@/components/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Book } from "@shared/schema";
+import type { Book, Genre } from "@shared/schema";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,16 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
-const GENRES = [
-  { value: "lektira", label: "Lektira" },
-  { value: "avantura_fantasy", label: "Avantura i Fantasy" },
-  { value: "roman", label: "Roman" },
-  { value: "beletristika", label: "Beletristika" },
-  { value: "bajke_basne", label: "Bajke i Basne" },
-  { value: "zanimljiva_nauka", label: "Zanimljiva nauka" },
-  { value: "poezija", label: "Poezija" },
-  { value: "islam", label: "Islam" },
-];
+type BookWithGenres = Book & { genres?: Genre[] };
 
 const AGE_GROUPS = [
   { value: "R1", label: "Od 1. razreda" },
@@ -59,7 +51,7 @@ const bookFormSchema = z.object({
   coverImage: z.string().min(1, "Naslovna slika je obavezna"),
   content: z.string().min(1, "Sadržaj je obavezan"),
   ageGroup: z.string().min(1, "Dobna skupina je obavezna"),
-  genre: z.string().min(1, "Žanr je obavezan"),
+  genre: z.string().optional(),
   readingDifficulty: z.enum(["lako", "srednje", "tesko"]),
   pageCount: z.coerce.number().min(1, "Broj stranica mora biti barem 1"),
   pdfUrl: z.string().optional(),
@@ -79,8 +71,9 @@ const BOOKS_PER_PAGE = 20;
 export default function AdminBooks() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingBook, setEditingBook] = useState<Book | null>(null);
-  const [deleteBook, setDeleteBook] = useState<Book | null>(null);
+  const [editingBook, setEditingBook] = useState<BookWithGenres | null>(null);
+  const [deleteBook, setDeleteBook] = useState<BookWithGenres | null>(null);
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const bookFileInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -90,8 +83,12 @@ export default function AdminBooks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: books, isLoading } = useQuery<Book[]>({
+  const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
+  });
+
+  const { data: allGenres } = useQuery<Genre[]>({
+    queryKey: ["/api/genres"],
   });
 
   const filteredBooks = useMemo(() => {
@@ -102,6 +99,7 @@ export default function AdminBooks() {
       (b) =>
         b.title.toLowerCase().includes(q) ||
         b.author.toLowerCase().includes(q) ||
+        (b.genres && b.genres.some(g => g.name.toLowerCase().includes(q))) ||
         (b.genre && b.genre.toLowerCase().includes(q)) ||
         (b.isbn && b.isbn.toLowerCase().includes(q))
     );
@@ -118,7 +116,7 @@ export default function AdminBooks() {
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
       title: "", author: "", description: "", coverImage: "", content: "",
-      ageGroup: "", genre: "lektira", readingDifficulty: "srednje",
+      ageGroup: "", genre: "", readingDifficulty: "srednje",
       pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
       publisher: "", publicationYear: new Date().getFullYear(),
       publicationCity: "", isbn: "", cobissId: "",
@@ -172,7 +170,8 @@ export default function AdminBooks() {
 
   const createMutation = useMutation({
     mutationFn: async (data: BookFormValues) => {
-      const payload = { ...data, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null };
+      const firstGenreSlug = allGenres?.find(g => selectedGenreIds.includes(g.id))?.slug ?? "";
+      const payload = { ...data, genre: firstGenreSlug, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null, genreIds: selectedGenreIds };
       await apiRequest("POST", "/api/books", payload);
     },
     onSuccess: () => {
@@ -188,7 +187,8 @@ export default function AdminBooks() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: BookFormValues) => {
-      const payload = { ...data, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null };
+      const firstGenreSlug = allGenres?.find(g => selectedGenreIds.includes(g.id))?.slug ?? "";
+      const payload = { ...data, genre: firstGenreSlug, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null, genreIds: selectedGenreIds };
       await apiRequest("PUT", `/api/books/${editingBook!.id}`, payload);
     },
     onSuccess: () => {
@@ -270,16 +270,18 @@ export default function AdminBooks() {
 
   function openCreate() {
     setEditingBook(null);
+    setSelectedGenreIds([]);
     form.reset({
       title: "", author: "", description: "", coverImage: "", content: "",
-      ageGroup: "", genre: "lektira", readingDifficulty: "srednje",
+      ageGroup: "", genre: "", readingDifficulty: "srednje",
       pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
     });
     setDialogOpen(true);
   }
 
-  function openEdit(book: Book) {
+  function openEdit(book: BookWithGenres) {
     setEditingBook(book);
+    setSelectedGenreIds(book.genres?.map(g => g.id) ?? []);
     form.reset({
       title: book.title,
       author: book.author,
@@ -317,7 +319,6 @@ export default function AdminBooks() {
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
-  const genreLabel = (v: string) => GENRES.find((g) => g.value === v)?.label ?? v;
   const ageLabel = (v: string) => AGE_GROUPS.find((a) => a.value === v)?.label ?? v;
 
   return (
@@ -396,7 +397,16 @@ export default function AdminBooks() {
                         </TableCell>
                         <TableCell>{book.author}</TableCell>
                         <TableCell>{ageLabel(book.ageGroup)}</TableCell>
-                        <TableCell><Badge variant="secondary">{genreLabel(book.genre)}</Badge></TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {book.genres && book.genres.length > 0
+                              ? book.genres.map(g => (
+                                  <Badge key={g.id} variant="secondary">{g.name}</Badge>
+                                ))
+                              : book.genre && <Badge variant="secondary">{book.genre}</Badge>
+                            }
+                          </div>
+                        </TableCell>
                         <TableCell><DifficultyIcon difficulty={book.readingDifficulty} size="sm" /></TableCell>
                         <TableCell>{book.pageCount}</TableCell>
                         <TableCell>
@@ -572,24 +582,31 @@ export default function AdminBooks() {
                     </FormItem>
                   )} />
 
-                  <FormField control={form.control} name="genre" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Žanr</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-book-genre">
-                            <SelectValue placeholder="Odaberite žanr" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {GENRES.map((g) => (
-                            <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  <div>
+                    <FormLabel>Žanrovi</FormLabel>
+                    <div className="grid grid-cols-2 gap-2 mt-2 p-3 border rounded-md" data-testid="genre-checkboxes">
+                      {allGenres && allGenres.length > 0 ? (
+                        allGenres.map((g) => (
+                          <label key={g.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <Checkbox
+                              checked={selectedGenreIds.includes(g.id)}
+                              onCheckedChange={(checked) => {
+                                setSelectedGenreIds(prev =>
+                                  checked
+                                    ? [...prev, g.id]
+                                    : prev.filter(id => id !== g.id)
+                                );
+                              }}
+                              data-testid={`checkbox-genre-${g.slug}`}
+                            />
+                            {g.name}
+                          </label>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground col-span-2">Nema žanrova. Dodajte ih na stranici Žanrovi.</p>
+                      )}
+                    </div>
+                  </div>
 
                   <FormField control={form.control} name="readingDifficulty" render={({ field }) => (
                     <FormItem>

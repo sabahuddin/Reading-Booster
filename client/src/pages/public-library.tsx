@@ -12,19 +12,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { BookOpen, Search, FileText, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
-import type { Book } from "@shared/schema";
+import type { Book, Genre } from "@shared/schema";
 import defaultBookCover from "@assets/background_1771243573729.png";
 
-const GENRES = [
-  { value: "lektira", label: "Lektira" },
-  { value: "avantura_fantasy", label: "Avantura i Fantasy" },
-  { value: "roman", label: "Roman" },
-  { value: "beletristika", label: "Beletristika" },
-  { value: "bajke_basne", label: "Bajke i Basne" },
-  { value: "zanimljiva_nauka", label: "Zanimljiva nauka" },
-  { value: "poezija", label: "Poezija" },
-  { value: "islam", label: "Islam" },
-];
+type BookWithGenres = Book & { genres?: Genre[] };
 
 const AGE_GROUPS = [
   { value: "R1", label: "Od 1. razreda" },
@@ -37,11 +28,7 @@ const AGE_GROUPS = [
 
 const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
-function genreLabel(v: string) {
-  return GENRES.find((g) => g.value === v)?.label ?? v;
-}
-
-function BookCard({ book }: { book: Book }) {
+function BookCard({ book }: { book: BookWithGenres }) {
   return (
     <Link href={`/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
       <Card className="hover-elevate h-full">
@@ -62,7 +49,10 @@ function BookCard({ book }: { book: Book }) {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary">{AGE_LABELS[book.ageGroup] || book.ageGroup}</Badge>
-            <Badge variant="outline">{genreLabel(book.genre)}</Badge>
+            {book.genres && book.genres.length > 0
+              ? book.genres.map(g => <Badge key={g.id} variant="outline">{g.name}</Badge>)
+              : book.genre && <Badge variant="outline">{book.genre}</Badge>
+            }
           </div>
         </CardContent>
       </Card>
@@ -79,28 +69,32 @@ export default function PublicLibrary() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: books, isLoading } = useQuery<Book[]>({
+  const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
+  });
+
+  const { data: allGenres } = useQuery<Genre[]>({
+    queryKey: ["/api/genres"],
   });
 
   const weeklyPick = books?.find((b) => b.weeklyPick);
   const mostRead = books ? [...books].sort((a, b) => b.timesRead - a.timesRead).find((b) => b.timesRead > 0) : null;
 
-  const genresWithBooks = books
-    ? Array.from(new Set(books.map((b) => b.genre))).filter((g) => g !== "ostalo").slice(0, 3)
-    : [];
-  const recommendedByGenre = genresWithBooks.map((genre) => ({
-    genre,
-    label: genreLabel(genre),
-    books: books!.filter((b) => b.genre === genre).sort((a, b) => b.timesRead - a.timesRead).slice(0, 4),
-  }));
+  const recommendedByGenre = useMemo(() => {
+    if (!books || !allGenres) return [];
+    return allGenres.slice(0, 3).map((genre) => ({
+      genre: genre.slug,
+      label: genre.name,
+      books: books.filter((b) => b.genres?.some(g => g.id === genre.id)).sort((a, b) => b.timesRead - a.timesRead).slice(0, 4),
+    })).filter(r => r.books.length > 0);
+  }, [books, allGenres]);
 
   const filtered = useMemo(() => {
     return books?.filter((b) => {
       const matchSearch =
         b.title.toLowerCase().includes(search.toLowerCase()) ||
         b.author.toLowerCase().includes(search.toLowerCase());
-      const matchGenre = selectedGenre === "all" || b.genre === selectedGenre;
+      const matchGenre = selectedGenre === "all" || (b.genres?.some(g => g.slug === selectedGenre)) || b.genre === selectedGenre;
       const matchAge = selectedAge === "all" || b.ageGroup === selectedAge;
       const matchDifficulty = selectedDifficulty === "all" || b.readingDifficulty === selectedDifficulty;
       return matchSearch && matchGenre && matchAge && matchDifficulty;
@@ -150,7 +144,10 @@ export default function PublicLibrary() {
                               <p className="text-base line-clamp-2">{weeklyPick.description}</p>
                               <div className="flex gap-2 pt-1">
                                 <Badge variant="secondary">{AGE_LABELS[weeklyPick.ageGroup] || weeklyPick.ageGroup}</Badge>
-                                <Badge variant="outline">{genreLabel(weeklyPick.genre)}</Badge>
+                                {(weeklyPick as BookWithGenres).genres && (weeklyPick as BookWithGenres).genres!.length > 0
+                                  ? (weeklyPick as BookWithGenres).genres!.map(g => <Badge key={g.id} variant="outline">{g.name}</Badge>)
+                                  : weeklyPick.genre && <Badge variant="outline">{weeklyPick.genre}</Badge>
+                                }
                               </div>
                             </div>
                           </div>
@@ -233,8 +230,8 @@ export default function PublicLibrary() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Svi žanrovi</SelectItem>
-                  {GENRES.map((g) => (
-                    <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                  {allGenres?.map((g) => (
+                    <SelectItem key={g.id} value={g.slug}>{g.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

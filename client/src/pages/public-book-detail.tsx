@@ -14,17 +14,12 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import type { Book, Quiz, QuizResult } from "@shared/schema";
+import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
 import defaultBookCover from "@assets/background_1771243573729.png";
 
-const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
+type BookWithGenres = Book & { genres?: Genre[] };
 
-const GENRES: Record<string, string> = {
-  lektira: "Lektira", avantura_fantasy: "Avantura i Fantasy",
-  roman: "Roman", beletristika: "Beletristika",
-  bajke_basne: "Bajke i Basne", zanimljiva_nauka: "Zanimljiva nauka",
-  poezija: "Poezija", islam: "Islam",
-};
+const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
 
 export default function PublicBookDetail() {
@@ -32,7 +27,7 @@ export default function PublicBookDetail() {
   const bookId = params?.id;
   const { user, isAuthenticated } = useAuth();
 
-  const { data: book, isLoading: bookLoading } = useQuery<Book>({
+  const { data: book, isLoading: bookLoading } = useQuery<BookWithGenres>({
     queryKey: ["/api/books", bookId],
     enabled: !!bookId,
   });
@@ -100,11 +95,10 @@ export default function PublicBookDetail() {
                         {AGE_LABELS[book.ageGroup] || book.ageGroup}
                       </Badge>
                     )}
-                    {book.genre && (
-                      <Badge variant="outline" data-testid="badge-genre">
-                        {GENRES[book.genre] ?? book.genre}
-                      </Badge>
-                    )}
+                    {book.genres && book.genres.length > 0
+                      ? book.genres.map(g => <Badge key={g.id} variant="outline" data-testid={`badge-genre-${g.slug}`}>{g.name}</Badge>)
+                      : book.genre && <Badge variant="outline" data-testid="badge-genre">{book.genre}</Badge>
+                    }
                     {book.pageCount && (
                       <Badge variant="outline">
                         <FileText className="mr-1 h-3 w-3" />
