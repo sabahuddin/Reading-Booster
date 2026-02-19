@@ -61,7 +61,7 @@ const plans = [
     ],
     cta: "Odaberi porodični paket",
     featured: false,
-    href: "/prijava?tab=register&plan=family",
+    href: "/prijava?tab=register",
   },
   {
     name: "Škole",
@@ -154,16 +154,14 @@ export default function PricingPage() {
                       </p>
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col p-6 pt-0">
-                      {plan.price && (
-                        <div className="my-6 text-center">
-                          <span className={`font-bold ${plan.price.length > 5 ? "text-3xl" : "text-5xl"}`}>{plan.price}</span>
-                          {plan.period && (
-                            <span className="ml-1 text-muted-foreground">
-                              {plan.period}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      <div className="my-6 text-center">
+                        <span className={`font-bold ${plan.price.length > 5 ? "text-3xl" : "text-5xl"}`}>{plan.price}</span>
+                        {plan.period && (
+                          <span className="ml-1 text-muted-foreground">
+                            {plan.period}
+                          </span>
+                        )}
+                      </div>
 
                       <ul className="flex-1 space-y-3">
                         {plan.features.map((feature) => (

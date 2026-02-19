@@ -108,10 +108,8 @@ export default function AuthPage() {
   const { toast } = useToast();
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get("tab");
-  const planParam = urlParams.get("plan");
   const validTabs = ["login", "register", "school"];
   const initialTab = tabParam && validTabs.includes(tabParam) ? tabParam : "login";
-  const initialRole = planParam === "family" ? "parent" : "reader";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [captcha, setCaptcha] = useState(() => generateCaptcha());
   const [schoolCaptcha, setSchoolCaptcha] = useState(() => generateCaptcha());
@@ -137,7 +135,7 @@ export default function AuthPage() {
       email: "",
       password: "",
       fullName: "",
-      role: initialRole as "reader" | "parent",
+      role: "reader" as "reader" | "parent",
       pricingPlan: "free",
       captchaAnswer: "",
     },
