@@ -25,7 +25,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, PenTool } from "lucide-react";
+import { Plus, Pencil, Trash2, PenTool, Upload, Loader2, ImageIcon } from "lucide-react";
+import { useUpload } from "@/hooks/use-upload";
 
 const blogFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
@@ -43,6 +44,15 @@ export default function AdminBlog() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [deletePost, setDeletePost] = useState<BlogPost | null>(null);
+  const { uploadFile, isUploading } = useUpload({
+    onSuccess: (response) => {
+      form.setValue("coverImage", response.objectPath);
+      toast({ title: "Slika uploadovana", description: "Slika je uspješno postavljena." });
+    },
+    onError: (error) => {
+      toast({ title: "Greška pri uploadu", description: error.message, variant: "destructive" });
+    },
+  });
 
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog"],
@@ -240,8 +250,45 @@ export default function AdminBlog() {
                 )} />
                 <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL naslovne slike</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-blog-coverImage" /></FormControl>
+                    <FormLabel>Naslovna slika</FormLabel>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={isUploading}
+                          onClick={() => {
+                            const input = document.createElement("input");
+                            input.type = "file";
+                            input.accept = "image/*";
+                            input.onchange = (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (file) uploadFile(file);
+                            };
+                            input.click();
+                          }}
+                          data-testid="button-upload-blog-image"
+                        >
+                          {isUploading ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploadovanje...</>
+                          ) : (
+                            <><Upload className="mr-2 h-4 w-4" />Uploaduj sliku</>
+                          )}
+                        </Button>
+                        <span className="text-sm text-muted-foreground">ili unesite URL:</span>
+                      </div>
+                      <FormControl><Input {...field} placeholder="https://... ili uploadujte sliku iznad" data-testid="input-blog-coverImage" /></FormControl>
+                      {field.value && field.value !== "/images/blog-placeholder.svg" && (
+                        <div className="relative w-full max-w-[200px] aspect-video rounded-md overflow-hidden border">
+                          <img
+                            src={field.value}
+                            alt="Pregled slike"
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
+                        </div>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )} />

@@ -180,6 +180,10 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
   await ensureSessionTable();
   setupSession();
 
+  // Register object storage routes for file uploads
+  const { registerObjectStorageRoutes } = await import("./replit_integrations/object_storage");
+  registerObjectStorageRoutes(app);
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
