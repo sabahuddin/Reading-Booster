@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Check, Star, Sparkles, Users, School } from "lucide-react";
@@ -49,8 +48,8 @@ const plans = [
   },
   {
     name: "Porodični",
-    price: "",
-    period: "",
+    price: "Od 15",
+    period: "KM",
     description: "Zajedničko čitanje i takmičenje",
     icon: Users,
     features: [
@@ -62,12 +61,7 @@ const plans = [
     ],
     cta: "Odaberi porodični paket",
     featured: false,
-    href: "/prijava?tab=register",
-    familyOptions: [
-      { label: "1 roditelj + 1 dijete", price: "15 KM" },
-      { label: "1 roditelj + 3 djece", price: "20 KM" },
-      { label: "2 roditelja + 3 djece", price: "25 KM" },
-    ],
+    href: "/prijava?tab=register&plan=family",
   },
   {
     name: "Škole",
@@ -92,8 +86,6 @@ const plans = [
 ];
 
 export default function PricingPage() {
-  const [showFamilyOptions, setShowFamilyOptions] = useState(false);
-
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -185,43 +177,16 @@ export default function PricingPage() {
                         ))}
                       </ul>
 
-                      {plan.familyOptions && showFamilyOptions && (
-                        <div className="mt-4 p-3 bg-muted/50 rounded-md space-y-1.5">
-                          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Odaberite paket</p>
-                          {plan.familyOptions.map((opt, i) => (
-                            <Link key={opt.label} href="/prijava?tab=register">
-                              <div className="flex items-center justify-between text-base gap-2 p-2 rounded-md hover-elevate cursor-pointer" data-testid={`link-family-option-${i}`}>
-                                <span>{opt.label}</span>
-                                <span className="font-semibold whitespace-nowrap">{opt.price}</span>
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-
                       <div className="mt-8">
-                        {plan.familyOptions ? (
-                          showFamilyOptions ? null : (
-                            <Button
-                              className="w-full"
-                              variant="outline"
-                              onClick={() => setShowFamilyOptions(true)}
-                              data-testid={`button-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
-                            >
-                              {plan.cta}
-                            </Button>
-                          )
-                        ) : (
-                          <Link href={plan.href}>
-                            <Button
-                              className="w-full"
-                              variant={plan.featured ? "default" : "outline"}
-                              data-testid={`button-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
-                            >
-                              {plan.cta}
-                            </Button>
-                          </Link>
-                        )}
+                        <Link href={plan.href}>
+                          <Button
+                            className="w-full"
+                            variant={plan.featured ? "default" : "outline"}
+                            data-testid={`button-pricing-${plan.name.toLowerCase().replace(/\s+/g, "-")}`}
+                          >
+                            {plan.cta}
+                          </Button>
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>

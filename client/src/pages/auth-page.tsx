@@ -41,8 +41,7 @@ const registerSchema = insertUserSchema.extend({
   email: z.string().email("Unesite ispravnu email adresu"),
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
-  role: z.enum(["student", "parent", "reader"]),
-  ageGroup: z.enum(["R1", "R4", "R7", "O", "A"]).default("R1"),
+  role: z.enum(["parent", "reader"]),
   pricingPlan: z.string().optional(),
   captchaAnswer: z.string().min(1, "Odgovorite na sigurnosno pitanje"),
 });
@@ -109,8 +108,10 @@ export default function AuthPage() {
   const { toast } = useToast();
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get("tab");
+  const planParam = urlParams.get("plan");
   const validTabs = ["login", "register", "school"];
   const initialTab = tabParam && validTabs.includes(tabParam) ? tabParam : "login";
+  const initialRole = planParam === "family" ? "parent" : "reader";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [captcha, setCaptcha] = useState(() => generateCaptcha());
   const [schoolCaptcha, setSchoolCaptcha] = useState(() => generateCaptcha());
@@ -136,8 +137,7 @@ export default function AuthPage() {
       email: "",
       password: "",
       fullName: "",
-      role: "reader",
-      ageGroup: "R1",
+      role: initialRole as "reader" | "parent",
       pricingPlan: "free",
       captchaAnswer: "",
     },
@@ -158,9 +158,6 @@ export default function AuthPage() {
   });
 
   const selectedRole = registerForm.watch("role");
-  const selectedPlan = registerForm.watch("pricingPlan");
-
-  const isFamilyPlan = selectedPlan && selectedPlan.startsWith("family_");
 
   async function onLogin(data: LoginValues) {
     try {
@@ -422,40 +419,9 @@ export default function AuthPage() {
                                 <SelectItem value="reader" data-testid="select-role-reader">
                                   Čitalac
                                 </SelectItem>
-                                <SelectItem value="student" data-testid="select-role-student">
-                                  Učenik
-                                </SelectItem>
                                 <SelectItem value="parent" data-testid="select-role-parent">
-                                  Roditelj / Porodica
+                                  Porodica
                                 </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={registerForm.control}
-                        name="ageGroup"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Starosna skupina</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger data-testid="select-register-age-group">
-                                  <SelectValue placeholder="Odaberite..." />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="R1">Od 1. razreda</SelectItem>
-                                <SelectItem value="R4">Od 4. razreda</SelectItem>
-                                <SelectItem value="R7">Od 7. razreda</SelectItem>
-                                <SelectItem value="O">Omladina</SelectItem>
-                                <SelectItem value="A">Odrasli</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -470,7 +436,7 @@ export default function AuthPage() {
                             name="pricingPlan"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Odaberite paket</FormLabel>
+                                <FormLabel>Odaberite porodični paket</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger data-testid="select-register-plan">
@@ -478,23 +444,19 @@ export default function AuthPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="free">Čitalac (Besplatno)</SelectItem>
-                                    <SelectItem value="pro">Čitalac Pro (10 KM/godišnje)</SelectItem>
-                                    <SelectItem value="family_1_1">Porodica 15 KM (1 roditelj + 1 dijete)</SelectItem>
-                                    <SelectItem value="family_1_3">Porodica 20 KM (1 roditelj + 3 djece)</SelectItem>
-                                    <SelectItem value="family_2_3">Porodica 25 KM (2 roditelja + 3 djece)</SelectItem>
+                                    <SelectItem value="family_1_1">1 roditelj + 1 dijete — 15 KM</SelectItem>
+                                    <SelectItem value="family_1_3">1 roditelj + 3 djece — 20 KM</SelectItem>
+                                    <SelectItem value="family_2_3">2 roditelja + 3 djece — 25 KM</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          {isFamilyPlan && (
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">
-                              <p className="font-medium mb-1">Dodavanje članova porodice</p>
-                              <p>Nakon registracije, moći ćete dodati račune za svoju djecu i drugog roditelja u svom profilu. Svaki član porodice dobija vlastito korisničko ime i lozinku.</p>
-                            </div>
-                          )}
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">
+                            <p className="font-medium mb-1">Dodavanje članova porodice</p>
+                            <p>Nakon registracije, moći ćete dodati račune za svoju djecu u svom profilu. Svaki član porodice dobija vlastito korisničko ime i lozinku.</p>
+                          </div>
                         </div>
                       )}
 
