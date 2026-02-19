@@ -87,7 +87,7 @@ interface TopReader {
 function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: string }) {
   const endpoint = ageGroup === "A"
     ? `/api/leaderboard?period=${period}&ageGroup=A`
-    : `/api/leaderboard?period=${period}&ageGroup=MDO`;
+    : `/api/leaderboard?period=${period}&ageGroup=R1,R4,R7,O`;
 
 
 

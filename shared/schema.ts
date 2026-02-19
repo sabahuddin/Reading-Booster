@@ -21,7 +21,7 @@ export const users = pgTable("users", {
   createdByTeacherId: varchar("created_by_teacher_id"),
   subscriptionType: text("subscription_type", { enum: ["free", "standard", "full"] }).notNull().default("free"),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
-  ageGroup: text("age_group").default("M"),
+  ageGroup: text("age_group").default("R1"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

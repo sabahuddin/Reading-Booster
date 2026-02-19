@@ -212,7 +212,7 @@ export async function registerRoutes(
         ...parsed.data,
         password: hashedPassword,
         role: isInstitutional ? "teacher" : parsed.data.role,
-        ageGroup: parsed.data.ageGroup || "M",
+        ageGroup: parsed.data.ageGroup || "R1",
         approved: isInstitutional ? false : undefined,
       };
 
@@ -501,6 +501,11 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No questions found for this quiz" });
       }
 
+      const quiz = await storage.getQuiz(quizId);
+      const book = quiz ? await storage.getBook(quiz.bookId) : null;
+      const pointsPerQuestion: Record<string, number> = { R1: 1, R4: 3, R7: 5, O: 7, A: 10 };
+      const ptsPerQ = pointsPerQuestion[book?.ageGroup || "R1"] || 1;
+
       let correctCount = 0;
       let wrongCount = 0;
 
@@ -515,8 +520,7 @@ export async function registerRoutes(
         }
       }
 
-      let score = correctCount - wrongCount;
-      if (score < 0) score = 0;
+      let score = correctCount * ptsPerQ;
 
       const result = await storage.createQuizResult({
         userId,
@@ -532,7 +536,6 @@ export async function registerRoutes(
         await storage.updateUserPoints(userId, updatedUser.points + score);
       }
 
-      const quiz = await storage.getQuiz(quizId);
       if (quiz) {
         await storage.incrementTimesRead(quiz.bookId);
       }
@@ -1243,8 +1246,8 @@ export async function registerRoutes(
   app.get("/api/admin/templates/books", requireAdmin, (_req, res) => {
     const headers = "title;author;description;coverImage;content;ageGroup;genre;readingDifficulty;pageCount;pdfUrl;purchaseUrl;weeklyPick;publisher;publicationYear;publicationCity;isbn;cobissId;language;bookFormat";
     const exampleRows = [
-      '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"D";"avantura_fantasy";"lako";"96";"";"";"ne";"Svjetlost";"2023";"Sarajevo";"9789958111234";"123456";"bosanski";"meki uvez"',
-      '"Ježeva kućica";"Branko Ćopić";"Priča o ježevoj kućici";"https://example.com/jez.jpg";"Sadržaj...";"M";"bajke_basne";"lako";"48";"";"";"ne";"Veselin Masleša";"2020";"Sarajevo";"";"";"";"tvrdi uvez"',
+      '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"R4";"avantura_fantasy";"lako";"96";"";"";"ne";"Svjetlost";"2023";"Sarajevo";"9789958111234";"123456";"bosanski";"meki uvez"',
+      '"Ježeva kućica";"Branko Ćopić";"Priča o ježevoj kućici";"https://example.com/jez.jpg";"Sadržaj...";"R1";"bajke_basne";"lako";"48";"";"";"ne";"Veselin Masleša";"2020";"Sarajevo";"";"";"";"tvrdi uvez"',
       '"Tvrđava";"Meša Selimović";"Roman o derviš Ahmetu Nurudinu";"https://example.com/tvrdjava.jpg";"Sadržaj...";"A";"beletristika";"tesko";"432";"";"";"ne";"Svjetlost";"2019";"Sarajevo";"9789958101234";"";"bosanski";""',
     ];
     const csv = headers + "\n" + exampleRows.join("\n");
@@ -1285,7 +1288,7 @@ export async function registerRoutes(
             description: row.description || "",
             coverImage: row.coverImage || "https://via.placeholder.com/200x300?text=Knjiga",
             content: row.content || row.description || "",
-            ageGroup: row.ageGroup || "M",
+            ageGroup: row.ageGroup || "R1",
             genre: row.genre || "lektira",
             readingDifficulty: (row.readingDifficulty as "lako" | "srednje" | "tesko") || "srednje",
             pageCount: parseInt(row.pageCount) || 100,

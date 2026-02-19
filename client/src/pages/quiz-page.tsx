@@ -20,7 +20,8 @@ import {
   Lock,
   Crown,
 } from "lucide-react";
-import type { Quiz, Question, QuizResult } from "@shared/schema";
+import type { Quiz, Question, QuizResult, Book } from "@shared/schema";
+import { DifficultyIcon } from "@/components/difficulty-icon";
 
 type QuizWithQuestions = Quiz & { questions: Question[] };
 
@@ -47,6 +48,14 @@ export default function QuizPage() {
     queryKey: ["/api/quizzes", quizId],
     enabled: !!quizId,
   });
+
+  const { data: book } = useQuery<Book>({
+    queryKey: ["/api/books", quiz?.bookId],
+    enabled: !!quiz?.bookId,
+  });
+
+  const POINTS_PER_Q: Record<string, number> = { R1: 1, R4: 3, R7: 5, O: 7, A: 10 };
+  const ptsPerQ = POINTS_PER_Q[book?.ageGroup || "R1"] || 1;
 
   const { data: subStatus } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
@@ -241,9 +250,17 @@ export default function QuizPage() {
           <>
             <div>
               <h1 className="text-xl font-bold" data-testid="text-quiz-title">{quiz.title}</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Pitanje {currentQ + 1} od {totalQ}
-              </p>
+              <div className="flex items-center gap-3 flex-wrap mt-1">
+                <p className="text-sm text-muted-foreground">
+                  Pitanje {currentQ + 1} od {totalQ}
+                </p>
+                {book?.readingDifficulty && (
+                  <DifficultyIcon difficulty={book.readingDifficulty} size="sm" />
+                )}
+                <Badge variant="outline" data-testid="badge-points-per-q">
+                  {ptsPerQ} {ptsPerQ === 1 ? "bod" : (ptsPerQ < 5 ? "boda" : "bodova")} po pitanju
+                </Badge>
+              </div>
             </div>
 
             <Progress value={progressValue} className="h-2" />

@@ -61,7 +61,7 @@ function ChildSummaryCard({ child }: { child: ChildUser }) {
             </Badge>
           )}
           {child.ageGroup && (
-            <Badge variant="outline">Grupa: {child.ageGroup}</Badge>
+            <Badge variant="outline">{{"R1":"Od 1. razreda","R4":"Od 4. razreda","R7":"Od 7. razreda","O":"Omladina","A":"Odrasli"}[child.ageGroup as string] || child.ageGroup}</Badge>
           )}
         </div>
 

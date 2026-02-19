@@ -18,7 +18,7 @@ import defaultBookCover from "@assets/background_1771243573729.png";
 const GENRES = [
   { value: "lektira", label: "Lektira" },
   { value: "avantura_fantasy", label: "Avantura i Fantasy" },
-  { value: "realisticni_roman", label: "Realistični roman" },
+  { value: "roman", label: "Roman" },
   { value: "beletristika", label: "Beletristika" },
   { value: "bajke_basne", label: "Bajke i Basne" },
   { value: "zanimljiva_nauka", label: "Zanimljiva nauka" },
@@ -27,13 +27,15 @@ const GENRES = [
 ];
 
 const AGE_GROUPS = [
-  { value: "M", label: "M – Mlađi osnovci (6-10)" },
-  { value: "D", label: "D – Stariji osnovci (11-15)" },
-  { value: "O", label: "O – Omladina (15-18)" },
-  { value: "A", label: "A – Odrasli (18+)" },
+  { value: "R1", label: "Od 1. razreda" },
+  { value: "R4", label: "Od 4. razreda" },
+  { value: "R7", label: "Od 7. razreda" },
+  { value: "O", label: "Omladina" },
+  { value: "A", label: "Odrasli" },
 ];
 
-import { DifficultyIcon, DIFFICULTY_LABELS } from "@/components/difficulty-icon";
+
+const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
 function genreLabel(v: string) {
   return GENRES.find((g) => g.value === v)?.label ?? v;
@@ -59,9 +61,8 @@ function BookCard({ book }: { book: Book }) {
             <p className="text-base text-muted-foreground">{book.author}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary">{book.ageGroup}</Badge>
+            <Badge variant="secondary">{AGE_LABELS[book.ageGroup] || book.ageGroup}</Badge>
             <Badge variant="outline">{genreLabel(book.genre)}</Badge>
-            <DifficultyIcon difficulty={book.readingDifficulty} size="sm" showLabel={false} />
           </div>
         </CardContent>
       </Card>
@@ -148,7 +149,7 @@ export default function PublicLibrary() {
                               <p className="text-base text-muted-foreground">{weeklyPick.author}</p>
                               <p className="text-base line-clamp-2">{weeklyPick.description}</p>
                               <div className="flex gap-2 pt-1">
-                                <Badge variant="secondary">{weeklyPick.ageGroup}</Badge>
+                                <Badge variant="secondary">{AGE_LABELS[weeklyPick.ageGroup] || weeklyPick.ageGroup}</Badge>
                                 <Badge variant="outline">{genreLabel(weeklyPick.genre)}</Badge>
                               </div>
                             </div>
@@ -177,7 +178,7 @@ export default function PublicLibrary() {
                               <p className="text-base text-muted-foreground">{mostRead.author}</p>
                               <p className="text-base line-clamp-2">{mostRead.description}</p>
                               <div className="flex gap-2 pt-1">
-                                <Badge variant="secondary">{mostRead.ageGroup}</Badge>
+                                <Badge variant="secondary">{AGE_LABELS[mostRead.ageGroup] || mostRead.ageGroup}</Badge>
                                 <Badge variant="outline">{mostRead.timesRead}x pročitano</Badge>
                               </div>
                             </div>

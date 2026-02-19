@@ -34,7 +34,7 @@ import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, 
 const GENRES = [
   { value: "lektira", label: "Lektira" },
   { value: "avantura_fantasy", label: "Avantura i Fantasy" },
-  { value: "realisticni_roman", label: "Realistični roman" },
+  { value: "roman", label: "Roman" },
   { value: "beletristika", label: "Beletristika" },
   { value: "bajke_basne", label: "Bajke i Basne" },
   { value: "zanimljiva_nauka", label: "Zanimljiva nauka" },
@@ -43,10 +43,11 @@ const GENRES = [
 ];
 
 const AGE_GROUPS = [
-  { value: "M", label: "M – Mlađi osnovci (6-10)" },
-  { value: "D", label: "D – Stariji osnovci (11-15)" },
-  { value: "O", label: "O – Omladina (15-18)" },
-  { value: "A", label: "A – Odrasli (18+)" },
+  { value: "R1", label: "Od 1. razreda" },
+  { value: "R4", label: "Od 4. razreda" },
+  { value: "R7", label: "Od 7. razreda" },
+  { value: "O", label: "Omladina" },
+  { value: "A", label: "Odrasli" },
 ];
 
 import { DifficultyIcon, DIFFICULTY_LABELS } from "@/components/difficulty-icon";

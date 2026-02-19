@@ -15,14 +15,15 @@ import {
 import type { Book, Quiz, QuizResult } from "@shared/schema";
 import defaultBookCover from "@assets/background_1771243573729.png";
 
+const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
+
 const GENRES: Record<string, string> = {
   lektira: "Lektira", avantura_fantasy: "Avantura i Fantasy",
-  realisticni_roman: "Realistični roman", beletristika: "Beletristika",
+  roman: "Roman", beletristika: "Beletristika",
   bajke_basne: "Bajke i Basne", zanimljiva_nauka: "Zanimljiva nauka",
   poezija: "Poezija", islam: "Islam",
 };
 
-import { DifficultyIcon } from "@/components/difficulty-icon";
 
 export default function BookDetail() {
   const [, params] = useRoute("/ucenik/knjiga/:id");
@@ -90,16 +91,13 @@ export default function BookDetail() {
                   {book.ageGroup && (
                     <Badge data-testid="badge-age-group">
                       <Users className="mr-1 h-3 w-3" />
-                      {book.ageGroup}
+                      {AGE_LABELS[book.ageGroup] || book.ageGroup}
                     </Badge>
                   )}
                   {book.genre && (
                     <Badge variant="outline" data-testid="badge-genre">
                       {GENRES[book.genre] ?? book.genre}
                     </Badge>
-                  )}
-                  {book.readingDifficulty && (
-                    <DifficultyIcon difficulty={book.readingDifficulty} size="sm" />
                   )}
                   {book.pageCount && (
                     <Badge variant="outline">

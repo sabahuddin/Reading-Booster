@@ -21,8 +21,9 @@ Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici
 - **Slike knjiga:** Portrait aspect ratio 2:3 (kao prave knjige)
 
 ## Starosne skupine (ageGroup) — za knjige i korisnike
-- **M** — Mlađi osnovci (6-10 godina, 1.-4. razred)
-- **D** — Stariji osnovci (11-15 godina, 5.-9. razred)
+- **R1** — Od 1. razreda (6-9 godina, 1.-3. razred)
+- **R4** — Od 4. razreda (10-12 godina, 4.-6. razred)
+- **R7** — Od 7. razreda (13-15 godina, 7.-9. razred)
 - **O** — Omladina / Young Adult (15-18 godina, srednja škola)
 - **A** — Odrasli (18+, roditelji i stariji korisnici)
 
@@ -84,10 +85,15 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - Učenik: ucenik1 / ucenik123, ucenik2 / ucenik123
 
 ## Scoring System
-- +1 bod po tačnom odgovoru
-- -1 bod po netačnom odgovoru
-- Minimum score po kvizu: 0
+- Bodovi po tačnom odgovoru zavise od starosne skupine knjige:
+  - R1 (Od 1. razreda): 1 bod
+  - R4 (Od 4. razreda): 3 boda
+  - R7 (Od 7. razreda): 5 bodova
+  - O (Omladina): 7 bodova
+  - A (Odrasli): 10 bodova
+- Netačni odgovori ne oduzimaju bodove
 - Bodovi se akumuliraju na profilu korisnika
+- Težina knjige (readingDifficulty) se prikazuje na kviz stranici, ne na knjigama
 
 ## Features
 
@@ -98,7 +104,7 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - Detaljna stranica knjige sa "Gdje pronaći ovu knjigu?" sekcijom (biblioteka, kupovina, PDF preview)
 - Slike knjiga u portrait formatu 2:3
 - Informacije: izdavač, ISBN, godina, jezik, format, broj stranica
-- CSV bulk import knjiga sa mapiranjem na nove ageGroup (M/D/O/A) i žanrove
+- CSV bulk import knjiga sa mapiranjem na nove ageGroup (R1/R4/R7/O/A) i žanrove
 
 ### Kvizovi
 - Interaktivni kvizovi vezani za knjige
@@ -106,7 +112,7 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 
 ### Leaderboard
 - Javni top čitači na naslovnoj stranici
-- Odvojeni tabovi "Djeca" (M+D+O) i "Odrasli" (A) po ageGroup korisnika
+- Odvojeni tabovi "Djeca" (R1+R4+R7+O) i "Odrasli" (A) po ageGroup korisnika
 - Filtriranje po periodu: sedmica/mjesec/godina
 - API: /api/leaderboard?period=week|month|year, /api/leaderboard/adults?period=week|month|year
 - Porodično takmičenje: roditelji (A) se mogu takmičiti kroz Beletristiku i Islam
@@ -129,9 +135,9 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 
 ### Registracija
 - Tri taba: Prijava, Registracija, Institucija
-- Samoregistracija: učenik/roditelj sa izborom starosne skupine (M/D/O/A)
+- Samoregistracija: učenik/roditelj sa izborom starosne skupine (R1/R4/R7/O/A)
 - Institucionalna registracija: škola/mekteb sa izborom uloge, zahtijeva admin odobrenje
-- Polje ageGroup (M/D/O/A) za odvajanje na leaderboardu i filtriranje biblioteke
+- Polje ageGroup (R1/R4/R7/O/A) za odvajanje na leaderboardu i filtriranje biblioteke
 
 ### Blog
 - Admin može kreirati i uređivati blog postove sa ključnim riječima (keywords)
@@ -158,15 +164,15 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 
 ## User Fields
 - Standardni: username, password, role, firstName, lastName, email, points, booksRead
-- Prošireni: ageGroup (M/D/O/A), institutionType, institutionRole, approved, maxStudentAccounts, createdByTeacherId
+- Prošireni: ageGroup (R1/R4/R7/O/A), institutionType, institutionRole, approved, maxStudentAccounts, createdByTeacherId
 
 ## Primjeri mapiranja knjiga
 | Naslov | ageGroup | genre |
 |--------|----------|-------|
-| Ježeva kućica | M | bajke_basne |
-| Priče o poslanicima | M | islam |
-| Družba Pere Kvržice | D | lektira |
-| Hajduk u Beogradu | D | avantura_fantasy |
+| Ježeva kućica | R1 | bajke_basne |
+| Priče o poslanicima | R1 | islam |
+| Družba Pere Kvržice | R4 | lektira |
+| Hajduk u Beogradu | R4 | avantura_fantasy |
 | Tvrđava | A | beletristika |
 | Sira: Životopis Poslanika | A | islam |
 

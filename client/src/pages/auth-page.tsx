@@ -42,7 +42,7 @@ const registerSchema = insertUserSchema.extend({
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
   role: z.enum(["student", "parent"]),
-  ageGroup: z.enum(["M", "D", "O", "A"]).default("M"),
+  ageGroup: z.enum(["R1", "R4", "R7", "O", "A"]).default("R1"),
   pricingPlan: z.string().optional(),
   captchaAnswer: z.string().min(1, "Odgovorite na sigurnosno pitanje"),
 });
@@ -131,7 +131,7 @@ export default function AuthPage() {
       password: "",
       fullName: "",
       role: "student",
-      ageGroup: "M",
+      ageGroup: "R1",
       pricingPlan: "free",
       captchaAnswer: "",
     },
@@ -442,10 +442,11 @@ export default function AuthPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="M">M - Mlađi osnovci (6-10)</SelectItem>
-                                <SelectItem value="D">D - Stariji osnovci (11-15)</SelectItem>
-                                <SelectItem value="O">O - Omladina (15-18)</SelectItem>
-                                <SelectItem value="A">A - Odrasli (18+)</SelectItem>
+                                <SelectItem value="R1">Od 1. razreda</SelectItem>
+                                <SelectItem value="R4">Od 4. razreda</SelectItem>
+                                <SelectItem value="R7">Od 7. razreda</SelectItem>
+                                <SelectItem value="O">Omladina</SelectItem>
+                                <SelectItem value="A">Odrasli</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />

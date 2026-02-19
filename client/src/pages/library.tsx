@@ -10,6 +10,8 @@ import { BookOpen, Search, FileText } from "lucide-react";
 import type { Book } from "@shared/schema";
 import defaultBookCover from "@assets/background_1771243573729.png";
 
+const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
+
 export default function Library() {
   const [search, setSearch] = useState("");
 
@@ -87,7 +89,7 @@ export default function Library() {
                       <p className="text-sm text-muted-foreground">{book.author}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="secondary">{book.ageGroup}</Badge>
+                      <Badge variant="secondary">{AGE_LABELS[book.ageGroup] || book.ageGroup}</Badge>
                       <Badge variant="outline">
                         <FileText className="mr-1" />
                         {book.pageCount} str.

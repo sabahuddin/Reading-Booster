@@ -536,8 +536,8 @@ export class DatabaseStorage implements IStorage {
       const user = await this.getUser(userId);
       if (user) {
         if (ageGroup) {
-          const allowedGroups = ageGroup.split("");
-          if (!allowedGroups.includes(user.ageGroup || "M")) continue;
+          const allowedGroups = ageGroup.split(",");
+          if (!allowedGroups.includes(user.ageGroup || "R1")) continue;
         }
         leaderboard.push({
           id: user.id,
