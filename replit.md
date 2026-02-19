@@ -151,6 +151,17 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 ## Database Tables
 - users, books, genres, book_genres, quizzes, questions, quiz_results, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges
 
+## Deployment
+- Connected to GitHub: `https://github.com/sabahuddin/Reading-Booster`
+- Deployed via Coolify on Hetzner
+- Database: PostgreSQL (Coolify managed)
+- Schema sync: `npx drizzle-kit push`
+- Port: 5000
+- Environment: `DATABASE_URL`, `SESSION_SECRET`, `NODE_ENV=production`
+
+### Initial Data Setup
+If the production database is empty, restart the application in Coolify to trigger the automatic seeding process (`seedDatabase`, `ensureAllBooks`, `seedMissingQuizzes`).
+
 ### Kontakt
 - Kontakt forma za poruke
 - Admin pregled poruka

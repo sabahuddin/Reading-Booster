@@ -1,0 +1,66 @@
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+6:51:33 PM [express] serving on port 5000
+npm warn config production Use `--omit=dev` instead.
+error: relation "books" does not exist
+at /app/dist/index.cjs:74:13326
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+at async /app/dist/index.cjs:82:31386
+at async Wv (/app/dist/index.cjs:87:64380) {
+length: 105,
+severity: 'ERROR',
+code: '42P01',
+detail: undefined,
+hint: undefined,
+position: '400',
+internalPosition: undefined,
+internalQuery: undefined,
+where: undefined,
+schema: undefined,
+table: undefined,
+column: undefined,
+dataType: undefined,
+constraint: undefined,
+file: 'parse_relation.c',
+line: '1449',
+routine: 'parserOpenTable'
+}
+error: relation "books" does not exist
+at /app/dist/index.cjs:74:13326
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+at async /app/dist/index.cjs:82:31386
+at async Wv (/app/dist/index.cjs:87:64380) {
+length: 105,
+severity: 'ERROR',
+code: '42P01',
+detail: undefined,
+hint: undefined,
+position: '400',
+6:52:22 PM [express] GET /api/books 500 in 38ms :: {"message":"relation \"books\" does not exist"}
+6:52:22 PM [express] GET /api/genres 500 in 38ms :: {"message":"relation \"genres\" does not exist"}
+6:52:24 PM [express] GET /api/auth/me 401 in 2ms :: {"message":"Not authenticated"}
+6:52:24 PM [express] GET /api/books 500 in 22ms :: {"message":"relation \"books\" does not exist"}
+6:52:24 PM [express] GET /api/genres 500 in 17ms :: {"message":"relation \"genres\" does not exist"}
+internalPosition: undefined,
+internalQuery: undefined,
+where: undefined,
+schema: undefined,
+table: undefined,
+column: undefined,
+dataType: undefined,
+constraint: undefined,
+file: 'parse_relation.c',
+line: '1449',
+routine: 'parserOpenTable'
+}
+6:52:25 PM [express] GET /api/auth/me 401 in 0ms :: {"message":"Not authenticated"}
+6:52:25 PM [express] GET /api/genres 500 in 17ms :: {"message":"relation \"genres\" does not exist"}
+6:52:25 PM [express] GET /api/books 500 in 18ms :: {"message":"relation \"books\" does not exist"}
+6:52:33 PM [express] GET /api/leaderboard 500 in 36ms :: {"message":"relation \"quiz_results\" does not exist"}
+6:52:33 PM [express] GET /api/challenges 500 in 30ms :: {"message":"relation \"challenges\" does not exist"}
+6:52:33 PM [express] GET /api/partners 500 in 29ms :: {"message":"relation \"partners\" does not exist"}
+6:54:02 PM [express] GET /api/books 500 in 22ms :: {"message":"relation \"books\" does not exist"}
+6:54:02 PM [express] GET /api/genres 500 in 18ms :: {"message":"relation \"genres\" does not exist"}
+6:54:04 PM [express] GET /api/auth/me 401 in 2ms :: {"message":"Not authenticated"}
+6:54:04 PM [express] GET /api/books 500 in 29ms :: {"message":"relation \"books\" does not exist"}
+6:54:04 PM [express] GET /api/genres 500 in 23ms :: {"message":"relation \"genres\" does not exist"}
