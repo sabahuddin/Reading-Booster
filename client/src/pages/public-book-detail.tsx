@@ -178,6 +178,50 @@ export default function PublicBookDetail() {
                     )}
                   </div>
 
+                  {quiz && (
+                    <div className="pt-6 border-t space-y-4" data-testid="card-quiz-section">
+                      <h3 className="font-bold text-xl flex items-center gap-2">
+                        <Brain className="h-5 w-5" />
+                        Kviz za ovu knjigu
+                      </h3>
+                      {!isAuthenticated ? (
+                        <div className="space-y-2">
+                          <p className="text-lg text-muted-foreground">
+                            Prijavi se da bi mogao/la riješiti kviz i osvojiti bodove!
+                          </p>
+                          <Button asChild data-testid="button-login-for-quiz">
+                            <Link href="/prijava">
+                              <Brain className="mr-2 h-4 w-4" />
+                              Prijavi se za kviz
+                            </Link>
+                          </Button>
+                        </div>
+                      ) : takenQuizIds.has(quiz.id) ? (
+                        <div className="space-y-2">
+                          <p className="text-lg text-muted-foreground">Već si riješio/la kviz za ovu knjigu.</p>
+                          <Button variant="outline" asChild data-testid="button-view-results">
+                            <Link href="/ucenik/rezultati">
+                              <BookOpen className="mr-2 h-4 w-4" />
+                              Pogledaj rezultate
+                            </Link>
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-lg text-muted-foreground">
+                            Pročitao/la si knjigu? Testiraj svoje znanje i osvoji bodove!
+                          </p>
+                          <Button asChild data-testid="button-start-quiz">
+                            <Link href={`/ucenik/kviz/${quiz.id}`}>
+                              <Brain className="mr-2 h-4 w-4" />
+                              Pokreni kviz
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="pt-6 border-t space-y-4" data-testid="card-where-to-find">
                     <h3 className="font-bold text-xl">Gdje pronaći ovu knjigu?</h3>
                     <p className="text-muted-foreground">
