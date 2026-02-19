@@ -134,8 +134,16 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - Polje ageGroup (M/D/O/A) za odvajanje na leaderboardu i filtriranje biblioteke
 
 ### Blog
-- Admin može kreirati i uređivati blog postove
-- Javni prikaz na /blog
+- Admin može kreirati i uređivati blog postove sa ključnim riječima (keywords)
+- Javni prikaz na /blog sa pretragom po naslovu/sažetku/autoru/ključnim riječima
+- Filtriranje po ključnim riječima (badge-ovi)
+- Najnoviji tekstovi se prikazuju prvi (sortiranje po publishedAt DESC)
+- Komentari na blog postove (prijavljeni korisnici mogu komentarisati, vlasnik/admin može brisati)
+- Ocjenjivanje blog postova (1-5 knjižica/BookOpen ikone), upsert sistem
+- API: /api/blog/:id/comments (GET/POST/DELETE), /api/blog/:id/rating (GET/POST)
+
+## Database Tables
+- users, books, quizzes, questions, quiz_results, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges
 
 ### Kontakt
 - Kontakt forma za poruke

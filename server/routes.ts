@@ -757,6 +757,16 @@ export async function registerRoutes(
 
   app.delete("/api/blog/:id/comments/:commentId", requireAuth, async (req, res) => {
     try {
+      const userId = (req.session as any).userId;
+      const user = await storage.getUser(userId);
+      const comments = await storage.getCommentsByPostId(req.params.id as string);
+      const comment = comments.find(c => c.id === req.params.commentId);
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      if (comment.userId !== userId && user?.role !== "admin") {
+        return res.status(403).json({ message: "Not authorized to delete this comment" });
+      }
       await storage.deleteBlogComment(req.params.commentId as string);
       return res.json({ message: "Comment deleted" });
     } catch (error: any) {
