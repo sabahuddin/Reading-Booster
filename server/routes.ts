@@ -16,6 +16,8 @@ import {
   insertQuestionSchema,
   insertQuizResultSchema,
   insertBlogPostSchema,
+  insertBlogCommentSchema,
+  insertBlogRatingSchema,
   insertContactMessageSchema,
   insertPartnerSchema,
   insertChallengeSchema,
@@ -720,6 +722,80 @@ export async function registerRoutes(
     try {
       await storage.deleteBlogPost(req.params.id as string);
       return res.json({ message: "Blog post deleted" });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== BLOG COMMENTS ROUTES ====================
+
+  app.get("/api/blog/:id/comments", async (req, res) => {
+    try {
+      const comments = await storage.getCommentsByPostId(req.params.id as string);
+      return res.json(comments);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/blog/:id/comments", requireAuth, async (req, res) => {
+    try {
+      const parsed = insertBlogCommentSchema.safeParse({
+        ...req.body,
+        postId: req.params.id,
+        userId: (req.session as any).userId,
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+      }
+      const comment = await storage.createBlogComment(parsed.data);
+      return res.status(201).json(comment);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/blog/:id/comments/:commentId", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteBlogComment(req.params.commentId as string);
+      return res.json({ message: "Comment deleted" });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== BLOG RATINGS ROUTES ====================
+
+  app.get("/api/blog/:id/rating", async (req, res) => {
+    try {
+      const avg = await storage.getAverageRating(req.params.id as string);
+      let userRating = null;
+      if ((req.session as any).userId) {
+        const ur = await storage.getUserRating(req.params.id as string, (req.session as any).userId);
+        userRating = ur?.rating || null;
+      }
+      return res.json({ ...avg, userRating });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/blog/:id/rating", requireAuth, async (req, res) => {
+    try {
+      const parsed = insertBlogRatingSchema.safeParse({
+        ...req.body,
+        postId: req.params.id,
+        userId: (req.session as any).userId,
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+      }
+      if (parsed.data.rating < 1 || parsed.data.rating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+      const rating = await storage.upsertBlogRating(parsed.data);
+      const avg = await storage.getAverageRating(req.params.id as string);
+      return res.json({ rating, ...avg });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

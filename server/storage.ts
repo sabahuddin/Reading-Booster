@@ -7,6 +7,8 @@ import {
   questions,
   quizResults,
   blogPosts,
+  blogComments,
+  blogRatings,
   contactMessages,
   partners,
   challenges,
@@ -26,6 +28,10 @@ import {
   type InsertQuizResult,
   type BlogPost,
   type InsertBlogPost,
+  type BlogComment,
+  type InsertBlogComment,
+  type BlogRating,
+  type InsertBlogRating,
   type ContactMessage,
   type InsertContactMessage,
   type Partner,
@@ -78,6 +84,15 @@ export interface IStorage {
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
   updateBlogPost(id: string, data: Partial<InsertBlogPost>): Promise<BlogPost | undefined>;
   deleteBlogPost(id: string): Promise<void>;
+
+  getCommentsByPostId(postId: string): Promise<(BlogComment & { userName: string })[]>;
+  createBlogComment(comment: InsertBlogComment): Promise<BlogComment>;
+  deleteBlogComment(id: string): Promise<void>;
+
+  getRatingsByPostId(postId: string): Promise<BlogRating[]>;
+  getUserRating(postId: string, userId: string): Promise<BlogRating | undefined>;
+  upsertBlogRating(rating: InsertBlogRating): Promise<BlogRating>;
+  getAverageRating(postId: string): Promise<{ average: number; count: number }>;
 
   createContactMessage(msg: InsertContactMessage): Promise<ContactMessage>;
   getAllContactMessages(): Promise<ContactMessage[]>;
@@ -285,7 +300,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllBlogPosts(): Promise<BlogPost[]> {
-    return db.select().from(blogPosts);
+    return db.select().from(blogPosts).orderBy(desc(blogPosts.publishedAt));
   }
 
   async getBlogPost(id: string): Promise<BlogPost | undefined> {
@@ -304,7 +319,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBlogPost(id: string): Promise<void> {
+    await db.delete(blogComments).where(eq(blogComments.postId, id));
+    await db.delete(blogRatings).where(eq(blogRatings.postId, id));
     await db.delete(blogPosts).where(eq(blogPosts.id, id));
+  }
+
+  async getCommentsByPostId(postId: string): Promise<(BlogComment & { userName: string })[]> {
+    const comments = await db.select().from(blogComments).where(eq(blogComments.postId, postId)).orderBy(desc(blogComments.createdAt));
+    const enriched = await Promise.all(comments.map(async (c) => {
+      const [user] = await db.select().from(users).where(eq(users.id, c.userId));
+      return { ...c, userName: user?.fullName || "Nepoznat korisnik" };
+    }));
+    return enriched;
+  }
+
+  async createBlogComment(comment: InsertBlogComment): Promise<BlogComment> {
+    const [created] = await db.insert(blogComments).values(comment).returning();
+    return created;
+  }
+
+  async deleteBlogComment(id: string): Promise<void> {
+    await db.delete(blogComments).where(eq(blogComments.id, id));
+  }
+
+  async getRatingsByPostId(postId: string): Promise<BlogRating[]> {
+    return db.select().from(blogRatings).where(eq(blogRatings.postId, postId));
+  }
+
+  async getUserRating(postId: string, userId: string): Promise<BlogRating | undefined> {
+    const [rating] = await db.select().from(blogRatings).where(and(eq(blogRatings.postId, postId), eq(blogRatings.userId, userId)));
+    return rating;
+  }
+
+  async upsertBlogRating(rating: InsertBlogRating): Promise<BlogRating> {
+    const existing = await this.getUserRating(rating.postId, rating.userId);
+    if (existing) {
+      const [updated] = await db.update(blogRatings).set({ rating: rating.rating }).where(eq(blogRatings.id, existing.id)).returning();
+      return updated;
+    }
+    const [created] = await db.insert(blogRatings).values(rating).returning();
+    return created;
+  }
+
+  async getAverageRating(postId: string): Promise<{ average: number; count: number }> {
+    const ratings = await this.getRatingsByPostId(postId);
+    if (ratings.length === 0) return { average: 0, count: 0 };
+    const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+    return { average: sum / ratings.length, count: ratings.length };
   }
 
   async createContactMessage(msg: InsertContactMessage): Promise<ContactMessage> {

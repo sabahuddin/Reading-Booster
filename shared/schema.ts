@@ -125,6 +125,7 @@ export const blogPosts = pgTable("blog_posts", {
   content: text("content").notNull(),
   author: text("author").notNull(),
   coverImage: text("cover_image").notNull(),
+  keywords: text("keywords").array().default(sql`'{}'::text[]`),
   publishedAt: timestamp("published_at").notNull().defaultNow(),
 });
 
@@ -134,6 +135,36 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
 });
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
+
+export const blogComments = pgTable("blog_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: varchar("post_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBlogCommentSchema = createInsertSchema(blogComments).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertBlogComment = z.infer<typeof insertBlogCommentSchema>;
+export type BlogComment = typeof blogComments.$inferSelect;
+
+export const blogRatings = pgTable("blog_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: varchar("post_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  rating: integer("rating").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBlogRatingSchema = createInsertSchema(blogRatings).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertBlogRating = z.infer<typeof insertBlogRatingSchema>;
+export type BlogRating = typeof blogRatings.$inferSelect;
 
 export const contactMessages = pgTable("contact_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
