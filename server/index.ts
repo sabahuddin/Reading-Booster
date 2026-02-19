@@ -8,6 +8,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { seedDatabase } from "./seed";
+import { ensureAllBooks } from "./seed-all-books";
 
 declare module "express-session" {
   interface SessionData {
@@ -181,7 +182,7 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
     },
     () => {
       log(`serving on port ${port}`);
-      seedDatabase().catch(console.error);
+      seedDatabase().then(() => ensureAllBooks()).catch(console.error);
     },
   );
 })();
