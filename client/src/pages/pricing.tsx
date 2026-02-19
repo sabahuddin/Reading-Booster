@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Check, Star, Sparkles, Users } from "lucide-react";
+import { Check, Star, Sparkles, Users, School } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +68,26 @@ const plans = [
       { label: "2 roditelja + 3 djece", price: "25 KM/godišnje" },
     ],
   },
+  {
+    name: "Škole",
+    price: "Po dogovoru",
+    period: "",
+    description: "Za škole i obrazovne ustanove",
+    icon: School,
+    features: [
+      "Sve iz Čitalac Pro paketa",
+      "Upravljanje razredima i učenicima",
+      "Kreiranje učeničkih računa",
+      "Detaljni izvještaji i statistike",
+      "CSV export podataka",
+      "Sedmični izazovi za razrede",
+      "Grupna pretplata za cijelu školu",
+      "Prioritetna podrška i obuka",
+    ],
+    cta: "Kontaktirajte nas",
+    featured: false,
+    href: "/kontakt",
+  },
 ];
 
 export default function PricingPage() {
@@ -97,8 +117,8 @@ export default function PricingPage() {
       </section>
 
       <section className="flex-1 py-12">
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan, index) => {
               const Icon = plan.icon;
               return (
@@ -137,10 +157,12 @@ export default function PricingPage() {
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col p-6 pt-0">
                       <div className="my-6 text-center">
-                        <span className="text-5xl font-bold">{plan.price}</span>
-                        <span className="ml-1 text-muted-foreground">
-                          {plan.period}
-                        </span>
+                        <span className={`font-bold ${plan.price.length > 5 ? "text-3xl" : "text-5xl"}`}>{plan.price}</span>
+                        {plan.period && (
+                          <span className="ml-1 text-muted-foreground">
+                            {plan.period}
+                          </span>
+                        )}
                       </div>
 
                       <ul className="flex-1 space-y-3">
@@ -185,23 +207,6 @@ export default function PricingPage() {
             })}
           </div>
 
-          <div className="mt-12 text-center">
-            <Card className="max-w-2xl mx-auto">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2" data-testid="text-school-pricing">Paket za škole</h3>
-                <p className="text-muted-foreground text-base mb-4">
-                  Za škole i obrazovne ustanove nudimo posebne uvjete. 
-                  Kontaktirajte nas za prilagođenu ponudu koja uključuje upravljanje razredima, 
-                  izvještaje i grupne pretplate.
-                </p>
-                <Link href="/kontakt">
-                  <Button variant="outline" data-testid="button-contact-school">
-                    Kontaktirajte nas
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </section>
 
