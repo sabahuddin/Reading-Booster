@@ -350,14 +350,14 @@ function generateQuestionsForBook(bookTitle: string, quizId: string) {
   }));
 }
 
-export async function seedDatabase() {
-  const existingBooks = await db.select().from(books).limit(1);
-  if (existingBooks.length > 0) {
-    console.log("Database already seeded, skipping...");
+async function ensureUsersSeeded() {
+  const existingUsers = await db.select().from(users).limit(1);
+  if (existingUsers.length > 0) {
+    console.log("Users already exist, skipping user seed...");
     return;
   }
 
-  console.log("Seeding database...");
+  console.log("Seeding users...");
 
   const adminPassword = await hashPassword("admin123");
   const teacherPassword = await hashPassword("ucitelj123");
@@ -414,6 +414,18 @@ export async function seedDatabase() {
   ]);
 
   console.log("Users seeded.");
+}
+
+export async function seedDatabase() {
+  await ensureUsersSeeded();
+
+  const existingBooks = await db.select().from(books).limit(1);
+  if (existingBooks.length > 0) {
+    console.log("Books already seeded, skipping book seed...");
+    return;
+  }
+
+  console.log("Seeding books...");
 
   const bookContent = "Ovo je primjer sadržaja knjige koji služi kao početni tekst za platformu Čitaj!. Knjiga sadrži mnogo zanimljivih poglavlja koja čitaoca vode kroz uzbudljivu priču punu neočekivanih obrata i pouka.\n\nLikovi u knjizi su pažljivo osmišljeni i svaki od njih nosi posebnu poruku. Kroz njihove avanture i iskustva, čitaoci uče o važnosti prijateljstva, hrabrosti i upornosti u životu.\n\nRadnja se odvija u fascinantnom okruženju koje oživljava kroz živopisne opise prirode, gradova i ljudi. Autor majstorski koristi jezik kako bi stvorio atmosferu koja čitaoca potpuno uvlači u priču.\n\nOva knjiga je odličan izbor za sve koji žele uživati u kvalitetnoj književnosti i istovremeno naučiti nešto novo o sebi i svijetu oko sebe.";
 

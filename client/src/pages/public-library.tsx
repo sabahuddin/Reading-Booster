@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { BookOpen, Search, FileText, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Book, Genre } from "@shared/schema";
-import defaultBookCover from "@assets/background_1771243573729.png";
+import { BookCover } from "@/components/book-cover";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -33,13 +33,8 @@ function BookCard({ book }: { book: BookWithGenres }) {
     <Link href={`/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
       <Card className="hover-elevate h-full">
         <CardContent className="p-4 space-y-3">
-          <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
-            <img
-              src={book.coverImage || defaultBookCover}
-              alt={book.title}
-              className="h-full w-full object-cover rounded-md"
-              data-testid={`img-book-cover-${book.id}`}
-            />
+          <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden" data-testid={`img-book-cover-${book.id}`}>
+            <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
           </div>
           <div>
             <h3 className="font-semibold text-base line-clamp-2" data-testid={`text-book-title-${book.id}`}>
@@ -136,7 +131,7 @@ export default function PublicLibrary() {
                         <Link href={`/knjiga/${weeklyPick.id}`}>
                           <div className="flex gap-4 items-start cursor-pointer hover:opacity-80 transition-opacity">
                             <div className="w-20 aspect-[2/3] shrink-0 rounded-md overflow-hidden bg-muted">
-                              <img src={weeklyPick.coverImage || defaultBookCover} alt={weeklyPick.title} className="w-full h-full object-cover" />
+                              <BookCover title={weeklyPick.title} author={weeklyPick.author} ageGroup={weeklyPick.ageGroup} coverImage={weeklyPick.coverImage} />
                             </div>
                             <div className="space-y-1">
                               <h3 className="font-bold text-xl">{weeklyPick.title}</h3>
@@ -168,7 +163,7 @@ export default function PublicLibrary() {
                         <Link href={`/knjiga/${mostRead.id}`}>
                           <div className="flex gap-4 items-start cursor-pointer hover:opacity-80 transition-opacity">
                             <div className="w-20 aspect-[2/3] shrink-0 rounded-md overflow-hidden bg-muted">
-                              <img src={mostRead.coverImage || defaultBookCover} alt={mostRead.title} className="w-full h-full object-cover" />
+                              <BookCover title={mostRead.title} author={mostRead.author} ageGroup={mostRead.ageGroup} coverImage={mostRead.coverImage} />
                             </div>
                             <div className="space-y-1">
                               <h3 className="font-bold text-xl">{mostRead.title}</h3>

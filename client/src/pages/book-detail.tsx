@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
-import defaultBookCover from "@assets/background_1771243573729.png";
+import { BookCover } from "@/components/book-cover";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -72,13 +72,8 @@ export default function BookDetail() {
         ) : (
           <>
             <div className="grid md:grid-cols-[300px_1fr] gap-8">
-              <div className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-muted">
-                <img
-                  src={book.coverImage || defaultBookCover}
-                  alt={book.title}
-                  className="w-full h-full object-cover rounded-lg shadow-lg"
-                  data-testid="img-book-cover"
-                />
+              <div className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-muted shadow-lg" data-testid="img-book-cover">
+                <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
               </div>
               <div className="space-y-3">
                 <h1 className="text-3xl md:text-4xl font-bold" data-testid="text-book-title">
