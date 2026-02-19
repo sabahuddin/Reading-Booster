@@ -239,20 +239,24 @@ export async function registerRoutes(
   app.post("/api/auth/login", loginLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
+      console.log(`[LOGIN DEBUG] Attempt for username: "${username}"`);
       if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
       }
 
       const user = await storage.getUserByUsername(username);
       if (!user) {
+        console.log(`[LOGIN DEBUG] User "${username}" NOT FOUND in database`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
+      console.log(`[LOGIN DEBUG] User found: id=${user.id}, role=${user.role}, hash_length=${user.password?.length}, hash_preview=${user.password?.substring(0, 20)}...`);
 
       if (user.role === "teacher" && user.institutionType && user.approved === false) {
         return res.status(403).json({ message: "Vaš račun čeka odobrenje administratora." });
       }
 
       const valid = await comparePasswords(password, user.password);
+      console.log(`[LOGIN DEBUG] Password comparison result: ${valid}`);
       if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -260,9 +264,18 @@ export async function registerRoutes(
       req.session.userId = user.id;
       req.session.userRole = user.role;
 
+      req.session.save((err) => {
+        if (err) {
+          console.error(`[LOGIN DEBUG] Session save ERROR:`, err);
+        } else {
+          console.log(`[LOGIN DEBUG] Session saved OK, sessionID: ${req.sessionID}`);
+        }
+      });
+
       const { password: _, ...userWithoutPassword } = user;
       return res.json(userWithoutPassword);
     } catch (error: any) {
+      console.error(`[LOGIN DEBUG] Exception:`, error);
       return res.status(500).json({ message: error.message || "Login failed" });
     }
   });
@@ -278,6 +291,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/auth/me", async (req, res) => {
+    console.log(`[AUTH ME DEBUG] sessionID: ${req.sessionID}, userId: ${req.session.userId}, cookie: ${req.headers.cookie?.substring(0, 50)}`);
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -289,6 +303,30 @@ export async function registerRoutes(
 
     const { password, ...userWithoutPassword } = user;
     return res.json(userWithoutPassword);
+  });
+
+  app.get("/api/debug/db-status", async (_req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+      const tables = await db.execute(sql`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`);
+      const userCount = await db.execute(sql`SELECT count(*) as cnt FROM users`);
+      const userList = await db.execute(sql`SELECT id, username, role, age_group, substring(password, 1, 30) as hash_preview, length(password) as hash_len FROM users ORDER BY role, username`);
+      let sessionInfo = null;
+      try {
+        sessionInfo = await db.execute(sql`SELECT count(*) as cnt, max(expire) as latest_expire FROM session`);
+      } catch (e: any) {
+        sessionInfo = { error: e.message };
+      }
+      return res.json({
+        tables: tables.rows,
+        userCount: userCount.rows[0],
+        users: userList.rows,
+        sessionTable: sessionInfo?.rows || sessionInfo,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
   });
 
   // ==================== BOOKS ROUTES ====================
