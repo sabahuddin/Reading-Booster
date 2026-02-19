@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Star } from "lucide-react";
 import logoImg from "@assets/logo_citanje_tr_1771366023473.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 
 const navLinks = [
@@ -93,6 +94,10 @@ export function Navbar() {
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-base">{user.fullName}</span>
+                  <Badge variant="secondary" className="ml-1 gap-1 text-sm no-default-hover-elevate no-default-active-elevate" data-testid="badge-points">
+                    <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                    {user.points ?? 0}
+                  </Badge>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -165,6 +170,23 @@ export function Navbar() {
                 <div className="my-4 border-t" />
                 {isAuthenticated && user ? (
                   <>
+                    <div className="flex items-center gap-2 px-4 py-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-sm">
+                          {user.fullName
+                            ?.split(" ")
+                            .map((n: string) => n[0])
+                            .join("")
+                            .toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-base font-medium">{user.fullName}</span>
+                      <Badge variant="secondary" className="ml-auto gap-1 text-sm no-default-hover-elevate no-default-active-elevate" data-testid="badge-points-mobile">
+                        <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                        {user.points ?? 0}
+                      </Badge>
+                    </div>
+                    <div className="my-2 border-t" />
                     <Link href={getDashboardPath(user.role)}>
                       <Button
                         variant="ghost"
