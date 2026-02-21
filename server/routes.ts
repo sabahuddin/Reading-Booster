@@ -79,13 +79,48 @@ const uploadCSV = multer({ storage: csvStorage, limits: { fileSize: 10 * 1024 * 
 function parseCSV(content: string): Record<string, string>[] {
   const lines = content.replace(/^\uFEFF/, "").split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
-  const headers = lines[0].split(";").map(h => h.trim().replace(/^"|"$/g, ""));
+
+  let headerLineIndex = 0;
+  const knownHeaders = ["title", "author", "naslov", "autor", "bookTitle", "questionText"];
+  if (!knownHeaders.some(h => lines[0].toLowerCase().includes(h))) {
+    headerLineIndex = 1;
+    if (lines.length < 3) return [];
+  }
+
+  const headerLine = lines[headerLineIndex];
+  const delimiter = headerLine.includes(";") ? ";" : ",";
+
+  function splitCSVLine(line: string, delim: string): string[] {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === delim && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current.trim());
+    return result.map(v => v.replace(/^"|"$/g, ""));
+  }
+
+  const headers = splitCSVLine(headerLine, delimiter);
   const rows: Record<string, string>[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(";").map(v => v.trim().replace(/^"|"$/g, ""));
-    if (values.length === headers.length) {
+  for (let i = headerLineIndex + 1; i < lines.length; i++) {
+    const values = splitCSVLine(lines[i], delimiter);
+    if (values.length >= headers.length - 1) {
       const row: Record<string, string> = {};
-      headers.forEach((h, idx) => { row[h] = values[idx]; });
+      headers.forEach((h, idx) => { row[h] = values[idx] ?? ""; });
       rows.push(row);
     }
   }
@@ -1486,14 +1521,32 @@ export async function registerRoutes(
             errors.push(`Red ${i + 2}: Naslov i autor su obavezni`);
             continue;
           }
+          const ageGroupMap: Record<string, string> = {
+            "od 1. razreda": "R1", "r1": "R1",
+            "od 4. razreda": "R4", "r4": "R4",
+            "od 7. razreda": "R7", "r7": "R7",
+            "omladina": "O", "o": "O",
+            "odrasli": "A", "a": "A",
+          };
+          const rawAge = (row.ageGroup || "").trim().toLowerCase();
+          const mappedAge = ageGroupMap[rawAge] || row.ageGroup || "R1";
+
+          const genreMap: Record<string, string> = {
+            "lektira": "lektira", "avantura i fantasy": "avantura_fantasy", "avantura": "avantura_fantasy",
+            "roman": "roman", "beletristika": "beletristika", "bajke i basne": "bajke_basne",
+            "bajke": "bajke_basne", "zanimljiva nauka": "zanimljiva_nauka", "poezija": "poezija", "islam": "islam",
+          };
+          const rawGenre = (row.genre || "").trim().toLowerCase();
+          const mappedGenre = genreMap[rawGenre] || row.genre || "lektira";
+
           await storage.createBook({
             title: row.title,
             author: row.author,
             description: row.description || "",
             coverImage: row.coverImage || "https://via.placeholder.com/200x300?text=Knjiga",
             content: row.content || row.description || "",
-            ageGroup: row.ageGroup || "R1",
-            genre: row.genre || "lektira",
+            ageGroup: mappedAge,
+            genre: mappedGenre,
             readingDifficulty: (row.readingDifficulty as "lako" | "srednje" | "tesko") || "srednje",
             pageCount: parseInt(row.pageCount) || 100,
             pdfUrl: row.pdfUrl || null,
