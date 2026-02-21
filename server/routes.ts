@@ -647,16 +647,30 @@ export async function registerRoutes(
   app.get("/api/quiz-results/user/:userId", requireAuth, async (req, res) => {
     try {
       const role = req.session.userRole;
-      if (role === "parent") {
+      const targetUserId = req.params.userId as string;
+
+      if (req.session.userId === targetUserId) {
+      } else if (role === "parent") {
         const children = await storage.getChildrenByParentId(req.session.userId!);
-        const isChild = children.some((c) => c.id === req.params.userId);
+        const isChild = children.some((c) => c.id === targetUserId);
         if (!isChild) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      } else if (role === "reader") {
+        const reader = await storage.getUser(req.session.userId!);
+        if (reader?.parentId) {
+          const siblings = await storage.getChildrenByParentId(reader.parentId);
+          const isSibling = siblings.some((c) => c.id === targetUserId);
+          if (!isSibling) {
+            return res.status(403).json({ message: "Access denied" });
+          }
+        } else {
           return res.status(403).json({ message: "Access denied" });
         }
       } else if (role !== "teacher" && role !== "admin") {
         return res.status(403).json({ message: "Access denied" });
       }
-      const results = await storage.getQuizResultsByUserId(req.params.userId as string);
+      const results = await storage.getQuizResultsByUserId(targetUserId);
       return res.json(results);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -1903,6 +1917,134 @@ export async function registerRoutes(
 
       const updated = await storage.updateParentChildRequestStatus(request.id, status);
       res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== PARENT: CREATE FAMILY ACCOUNTS ====================
+
+  app.post("/api/parent/create-child", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Samo roditelji mogu kreirati dječije račune" });
+      }
+      const parentId = req.session.userId!;
+      const parent = await storage.getUser(parentId);
+      if (!parent) return res.status(404).json({ message: "Korisnik nije pronađen" });
+
+      const existingChildren = await storage.getChildrenByParentId(parentId);
+      const childCount = existingChildren.filter(c => c.role === "student").length;
+      if (childCount >= 3) {
+        return res.status(400).json({ message: "Možete kreirati najviše 3 dječija računa." });
+      }
+
+      const { fullName, ageGroup } = req.body;
+      if (!fullName || fullName.trim().length < 2) {
+        return res.status(400).json({ message: "Ime i prezime je obavezno (min. 2 karaktera)." });
+      }
+
+      let username = generateUsername(fullName);
+      let attempts = 0;
+      while (await storage.getUserByUsername(username) && attempts < 10) {
+        username = generateUsername(fullName);
+        attempts++;
+      }
+
+      const plainPassword = generatePassword();
+      const hashedPw = await hashPassword(plainPassword);
+
+      const child = await storage.createUser({
+        username,
+        email: `${username}@family.citaj.ba`,
+        password: hashedPw,
+        role: "student",
+        fullName: fullName.trim(),
+        ageGroup: ageGroup || "R1",
+        parentId,
+      });
+
+      const { password, ...childData } = child;
+      return res.status(201).json({ ...childData, generatedPassword: plainPassword });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/parent/create-reader", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Samo roditelji mogu kreirati Čitalac Pro račune" });
+      }
+      const parentId = req.session.userId!;
+      const parent = await storage.getUser(parentId);
+      if (!parent) return res.status(404).json({ message: "Korisnik nije pronađen" });
+
+      const existingChildren = await storage.getChildrenByParentId(parentId);
+      const readerCount = existingChildren.filter(c => c.role === "reader").length;
+      if (readerCount >= 1) {
+        return res.status(400).json({ message: "Možete kreirati najviše 1 Čitalac Pro račun." });
+      }
+
+      const { fullName } = req.body;
+      if (!fullName || fullName.trim().length < 2) {
+        return res.status(400).json({ message: "Ime i prezime je obavezno (min. 2 karaktera)." });
+      }
+
+      let username = generateUsername(fullName);
+      let attempts = 0;
+      while (await storage.getUserByUsername(username) && attempts < 10) {
+        username = generateUsername(fullName);
+        attempts++;
+      }
+
+      const plainPassword = generatePassword();
+      const hashedPw = await hashPassword(plainPassword);
+
+      const reader = await storage.createUser({
+        username,
+        email: `${username}@family.citaj.ba`,
+        password: hashedPw,
+        role: "reader",
+        fullName: fullName.trim(),
+        ageGroup: "A",
+        parentId,
+        subscriptionType: "standard",
+      });
+
+      const { password, ...readerData } = reader;
+      return res.status(201).json({ ...readerData, generatedPassword: plainPassword });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/parent/family-members", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Pristup odbijen" });
+      }
+      const members = await storage.getChildrenByParentId(req.session.userId!);
+      const withoutPasswords = members.map(({ password, ...u }) => u);
+      res.json(withoutPasswords);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/reader/family-children", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "reader") {
+        return res.status(403).json({ message: "Pristup odbijen" });
+      }
+      const reader = await storage.getUser(req.session.userId!);
+      if (!reader || !reader.parentId) {
+        return res.json([]);
+      }
+      const allMembers = await storage.getChildrenByParentId(reader.parentId);
+      const children = allMembers.filter(m => m.role === "student");
+      const withoutPasswords = children.map(({ password, ...u }) => u);
+      res.json(withoutPasswords);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

@@ -7,7 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -16,12 +24,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Baby, Star, Trophy, Users, Target, TrendingUp, BookOpen, UserPlus, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Baby, Star, Trophy, Users, BookOpen, UserPlus, Clock, CheckCircle2, Copy, Sparkles } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
 type ChildUser = Omit<User, "password">;
+
+const ageGroupLabels: Record<string, string> = {
+  R1: "Od 1. razreda (6-9 god.)",
+  R4: "Od 4. razreda (10-12 god.)",
+  R7: "Od 7. razreda (13-15 god.)",
+  O: "Omladina (15-18 god.)",
+  A: "Odrasli (18+)",
+};
 
 function ChildSummaryCard({ child }: { child: ChildUser }) {
   const { data: results, isLoading } = useQuery<QuizResult[]>({
@@ -35,38 +57,35 @@ function ChildSummaryCard({ child }: { child: ChildUser }) {
     : 0;
 
   const recentResults = results?.slice(0, 3) ?? [];
+  const isReader = child.role === "reader";
 
   return (
     <Card data-testid={`card-child-${child.id}`}>
       <CardHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <Baby className="text-muted-foreground" />
+            {isReader ? <Sparkles className="text-muted-foreground" /> : <Baby className="text-muted-foreground" />}
             <CardTitle className="text-lg" data-testid={`text-child-name-${child.id}`}>
               {child.fullName}
             </CardTitle>
           </div>
-          <Badge variant="default">
-            <Star className="mr-1" />
-            {child.points} bodova
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={isReader ? "secondary" : "default"}>
+              {isReader ? "Čitalac Pro" : "Dijete"}
+            </Badge>
+            <Badge variant="default">
+              <Star className="mr-1 h-3 w-3" />
+              {child.points} bodova
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2 flex-wrap">
-          {child.schoolName && (
-            <Badge variant="secondary" data-testid={`badge-school-${child.id}`}>
-              {child.schoolName}
-            </Badge>
-          )}
-          {child.className && (
-            <Badge variant="outline" data-testid={`badge-class-${child.id}`}>
-              {child.className}
-            </Badge>
-          )}
           {child.ageGroup && (
-            <Badge variant="outline">{{"R1":"Od 1. razreda","R4":"Od 4. razreda","R7":"Od 7. razreda","O":"Omladina","A":"Odrasli"}[child.ageGroup as string] || child.ageGroup}</Badge>
+            <Badge variant="outline">{ageGroupLabels[child.ageGroup as string] || child.ageGroup}</Badge>
           )}
+          <Badge variant="outline" className="text-xs">@{child.username}</Badge>
         </div>
 
         {isLoading ? (
@@ -133,18 +152,40 @@ interface LinkRequest {
   createdAt: string;
 }
 
+interface CreatedAccount {
+  username: string;
+  fullName: string;
+  generatedPassword: string;
+  role: string;
+}
+
 export default function ParentDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [studentUsername, setStudentUsername] = useState("");
+  const [childName, setChildName] = useState("");
+  const [childAgeGroup, setChildAgeGroup] = useState("R1");
+  const [readerName, setReaderName] = useState("");
+  const [createdAccount, setCreatedAccount] = useState<CreatedAccount | null>(null);
 
-  const { data: children, isLoading } = useQuery<ChildUser[]>({
+  const { data: familyMembers, isLoading } = useQuery<ChildUser[]>({
+    queryKey: ["/api/parent/family-members"],
+  });
+
+  const { data: children } = useQuery<ChildUser[]>({
     queryKey: ["/api/parent/children"],
   });
 
   const { data: linkRequests } = useQuery<LinkRequest[]>({
     queryKey: ["/api/parent/link-requests"],
   });
+
+  const allChildren = [...(familyMembers || []), ...(children || [])];
+  const uniqueChildren = allChildren.filter((child, index, self) =>
+    index === self.findIndex(c => c.id === child.id)
+  );
+  const studentMembers = uniqueChildren.filter(c => c.role === "student");
+  const readerMembers = uniqueChildren.filter(c => c.role === "reader");
 
   const linkChildMutation = useMutation({
     mutationFn: async (username: string) => {
@@ -159,9 +200,51 @@ export default function ParentDashboard() {
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
 
-  const totalChildPoints = children?.reduce((sum, c) => sum + c.points, 0) ?? 0;
-  const totalChildren = children?.length ?? 0;
+  const createChildMutation = useMutation({
+    mutationFn: async (data: { fullName: string; ageGroup: string }) => {
+      const res = await apiRequest("POST", "/api/parent/create-child", data);
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/family-members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/children"] });
+      setCreatedAccount({
+        username: data.username,
+        fullName: data.fullName,
+        generatedPassword: data.generatedPassword,
+        role: "student",
+      });
+      setChildName("");
+      setChildAgeGroup("R1");
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
+  const createReaderMutation = useMutation({
+    mutationFn: async (data: { fullName: string }) => {
+      const res = await apiRequest("POST", "/api/parent/create-reader", data);
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/family-members"] });
+      setCreatedAccount({
+        username: data.username,
+        fullName: data.fullName,
+        generatedPassword: data.generatedPassword,
+        role: "reader",
+      });
+      setReaderName("");
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
+  const totalChildPoints = studentMembers.reduce((sum, c) => sum + c.points, 0);
   const pendingRequests = linkRequests?.filter(r => r.status === "pending") || [];
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Kopirano!", description: "Podatci su kopirani." });
+  }
 
   return (
     <DashboardLayout role="parent">
@@ -171,31 +254,38 @@ export default function ParentDashboard() {
             Dobrodošli, {user?.fullName || "Roditelju"}!
           </h1>
           <p className="text-muted-foreground">
-            Pratite napredak i rezultate svoje djece.
+            Upravljajte porodičnim profilima i pratite napredak djece.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Djece</CardTitle>
               <Baby className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? <Skeleton className="h-8 w-20" /> : (
-                <div className="text-3xl font-bold" data-testid="text-total-children">{totalChildren}</div>
-              )}
+              <div className="text-3xl font-bold" data-testid="text-total-children">{studentMembers.length}</div>
+              <p className="text-xs text-muted-foreground">maks. 3</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ukupno bodova</CardTitle>
+              <CardTitle className="text-sm font-medium">Čitalac Pro</CardTitle>
+              <Sparkles className="text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{readerMembers.length}</div>
+              <p className="text-xs text-muted-foreground">maks. 1</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bodovi djece</CardTitle>
               <Star className="text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? <Skeleton className="h-8 w-20" /> : (
-                <div className="text-3xl font-bold" data-testid="text-total-points">{totalChildPoints}</div>
-              )}
+              <div className="text-3xl font-bold" data-testid="text-total-points">{totalChildPoints}</div>
             </CardContent>
           </Card>
           <Card>
@@ -205,43 +295,137 @@ export default function ParentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold" data-testid="text-parent-points">{user?.points ?? 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Porodično takmičenje</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card className="hover-elevate">
-            <Link href="/roditelj/djeca" data-testid="link-children-detail">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Baby className="text-muted-foreground" />
-                  <CardTitle className="text-lg">Detalji o djeci</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Kreiraj dječiji profil
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Kreirajte račun za vaše dijete. Korisničko ime i lozinka će biti automatski generirani.
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <Label>Ime i prezime djeteta</Label>
+                  <Input
+                    placeholder="npr. Amina Hodžić"
+                    value={childName}
+                    onChange={e => setChildName(e.target.value)}
+                    data-testid="input-child-name"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Detaljni pregled rezultata i napretka vaše djece.
-                </p>
-              </CardContent>
-            </Link>
+                <div>
+                  <Label>Starosna skupina</Label>
+                  <Select value={childAgeGroup} onValueChange={setChildAgeGroup}>
+                    <SelectTrigger data-testid="select-child-age">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="R1">Od 1. razreda (6-9 god.)</SelectItem>
+                      <SelectItem value="R4">Od 4. razreda (10-12 god.)</SelectItem>
+                      <SelectItem value="R7">Od 7. razreda (13-15 god.)</SelectItem>
+                      <SelectItem value="O">Omladina (15-18 god.)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={() => createChildMutation.mutate({ fullName: childName, ageGroup: childAgeGroup })}
+                  disabled={createChildMutation.isPending || !childName.trim() || studentMembers.length >= 3}
+                  className="w-full"
+                  data-testid="button-create-child"
+                >
+                  {createChildMutation.isPending ? "Kreira se..." : `Kreiraj profil (${studentMembers.length}/3)`}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
-          <Card className="hover-elevate">
-            <Link href="/biblioteka" data-testid="link-library">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <BookOpen className="text-muted-foreground" />
-                  <CardTitle className="text-lg">Biblioteka</CardTitle>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Kreiraj Čitalac Pro profil
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Kreirajte Čitalac Pro račun za člana porodice. Može rješavati kvizove i pratiti rezultate djece.
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <Label>Ime i prezime</Label>
+                  <Input
+                    placeholder="npr. Emir Hodžić"
+                    value={readerName}
+                    onChange={e => setReaderName(e.target.value)}
+                    data-testid="input-reader-name"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Pregledajte knjige dostupne vašoj djeci.
-                </p>
-              </CardContent>
-            </Link>
+                <Button
+                  onClick={() => createReaderMutation.mutate({ fullName: readerName })}
+                  disabled={createReaderMutation.isPending || !readerName.trim() || readerMembers.length >= 1}
+                  className="w-full"
+                  data-testid="button-create-reader"
+                >
+                  {createReaderMutation.isPending ? "Kreira se..." : `Kreiraj Čitalac Pro (${readerMembers.length}/1)`}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
+
+        <Dialog open={!!createdAccount} onOpenChange={() => setCreatedAccount(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {createdAccount?.role === "reader" ? "Čitalac Pro račun kreiran!" : "Dječiji račun kreiran!"}
+              </DialogTitle>
+            </DialogHeader>
+            {createdAccount && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Sačuvajte ove podatke - lozinka se ne može ponovo prikazati.
+                </p>
+                <div className="bg-muted p-4 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Ime</p>
+                      <p className="font-medium">{createdAccount.fullName}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Korisničko ime</p>
+                      <p className="font-mono font-medium">{createdAccount.username}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => copyToClipboard(createdAccount.username)} data-testid="button-copy-username">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Lozinka</p>
+                      <p className="font-mono font-medium text-lg">{createdAccount.generatedPassword}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => copyToClipboard(createdAccount.generatedPassword)} data-testid="button-copy-password">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Button onClick={() => setCreatedAccount(null)} className="w-full" data-testid="button-close-created">
+                  Razumijem, sačuvao/la sam podatke
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -257,21 +441,21 @@ export default function ParentDashboard() {
               </Card>
             ))}
           </div>
-        ) : !children || children.length === 0 ? (
+        ) : uniqueChildren.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <Users className="mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium">Nema povezane djece</p>
+              <Users className="mx-auto mb-4 text-muted-foreground h-12 w-12" />
+              <p className="text-lg font-medium">Nema članova porodice</p>
               <p className="text-muted-foreground mb-4">
-                Povežite se s djetetom koristeći korisničko ime učenika.
+                Kreirajte dječije profile ili Čitalac Pro profil iznad.
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Pregled djece</h2>
+            <h2 className="text-lg font-semibold">Članovi porodice</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {children.map((child) => (
+              {uniqueChildren.map((child) => (
                 <ChildSummaryCard key={child.id} child={child} />
               ))}
             </div>
@@ -282,12 +466,12 @@ export default function ParentDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5" />
-              Poveži dijete
+              Poveži postojeće dijete
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Unesite korisničko ime vašeg djeteta. Učitelj će odobriti zahtjev za povezivanje.
+              Ako vaše dijete već ima školski račun, unesite korisničko ime. Učitelj će odobriti povezivanje.
             </p>
             <div className="flex gap-2">
               <Input

@@ -14,8 +14,42 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles } from "lucide-react";
-import type { QuizResult, Challenge } from "@shared/schema";
+import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Baby } from "lucide-react";
+import type { User, QuizResult, Challenge } from "@shared/schema";
+
+type ChildUser = Omit<User, "password">;
+
+function FamilyChildCard({ child }: { child: ChildUser }) {
+  const { data: results, isLoading } = useQuery<QuizResult[]>({
+    queryKey: ["/api/quiz-results/user", child.id],
+  });
+
+  const totalQuizzes = results?.length ?? 0;
+  const totalScore = results?.reduce((sum, r) => sum + r.score, 0) ?? 0;
+
+  return (
+    <div className="flex items-center justify-between p-3 rounded-md bg-muted" data-testid={`family-child-${child.id}`}>
+      <div className="flex items-center gap-3">
+        <Baby className="text-muted-foreground h-5 w-5" />
+        <div>
+          <p className="font-medium text-sm">{child.fullName}</p>
+          <p className="text-xs text-muted-foreground">@{child.username}</p>
+        </div>
+      </div>
+      {isLoading ? (
+        <Skeleton className="h-6 w-20" />
+      ) : (
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{totalQuizzes} kviz.</Badge>
+          <Badge variant="default">
+            <Star className="h-3 w-3 mr-1" />
+            {totalScore} bod.
+          </Badge>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface SubscriptionStatus {
   subscriptionType: string;
@@ -38,6 +72,12 @@ export default function ReaderDashboard() {
 
   const { data: subscription } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
+  });
+
+  const hasFamilyLink = !!user?.parentId;
+  const { data: familyChildren } = useQuery<ChildUser[]>({
+    queryKey: ["/api/reader/family-children"],
+    enabled: hasFamilyLink,
   });
 
   const totalQuizzes = results?.length ?? 0;
@@ -206,6 +246,22 @@ export default function ReaderDashboard() {
             </Link>
           </Card>
         </div>
+
+        {hasFamilyLink && familyChildren && familyChildren.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Baby className="text-muted-foreground" />
+                Djeca iz porodice
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {familyChildren.map((child) => (
+                <FamilyChildCard key={child.id} child={child} />
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
