@@ -7,6 +7,8 @@ import DashboardLayout from "@/components/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Quiz, Book, Question } from "@shared/schema";
+
+type QuizWithCount = Quiz & { questionCount?: number };
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +33,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle } from "lucide-react";
 
 const quizFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
@@ -305,13 +307,15 @@ const QUIZZES_PER_PAGE = 20;
 export default function AdminQuizzes() {
   const { toast } = useToast();
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
-  const [deleteQuiz, setDeleteQuiz] = useState<Quiz | null>(null);
+  const [deleteQuiz, setDeleteQuiz] = useState<QuizWithCount | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<"title" | "book" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const { data: quizzes, isLoading: quizzesLoading } = useQuery<Quiz[]>({
+  const { data: quizzes, isLoading: quizzesLoading } = useQuery<QuizWithCount[]>({
     queryKey: ["/api/quizzes"],
   });
 
@@ -416,16 +420,36 @@ export default function AdminQuizzes() {
     return book?.title ?? "Nepoznata knjiga";
   }
 
+  function toggleSort(field: "title" | "book") {
+    if (sortField === field) {
+      setSortDir(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  }
+
   const filteredQuizzes = useMemo(() => {
     if (!quizzes) return [];
-    if (!searchQuery.trim()) return quizzes;
-    const q = searchQuery.toLowerCase();
-    return quizzes.filter(
-      (quiz) =>
-        quiz.title.toLowerCase().includes(q) ||
-        getBookTitle(quiz.bookId).toLowerCase().includes(q)
-    );
-  }, [quizzes, searchQuery, books]);
+    let result = quizzes;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (quiz) =>
+          quiz.title.toLowerCase().includes(q) ||
+          getBookTitle(quiz.bookId).toLowerCase().includes(q)
+      );
+    }
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        const valA = sortField === "book" ? getBookTitle(a.bookId).toLowerCase() : a.title.toLowerCase();
+        const valB = sortField === "book" ? getBookTitle(b.bookId).toLowerCase() : b.title.toLowerCase();
+        return sortDir === "asc" ? valA.localeCompare(valB, "hr") : valB.localeCompare(valA, "hr");
+      });
+    }
+    return result;
+  }, [quizzes, searchQuery, books, sortField, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filteredQuizzes.length / QUIZZES_PER_PAGE));
   const safePage = Math.max(1, Math.min(currentPage, totalPages));
@@ -493,30 +517,65 @@ export default function AdminQuizzes() {
                 {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
               </div>
             ) : paginatedQuizzes.length > 0 ? (
-              <Accordion type="multiple">
-                {paginatedQuizzes.map((quiz) => (
-                  <AccordionItem key={quiz.id} value={quiz.id}>
-                    <AccordionTrigger className="gap-2" data-testid={`accordion-quiz-${quiz.id}`}>
-                      <div className="flex items-center gap-3 flex-wrap text-left flex-1">
-                        <span className="font-medium">{quiz.title}</span>
-                        <Badge variant="secondary">{getBookTitle(quiz.bookId)}</Badge>
+              <div className="space-y-0">
+                <div className="flex items-center gap-3 px-4 py-2 border-b text-sm text-muted-foreground">
+                  <div className="flex-1">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("title")}
+                      data-testid="button-sort-quiz-title"
+                    >
+                      Naslov kviza
+                      {sortField === "title" ? (sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+                    </button>
+                  </div>
+                  <div className="w-48">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("book")}
+                      data-testid="button-sort-quiz-book"
+                    >
+                      Knjiga
+                      {sortField === "book" ? (sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+                    </button>
+                  </div>
+                  <div className="w-24 text-center">Pitanja</div>
+                  <div className="w-10"></div>
+                </div>
+                <Accordion type="multiple">
+                  {paginatedQuizzes.map((quiz) => (
+                    <AccordionItem key={quiz.id} value={quiz.id} className="relative">
+                      <div className="flex items-center">
+                        <AccordionTrigger className="gap-2 flex-1" data-testid={`accordion-quiz-${quiz.id}`}>
+                          <div className="flex items-center gap-3 text-left flex-1">
+                            <span className="font-medium flex-1">{quiz.title}</span>
+                            <Badge variant="secondary" className="w-48 justify-center truncate">{getBookTitle(quiz.bookId)}</Badge>
+                            <Badge variant="outline" className="w-24 justify-center" data-testid={`text-question-count-${quiz.id}`}>
+                              <HelpCircle className="h-3 w-3 mr-1" />
+                              {quiz.questionCount ?? "?"} pitanja
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="shrink-0 p-2 rounded-md hover:bg-accent cursor-pointer mr-2"
+                          onClick={() => setDeleteQuiz(quiz)}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setDeleteQuiz(quiz); }}
+                          data-testid={`button-delete-quiz-${quiz.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </div>
                       </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="shrink-0 ml-2"
-                        onClick={(e) => { e.stopPropagation(); setDeleteQuiz(quiz); }}
-                        data-testid={`button-delete-quiz-${quiz.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <QuizQuestions quizId={quiz.id} />
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                      <AccordionContent>
+                        <QuizQuestions quizId={quiz.id} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">
                 {searchQuery ? "Nema rezultata za vašu pretragu." : "Nema kvizova. Dodajte prvi kviz."}

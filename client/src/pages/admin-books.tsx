@@ -30,7 +30,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -82,6 +82,8 @@ export default function AdminBooks() {
   const [csvImporting, setCsvImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<"title" | "author" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -91,19 +93,39 @@ export default function AdminBooks() {
     queryKey: ["/api/genres"],
   });
 
+  function toggleSort(field: "title" | "author") {
+    if (sortField === field) {
+      setSortDir(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  }
+
   const filteredBooks = useMemo(() => {
     if (!books) return [];
-    if (!searchQuery.trim()) return books;
-    const q = searchQuery.toLowerCase();
-    return books.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) ||
-        b.author.toLowerCase().includes(q) ||
-        (b.genres && b.genres.some(g => g.name.toLowerCase().includes(q))) ||
-        (b.genre && b.genre.toLowerCase().includes(q)) ||
-        (b.isbn && b.isbn.toLowerCase().includes(q))
-    );
-  }, [books, searchQuery]);
+    let result = books;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (b) =>
+          b.title.toLowerCase().includes(q) ||
+          b.author.toLowerCase().includes(q) ||
+          (b.genres && b.genres.some(g => g.name.toLowerCase().includes(q))) ||
+          (b.genre && b.genre.toLowerCase().includes(q)) ||
+          (b.isbn && b.isbn.toLowerCase().includes(q))
+      );
+    }
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        const valA = a[sortField].toLowerCase();
+        const valB = b[sortField].toLowerCase();
+        return sortDir === "asc" ? valA.localeCompare(valB, "hr") : valB.localeCompare(valA, "hr");
+      });
+    }
+    return result;
+  }, [books, searchQuery, sortField, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBooks.length / BOOKS_PER_PAGE));
   const safePage = Math.max(1, Math.min(currentPage, totalPages));
@@ -376,8 +398,28 @@ export default function AdminBooks() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Naslov</TableHead>
-                    <TableHead>Autor</TableHead>
+                    <TableHead>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                        onClick={() => toggleSort("title")}
+                        data-testid="button-sort-title"
+                      >
+                        Naslov
+                        {sortField === "title" ? (sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                        onClick={() => toggleSort("author")}
+                        data-testid="button-sort-author"
+                      >
+                        Autor
+                        {sortField === "author" ? (sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+                      </button>
+                    </TableHead>
                     <TableHead>Dob</TableHead>
                     <TableHead>Žanr</TableHead>
                     <TableHead>Težina</TableHead>

@@ -424,7 +424,13 @@ export async function registerRoutes(
   app.get("/api/quizzes", requireAdmin, async (_req, res) => {
     try {
       const allQuizzes = await storage.getAllQuizzes();
-      return res.json(allQuizzes);
+      const quizzesWithCounts = await Promise.all(
+        allQuizzes.map(async (quiz) => {
+          const questions = await storage.getQuestionsByQuizId(quiz.id);
+          return { ...quiz, questionCount: questions.length };
+        })
+      );
+      return res.json(quizzesWithCounts);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
