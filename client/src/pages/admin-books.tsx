@@ -271,9 +271,13 @@ export default function AdminBooks() {
       queryClient.invalidateQueries({ queryKey: ["/api/books"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       
-      const description = data.errors && data.errors.length > 0 
-        ? `Uvezeno: ${data.imported || 0}. Greške: ${data.errors.join(", ")}`
-        : `Uspješno uvezeno ${data.imported || 0} knjiga.`;
+      let description = `Uspješno uvezeno ${data.imported || 0} knjiga.`;
+      if (data.skipped > 0) {
+        description += ` Preskočeno ${data.skipped} duplikata.`;
+      }
+      if (data.errors && data.errors.length > 0) {
+        description += ` Greške: ${data.errors.join(", ")}`;
+      }
       
       toast({ 
         title: "Import završen", 

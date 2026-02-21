@@ -407,6 +407,14 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
       }
+      const allBooks = await storage.getAllBooks();
+      const duplicate = allBooks.find(b =>
+        b.title.toLowerCase() === parsed.data.title.toLowerCase() &&
+        b.author.toLowerCase() === parsed.data.author.toLowerCase()
+      );
+      if (duplicate) {
+        return res.status(400).json({ message: `Knjiga "${parsed.data.title}" od autora "${parsed.data.author}" već postoji u bazi.` });
+      }
       const book = await storage.createBook(parsed.data);
       if (Array.isArray(genreIds) && genreIds.length > 0) {
         await storage.setBookGenres(book.id, genreIds);
@@ -1512,7 +1520,11 @@ export async function registerRoutes(
       if (rows.length === 0) return res.status(400).json({ message: "CSV je prazan ili neispravan format" });
 
       const created: string[] = [];
+      const skipped: string[] = [];
       const errors: string[] = [];
+
+      const existingBooks = await storage.getAllBooks();
+      const existingSet = new Set(existingBooks.map(b => `${b.title.toLowerCase()}::${b.author.toLowerCase()}`));
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -1521,6 +1533,12 @@ export async function registerRoutes(
             errors.push(`Red ${i + 2}: Naslov i autor su obavezni`);
             continue;
           }
+          const key = `${row.title.toLowerCase()}::${row.author.toLowerCase()}`;
+          if (existingSet.has(key)) {
+            skipped.push(row.title);
+            continue;
+          }
+          existingSet.add(key);
           const ageGroupMap: Record<string, string> = {
             "od 1. razreda": "R1", "r1": "R1",
             "od 4. razreda": "R4", "r4": "R4",
@@ -1567,7 +1585,7 @@ export async function registerRoutes(
       }
 
       fs.unlinkSync(req.file.path);
-      return res.json({ imported: created.length, errors, titles: created });
+      return res.json({ imported: created.length, skipped: skipped.length, skippedTitles: skipped, errors, titles: created });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
