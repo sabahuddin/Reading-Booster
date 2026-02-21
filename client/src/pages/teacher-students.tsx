@@ -33,7 +33,17 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Star, Eye, Trophy, Target, UserPlus, Download, Copy, Check, KeyRound, UsersRound } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Users, Star, Eye, Trophy, Target, UserPlus, Download, Copy, Check, KeyRound, UsersRound, Pencil, Trash2 } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
 type StudentUser = Omit<User, "password">;
@@ -336,6 +346,9 @@ export default function TeacherStudents() {
   const [bulkResults, setBulkResults] = useState<CreatedStudentResult[]>([]);
   const [createdStudent, setCreatedStudent] = useState<CreatedStudentResult | null>(null);
   const [resetResult, setResetResult] = useState<ResetPasswordResult | null>(null);
+  const [editStudent, setEditStudent] = useState<StudentUser | null>(null);
+  const [editName, setEditName] = useState("");
+  const [deleteStudent, setDeleteStudent] = useState<StudentUser | null>(null);
 
   const form = useForm<CreateStudentValues>({
     resolver: zodResolver(createStudentSchema),
@@ -371,6 +384,37 @@ export default function TeacherStudents() {
     onSuccess: (data: ResetPasswordResult) => {
       setResetResult(data);
       toast({ title: "Lozinka resetovana" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async ({ id, fullName }: { id: string; fullName: string }) => {
+      const res = await apiRequest("PUT", `/api/teacher/update-student/${id}`, { fullName });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      setEditStudent(null);
+      setEditName("");
+      toast({ title: "Učenik uspješno ažuriran" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/teacher/delete-student/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      setDeleteStudent(null);
+      toast({ title: "Učenik uspješno obrisan" });
     },
     onError: (err: any) => {
       toast({ title: "Greška", description: err.message, variant: "destructive" });
@@ -498,12 +542,30 @@ export default function TeacherStudents() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => { setEditStudent(s); setEditName(s.fullName); }}
+                            title="Uredi ime"
+                            data-testid={`button-edit-student-${s.id}`}
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => resetPasswordMutation.mutate(s.id)}
                             disabled={resetPasswordMutation.isPending}
                             title="Resetuj lozinku"
                             data-testid={`button-reset-password-${s.id}`}
                           >
                             <KeyRound />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteStudent(s)}
+                            title="Obriši učenika"
+                            data-testid={`button-delete-student-${s.id}`}
+                          >
+                            <Trash2 className="text-destructive" />
                           </Button>
                         </div>
                       </TableCell>
@@ -577,6 +639,55 @@ export default function TeacherStudents() {
           open={!!resetResult}
           onClose={() => setResetResult(null)}
         />
+
+        <Dialog open={!!editStudent} onOpenChange={(v) => { if (!v) { setEditStudent(null); setEditName(""); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Uredi učenika</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Ime i prezime</label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Ime i prezime"
+                  data-testid="input-edit-student-name"
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => editStudent && editMutation.mutate({ id: editStudent.id, fullName: editName })}
+                disabled={editMutation.isPending || editName.trim().length < 2}
+                data-testid="button-submit-edit-student"
+              >
+                {editMutation.isPending ? "Spremam..." : "Spremi izmjene"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={!!deleteStudent} onOpenChange={(v) => { if (!v) setDeleteStudent(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Obriši učenika</AlertDialogTitle>
+              <AlertDialogDescription>
+                Jeste li sigurni da želite obrisati učenika <strong>{deleteStudent?.fullName}</strong>?
+                Ova akcija se ne može poništiti. Svi rezultati kvizova ovog učenika će biti izgubljeni.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-delete">Otkaži</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteStudent && deleteMutation.mutate(deleteStudent.id)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                data-testid="button-confirm-delete"
+              >
+                {deleteMutation.isPending ? "Brišem..." : "Obriši"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

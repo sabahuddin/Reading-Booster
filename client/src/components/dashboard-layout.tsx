@@ -1,8 +1,17 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   SidebarProvider,
   Sidebar,
@@ -17,6 +26,8 @@ import {
   SidebarFooter,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Home,
   BookOpen,
@@ -37,6 +48,7 @@ import {
   School as SchoolIcon,
   Sparkles,
   Tags,
+  KeyRound,
 } from "lucide-react";
 
 type Role = "student" | "teacher" | "parent" | "admin" | "school" | "reader";
@@ -101,7 +113,55 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ role, children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
+  const { toast } = useToast();
   const items = menusByRole[role] || [];
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const canChangePassword = role !== "student";
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/change-password", { currentPassword, newPassword });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Lozinka uspješno promijenjena." });
+      setPasswordOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: any) => {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    },
+  });
+
+  function handleChangePassword() {
+    if (!currentPassword || !newPassword) {
+      toast({ title: "Popunite sva polja.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Nove lozinke se ne poklapaju.", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({ title: "Nova lozinka mora imati najmanje 8 karaktera.", variant: "destructive" });
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      toast({ title: "Nova lozinka mora sadržavati veliko slovo.", variant: "destructive" });
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      toast({ title: "Nova lozinka mora sadržavati broj.", variant: "destructive" });
+      return;
+    }
+    changePasswordMutation.mutate();
+  }
 
   interface SubscriptionStatus {
     subscriptionType: string;
@@ -202,6 +262,17 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
             )}
           </SidebarContent>
           <SidebarFooter className="p-4 flex flex-col gap-1">
+            {canChangePassword && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2"
+                onClick={() => setPasswordOpen(true)}
+                data-testid="button-change-password"
+              >
+                <KeyRound className="shrink-0" />
+                <span>Promijeni lozinku</span>
+              </Button>
+            )}
             <Link href="/">
               <Button
                 variant="ghost"
@@ -235,6 +306,59 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
           </main>
         </div>
       </div>
+
+      {canChangePassword && (
+        <Dialog open={passwordOpen} onOpenChange={(v) => { if (!v) { setPasswordOpen(false); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Promijeni lozinku</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Trenutna lozinka</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  data-testid="input-current-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">Nova lozinka</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  data-testid="input-new-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Potvrdi novu lozinku</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  data-testid="input-confirm-password"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Lozinka mora imati najmanje 8 karaktera, jedno veliko slovo i jedan broj.
+              </p>
+              <Button
+                className="w-full"
+                onClick={handleChangePassword}
+                disabled={changePasswordMutation.isPending}
+                data-testid="button-submit-change-password"
+              >
+                {changePasswordMutation.isPending ? "Mijenjam..." : "Promijeni lozinku"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </SidebarProvider>
   );
 }

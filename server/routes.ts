@@ -291,6 +291,49 @@ export async function registerRoutes(
     return res.json(userWithoutPassword);
   });
 
+  // ==================== CHANGE PASSWORD ====================
+
+  app.post("/api/change-password", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Korisnik nije pronađen." });
+      }
+
+      if (user.role === "student") {
+        return res.status(403).json({ message: "Učenici ne mogu mijenjati lozinku. Obratite se učitelju." });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Trenutna i nova lozinka su obavezne." });
+      }
+
+      const isValid = await comparePasswords(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(400).json({ message: "Trenutna lozinka nije tačna." });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Nova lozinka mora imati najmanje 8 karaktera." });
+      }
+      if (!/[A-Z]/.test(newPassword)) {
+        return res.status(400).json({ message: "Nova lozinka mora sadržavati veliko slovo." });
+      }
+      if (!/[0-9]/.test(newPassword)) {
+        return res.status(400).json({ message: "Nova lozinka mora sadržavati broj." });
+      }
+
+      const hashedPw = await hashPassword(newPassword);
+      await storage.updateUser(userId, { password: hashedPw } as any);
+
+      return res.json({ message: "Lozinka uspješno promijenjena." });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // ==================== BOOKS ROUTES ====================
 
   app.get("/api/books", async (_req, res) => {
@@ -1228,6 +1271,49 @@ export async function registerRoutes(
       await storage.updateUser(studentId, { password: hashedPw } as any);
 
       return res.json({ username: student.username, fullName: student.fullName, newPassword });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/teacher/update-student/:studentId", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const studentId = req.params.studentId as string;
+      const student = await storage.getUser(studentId);
+      if (!student || student.createdByTeacherId !== teacherId) {
+        return res.status(403).json({ message: "Nemate pristup ovom učeniku." });
+      }
+
+      const { fullName } = req.body;
+      if (!fullName || fullName.trim().length < 2) {
+        return res.status(400).json({ message: "Ime i prezime mora imati najmanje 2 karaktera." });
+      }
+
+      const updated = await storage.updateUser(studentId, { fullName: fullName.trim() } as any);
+      if (!updated) {
+        return res.status(404).json({ message: "Učenik nije pronađen." });
+      }
+
+      const { password: _, ...withoutPassword } = updated;
+      return res.json(withoutPassword);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/teacher/delete-student/:studentId", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const studentId = req.params.studentId as string;
+      const student = await storage.getUser(studentId);
+      if (!student || student.createdByTeacherId !== teacherId) {
+        return res.status(403).json({ message: "Nemate pristup ovom učeniku." });
+      }
+
+      await storage.deleteQuizResultsByUserId(studentId);
+      await storage.deleteUser(studentId);
+      return res.json({ message: "Učenik uspješno obrisan." });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

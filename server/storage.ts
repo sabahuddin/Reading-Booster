@@ -81,6 +81,7 @@ export interface IStorage {
 
   getQuizResultsByUserId(userId: string): Promise<QuizResult[]>;
   getQuizResultsCountByUserId(userId: string): Promise<number>;
+  deleteQuizResultsByUserId(userId: string): Promise<void>;
   createQuizResult(result: InsertQuizResult): Promise<QuizResult>;
   getQuizResultByUserAndQuiz(userId: string, quizId: string): Promise<QuizResult | undefined>;
   getTopReadersSince(since: Date, limit?: number): Promise<Array<{ userId: string; username: string; fullName: string; totalScore: number }>>;
