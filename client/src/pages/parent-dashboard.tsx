@@ -1,10 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -14,7 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Baby, Star, Trophy, Users, Target, TrendingUp, BookOpen } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Baby, Star, Trophy, Users, Target, TrendingUp, BookOpen, UserPlus, Clock, CheckCircle2, XCircle } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
 type ChildUser = Omit<User, "password">;
@@ -118,15 +122,46 @@ function ChildSummaryCard({ child }: { child: ChildUser }) {
   );
 }
 
+interface LinkRequest {
+  id: string;
+  parentId: string;
+  studentId: string;
+  teacherId: string;
+  status: string;
+  studentName: string;
+  studentUsername: string;
+  createdAt: string;
+}
+
 export default function ParentDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [studentUsername, setStudentUsername] = useState("");
 
   const { data: children, isLoading } = useQuery<ChildUser[]>({
     queryKey: ["/api/parent/children"],
   });
 
+  const { data: linkRequests } = useQuery<LinkRequest[]>({
+    queryKey: ["/api/parent/link-requests"],
+  });
+
+  const linkChildMutation = useMutation({
+    mutationFn: async (username: string) => {
+      const res = await apiRequest("POST", "/api/parent/link-child", { studentUsername: username });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parent/link-requests"] });
+      toast({ title: "Zahtjev poslan", description: "Učitelj će odobriti vaš zahtjev za povezivanje." });
+      setStudentUsername("");
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
   const totalChildPoints = children?.reduce((sum, c) => sum + c.points, 0) ?? 0;
   const totalChildren = children?.length ?? 0;
+  const pendingRequests = linkRequests?.filter(r => r.status === "pending") || [];
 
   return (
     <DashboardLayout role="parent">
@@ -227,8 +262,8 @@ export default function ParentDashboard() {
             <CardContent className="text-center py-12">
               <Users className="mx-auto mb-4 text-muted-foreground" />
               <p className="text-lg font-medium">Nema povezane djece</p>
-              <p className="text-muted-foreground">
-                Djeca još nisu povezana s vašim računom. Obratite se administratoru.
+              <p className="text-muted-foreground mb-4">
+                Povežite se s djetetom koristeći korisničko ime učenika.
               </p>
             </CardContent>
           </Card>
@@ -242,6 +277,65 @@ export default function ParentDashboard() {
             </div>
           </div>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Poveži dijete
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Unesite korisničko ime vašeg djeteta. Učitelj će odobriti zahtjev za povezivanje.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Korisničko ime učenika"
+                value={studentUsername}
+                onChange={e => setStudentUsername(e.target.value)}
+                data-testid="input-link-child-username"
+              />
+              <Button
+                onClick={() => linkChildMutation.mutate(studentUsername)}
+                disabled={linkChildMutation.isPending || !studentUsername.trim()}
+                data-testid="button-link-child"
+              >
+                {linkChildMutation.isPending ? "Šalje se..." : "Pošalji zahtjev"}
+              </Button>
+            </div>
+
+            {pendingRequests.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">Zahtjevi na čekanju:</p>
+                <div className="space-y-2">
+                  {pendingRequests.map(req => (
+                    <div key={req.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm">{req.studentName} ({req.studentUsername})</span>
+                      <Badge variant="outline" className="ml-auto">Na čekanju</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {linkRequests && linkRequests.filter(r => r.status === "approved").length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">Odobreni zahtjevi:</p>
+                <div className="space-y-2">
+                  {linkRequests.filter(r => r.status === "approved").map(req => (
+                    <div key={req.id} className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">{req.studentName} ({req.studentUsername})</span>
+                      <Badge variant="outline" className="ml-auto text-green-600">Odobreno</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

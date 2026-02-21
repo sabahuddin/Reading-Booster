@@ -18,6 +18,7 @@ import {
   bookBorrowings,
   genres,
   bookGenres,
+  parentChildRequests,
   type User,
   type InsertUser,
   type Book,
@@ -44,6 +45,8 @@ import {
   type InsertGenre,
   type BookGenre,
   type InsertBookGenre,
+  type ParentChildRequest,
+  type InsertParentChildRequest,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -142,6 +145,16 @@ export interface IStorage {
   getBookGenres(bookId: string): Promise<Genre[]>;
   setBookGenres(bookId: string, genreIds: string[]): Promise<void>;
   getBooksByGenreId(genreId: string): Promise<Book[]>;
+
+  createParentChildRequest(request: InsertParentChildRequest): Promise<ParentChildRequest>;
+  getParentChildRequestsByTeacherId(teacherId: string): Promise<ParentChildRequest[]>;
+  getParentChildRequestsByParentId(parentId: string): Promise<ParentChildRequest[]>;
+  getParentChildRequest(id: string): Promise<ParentChildRequest | undefined>;
+  updateParentChildRequestStatus(id: string, status: string): Promise<ParentChildRequest | undefined>;
+  getPendingParentRequestForStudent(parentId: string, studentId: string): Promise<ParentChildRequest | undefined>;
+
+  getTeachersBySchoolAdminId(schoolAdminId: string): Promise<User[]>;
+  getPendingSchoolAdmins(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -281,6 +294,10 @@ export class DatabaseStorage implements IStorage {
 
   async getQuizResultsByUserId(userId: string): Promise<QuizResult[]> {
     return db.select().from(quizResults).where(eq(quizResults.userId, userId));
+  }
+
+  async deleteQuizResultsByUserId(userId: string): Promise<void> {
+    await db.delete(quizResults).where(eq(quizResults.userId, userId));
   }
 
   async getQuizResultsCountByUserId(userId: string): Promise<number> {
@@ -663,6 +680,52 @@ export class DatabaseStorage implements IStorage {
       if (book) bookList.push(book);
     }
     return bookList;
+  }
+
+  async createParentChildRequest(request: InsertParentChildRequest): Promise<ParentChildRequest> {
+    const [created] = await db.insert(parentChildRequests).values(request).returning();
+    return created;
+  }
+
+  async getParentChildRequestsByTeacherId(teacherId: string): Promise<ParentChildRequest[]> {
+    return db.select().from(parentChildRequests).where(eq(parentChildRequests.teacherId, teacherId));
+  }
+
+  async getParentChildRequestsByParentId(parentId: string): Promise<ParentChildRequest[]> {
+    return db.select().from(parentChildRequests).where(eq(parentChildRequests.parentId, parentId));
+  }
+
+  async getParentChildRequest(id: string): Promise<ParentChildRequest | undefined> {
+    const [request] = await db.select().from(parentChildRequests).where(eq(parentChildRequests.id, id));
+    return request;
+  }
+
+  async updateParentChildRequestStatus(id: string, status: string): Promise<ParentChildRequest | undefined> {
+    const [updated] = await db.update(parentChildRequests).set({ status } as any).where(eq(parentChildRequests.id, id)).returning();
+    return updated;
+  }
+
+  async getPendingParentRequestForStudent(parentId: string, studentId: string): Promise<ParentChildRequest | undefined> {
+    const [request] = await db.select().from(parentChildRequests).where(
+      and(
+        eq(parentChildRequests.parentId, parentId),
+        eq(parentChildRequests.studentId, studentId),
+        eq(parentChildRequests.status, "pending")
+      )
+    );
+    return request;
+  }
+
+  async getTeachersBySchoolAdminId(schoolAdminId: string): Promise<User[]> {
+    return db.select().from(users).where(
+      and(eq(users.createdBySchoolAdminId, schoolAdminId), eq(users.role, "teacher"))
+    );
+  }
+
+  async getPendingSchoolAdmins(): Promise<User[]> {
+    return db.select().from(users).where(
+      and(eq(users.role, "school_admin"), eq(users.approved, false))
+    );
   }
 }
 

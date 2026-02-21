@@ -8,17 +8,19 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role", { enum: ["student", "teacher", "parent", "admin", "school", "reader"] }).notNull().default("student"),
+  role: text("role", { enum: ["student", "teacher", "parent", "admin", "school", "reader", "school_admin"] }).notNull().default("student"),
   fullName: text("full_name").notNull(),
   schoolName: text("school_name"),
   className: text("class_name"),
   points: integer("points").notNull().default(0),
   parentId: varchar("parent_id"),
   institutionType: text("institution_type", { enum: ["school"] }),
-  institutionRole: text("institution_role", { enum: ["ucitelj", "bibliotekar", "sekretar"] }),
+  institutionRole: text("institution_role", { enum: ["ucitelj", "bibliotekar", "sekretar", "administrator"] }),
   approved: boolean("approved").default(false),
   maxStudentAccounts: integer("max_student_accounts").default(0),
+  maxTeacherAccounts: integer("max_teacher_accounts").default(0),
   createdByTeacherId: varchar("created_by_teacher_id"),
+  createdBySchoolAdminId: varchar("created_by_school_admin_id"),
   subscriptionType: text("subscription_type", { enum: ["free", "standard", "full"] }).notNull().default("free"),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   ageGroup: text("age_group").default("R1"),
@@ -30,6 +32,22 @@ export const insertUserSchema = createInsertSchema(users).omit({
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const parentChildRequests = pgTable("parent_child_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentId: varchar("parent_id").notNull(),
+  studentId: varchar("student_id").notNull(),
+  teacherId: varchar("teacher_id").notNull(),
+  status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertParentChildRequestSchema = createInsertSchema(parentChildRequests).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertParentChildRequest = z.infer<typeof insertParentChildRequestSchema>;
+export type ParentChildRequest = typeof parentChildRequests.$inferSelect;
 
 export const books = pgTable("books", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

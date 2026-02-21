@@ -54,7 +54,6 @@ const schoolSchema = insertUserSchema.extend({
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
   schoolName: z.string().min(2, "Naziv škole je obavezan"),
-  className: z.string().optional().nullable(),
   captchaAnswer: z.string().min(1, "Odgovorite na sigurnosno pitanje"),
 });
 
@@ -86,6 +85,7 @@ function generateCaptcha(): { question: string; answer: number } {
 function getDashboardPath(role: string): string {
   switch (role) {
     case "school":
+    case "school_admin":
       return "/skola";
     case "admin":
       return "/admin";
@@ -149,8 +149,6 @@ export default function AuthPage() {
       password: "",
       fullName: "",
       schoolName: "",
-      className: "",
-      role: "teacher",
       captchaAnswer: "",
     },
   });
@@ -213,9 +211,9 @@ export default function AuthPage() {
       const { captchaAnswer, ...rest } = data;
       const submitData = {
         ...rest,
-        role: "teacher" as const,
+        role: "school_admin" as const,
         institutionType: "school" as const,
-        institutionRole: "ucitelj" as const,
+        institutionRole: "administrator" as const,
       };
       const result: any = await register.mutateAsync(submitData);
       if (result?.pendingApproval) {
@@ -501,7 +499,7 @@ export default function AuthPage() {
                 <TabsContent value="school">
                   <div className="mt-2 mb-4 p-3 bg-muted rounded-md border-l-4 border-orange-500">
                     <p className="text-base font-medium">
-                      Registracija za škole. Nakon što pošaljete zahtjev, administrator će odobriti vaš račun.
+                      Registracija školskog administratora. Nakon odobrenja, moći ćete dodavati učitelje i upravljati školom.
                     </p>
                   </div>
                   <Form {...schoolForm}>
@@ -518,19 +516,6 @@ export default function AuthPage() {
                               <FormLabel>Naziv škole</FormLabel>
                               <FormControl>
                                 <Input placeholder="Npr. Druga osnovna škola" data-testid="input-school-name" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={schoolForm.control}
-                          name="className"
-                          render={({ field }) => (
-                            <FormItem className="col-span-2">
-                              <FormLabel>Mjesto / Grad</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Unesite grad" data-testid="input-school-city" {...field} value={field.value ?? ""} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

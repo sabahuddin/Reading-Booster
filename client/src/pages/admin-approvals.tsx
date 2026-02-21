@@ -16,13 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CheckCircle2, XCircle, School, UserCheck, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, School, UserCheck, Clock, Users, GraduationCap } from "lucide-react";
 
-interface PendingTeacher {
+interface PendingUser {
   id: string;
   fullName: string;
   username: string;
   email: string;
+  role: string;
   institutionType: string | null;
   institutionRole: string | null;
   schoolName: string | null;
@@ -34,6 +35,7 @@ const roleLabels: Record<string, string> = {
   ucitelj: "Učitelj",
   bibliotekar: "Bibliotekar",
   sekretar: "Sekretar",
+  administrator: "Školski administrator",
 };
 
 const typeLabels: Record<string, string> = {
@@ -42,16 +44,19 @@ const typeLabels: Record<string, string> = {
 
 export default function AdminApprovals() {
   const { toast } = useToast();
-  const [approveDialog, setApproveDialog] = useState<PendingTeacher | null>(null);
-  const [maxAccounts, setMaxAccounts] = useState("30");
+  const [approveDialog, setApproveDialog] = useState<PendingUser | null>(null);
+  const [maxStudents, setMaxStudents] = useState("30");
+  const [maxTeachers, setMaxTeachers] = useState("10");
 
-  const { data: pendingList, isLoading } = useQuery<PendingTeacher[]>({
+  const isSchoolAdmin = approveDialog?.role === "school_admin";
+
+  const { data: pendingList, isLoading } = useQuery<PendingUser[]>({
     queryKey: ["/api/admin/pending-teachers"],
   });
 
   const approveMutation = useMutation({
-    mutationFn: async ({ id, maxStudentAccounts }: { id: string; maxStudentAccounts: number }) => {
-      const res = await apiRequest("PUT", `/api/admin/approve-teacher/${id}`, { maxStudentAccounts });
+    mutationFn: async ({ id, maxStudentAccounts, maxTeacherAccounts }: { id: string; maxStudentAccounts: number; maxTeacherAccounts?: number }) => {
+      const res = await apiRequest("PUT", `/api/admin/approve-teacher/${id}`, { maxStudentAccounts, maxTeacherAccounts });
       return res.json();
     },
     onSuccess: () => {
@@ -74,6 +79,16 @@ export default function AdminApprovals() {
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
 
+  function openApproveDialog(user: PendingUser) {
+    setApproveDialog(user);
+    if (user.role === "school_admin") {
+      setMaxTeachers("10");
+      setMaxStudents("200");
+    } else {
+      setMaxStudents("30");
+    }
+  }
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
@@ -86,22 +101,25 @@ export default function AdminApprovals() {
           <div className="space-y-4">{[1, 2].map(i => <Skeleton key={i} className="h-32" />)}</div>
         ) : pendingList && pendingList.length > 0 ? (
           <div className="space-y-4">
-            {pendingList.map(teacher => (
-              <Card key={teacher.id}>
+            {pendingList.map(user => (
+              <Card key={user.id}>
                 <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Clock className="h-5 w-5 text-amber-500" />
-                      <CardTitle className="text-base" data-testid={`text-pending-name-${teacher.id}`}>{teacher.fullName}</CardTitle>
+                      <CardTitle className="text-base" data-testid={`text-pending-name-${user.id}`}>{user.fullName}</CardTitle>
                       <Badge variant="outline">Na čekanju</Badge>
+                      {user.role === "school_admin" && (
+                        <Badge className="bg-blue-100 text-blue-800">Školski admin</Badge>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{teacher.email}</p>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      onClick={() => { setApproveDialog(teacher); setMaxAccounts("30"); }}
-                      data-testid={`button-approve-${teacher.id}`}
+                      onClick={() => openApproveDialog(user)}
+                      data-testid={`button-approve-${user.id}`}
                     >
                       <CheckCircle2 className="mr-1 h-4 w-4" />
                       Odobri
@@ -109,8 +127,8 @@ export default function AdminApprovals() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => rejectMutation.mutate(teacher.id)}
-                      data-testid={`button-reject-${teacher.id}`}
+                      onClick={() => rejectMutation.mutate(user.id)}
+                      data-testid={`button-reject-${user.id}`}
                     >
                       <XCircle className="mr-1 h-4 w-4" />
                       Odbij
@@ -121,19 +139,19 @@ export default function AdminApprovals() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Tip institucije:</span>
-                      <p className="font-medium">{teacher.institutionType ? typeLabels[teacher.institutionType] || teacher.institutionType : "-"}</p>
+                      <p className="font-medium">{user.institutionType ? typeLabels[user.institutionType] || user.institutionType : "-"}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Uloga:</span>
-                      <p className="font-medium">{teacher.institutionRole ? roleLabels[teacher.institutionRole] || teacher.institutionRole : "-"}</p>
+                      <p className="font-medium">{user.role === "school_admin" ? "Školski administrator" : (user.institutionRole ? roleLabels[user.institutionRole] || user.institutionRole : "-")}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Institucija:</span>
-                      <p className="font-medium">{teacher.schoolName || "-"}</p>
+                      <p className="font-medium">{user.schoolName || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Razred/Grupa:</span>
-                      <p className="font-medium">{teacher.className || "-"}</p>
+                      <span className="text-muted-foreground">Korisničko ime:</span>
+                      <p className="font-medium">{user.username}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -155,27 +173,56 @@ export default function AdminApprovals() {
               <DialogTitle>Odobri registraciju</DialogTitle>
               <DialogDescription>
                 Odobravate račun za <strong>{approveDialog?.fullName}</strong> iz institucije{" "}
-                <strong>{approveDialog?.schoolName}</strong>. Odredite maksimalan broj učeničkih računa.
+                <strong>{approveDialog?.schoolName}</strong>.
+                {isSchoolAdmin
+                  ? " Odredite maksimalan broj učiteljskih i učeničkih računa za ovu školu."
+                  : " Odredite maksimalan broj učeničkih računa."}
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <label className="text-sm font-medium">Maksimalan broj učeničkih računa</label>
-              <Input
-                type="number"
-                value={maxAccounts}
-                onChange={e => setMaxAccounts(e.target.value)}
-                min="1"
-                max="500"
-                className="mt-1"
-                data-testid="input-max-accounts"
-              />
+            <div className="py-4 space-y-4">
+              {isSchoolAdmin && (
+                <div>
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Maksimalan broj učiteljskih računa
+                  </label>
+                  <Input
+                    type="number"
+                    value={maxTeachers}
+                    onChange={e => setMaxTeachers(e.target.value)}
+                    min="1"
+                    max="100"
+                    className="mt-1"
+                    data-testid="input-max-teachers"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4" />
+                  Maksimalan broj učeničkih računa
+                </label>
+                <Input
+                  type="number"
+                  value={maxStudents}
+                  onChange={e => setMaxStudents(e.target.value)}
+                  min="1"
+                  max="500"
+                  className="mt-1"
+                  data-testid="input-max-students"
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setApproveDialog(null)}>Otkaži</Button>
               <Button
                 onClick={() => {
                   if (approveDialog) {
-                    approveMutation.mutate({ id: approveDialog.id, maxStudentAccounts: parseInt(maxAccounts) || 30 });
+                    approveMutation.mutate({
+                      id: approveDialog.id,
+                      maxStudentAccounts: parseInt(maxStudents) || (isSchoolAdmin ? 200 : 30),
+                      maxTeacherAccounts: isSchoolAdmin ? (parseInt(maxTeachers) || 10) : undefined,
+                    });
                   }
                 }}
                 disabled={approveMutation.isPending}

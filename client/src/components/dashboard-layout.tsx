@@ -51,7 +51,7 @@ import {
   KeyRound,
 } from "lucide-react";
 
-type Role = "student" | "teacher" | "parent" | "admin" | "school" | "reader";
+type Role = "student" | "teacher" | "parent" | "admin" | "school" | "school_admin" | "reader";
 
 interface MenuItem {
   title: string;
@@ -82,6 +82,10 @@ const menusByRole: Record<Role, MenuItem[]> = {
   school: [
     { title: "Početna", url: "/skola", icon: SchoolIcon },
   ],
+  school_admin: [
+    { title: "Početna", url: "/skola", icon: SchoolIcon },
+    { title: "Učitelji", url: "/skola/ucitelji", icon: Users },
+  ],
   admin: [
     { title: "Početna", url: "/admin", icon: Home },
     { title: "Knjige", url: "/admin/knjige", icon: BookOpen },
@@ -102,6 +106,7 @@ const roleLabels: Record<Role, string> = {
   parent: "Roditelj",
   admin: "Administrator",
   school: "Ustanova",
+  school_admin: "Školski administrator",
   reader: "Čitalac",
 };
 

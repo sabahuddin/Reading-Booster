@@ -47,6 +47,7 @@ import PublicBookDetail from "@/pages/public-book-detail";
 import FAQPage from "@/pages/faq";
 import GuidePage from "@/pages/guide";
 import SchoolDashboard from "@/pages/school-dashboard";
+import SchoolAdminDashboard from "@/pages/school-admin-dashboard";
 
 function Router() {
   return (
@@ -79,7 +80,8 @@ function Router() {
       <Route path="/ucitelj/biblioteka" component={TeacherLibrary} />
       <Route path="/roditelj" component={ParentDashboard} />
       <Route path="/roditelj/djeca" component={ParentChildren} />
-      <Route path="/skola" component={SchoolDashboard} />
+      <Route path="/skola" component={SchoolAdminDashboard} />
+      <Route path="/skola/ucitelji" component={SchoolAdminDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/knjige" component={AdminBooks} />
       <Route path="/admin/zanrovi" component={AdminGenres} />

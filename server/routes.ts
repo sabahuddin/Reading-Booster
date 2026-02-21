@@ -8,7 +8,7 @@ import multer from "multer";
 import express from "express";
 import xss from "xss";
 import { storage } from "./storage";
-import { requireAuth, requireAdmin, requireTeacher, loginLimiter } from "./index";
+import { requireAuth, requireAdmin, requireTeacher, requireSchoolAdmin, loginLimiter } from "./index";
 import {
   insertUserSchema,
   insertBookSchema,
@@ -209,24 +209,25 @@ export async function registerRoutes(
       }
 
       const hashedPassword = await hashPassword(parsed.data.password);
+      const isSchoolAdmin = parsed.data.role === "school_admin";
       const userData: any = {
         ...parsed.data,
         password: hashedPassword,
-        role: isInstitutional ? "teacher" : parsed.data.role,
+        role: isSchoolAdmin ? "school_admin" : (isInstitutional ? "teacher" : parsed.data.role),
         ageGroup: parsed.data.ageGroup || "R1",
-        approved: isInstitutional ? false : undefined,
+        approved: (isInstitutional || isSchoolAdmin) ? false : undefined,
       };
 
       const user = await storage.createUser(userData);
 
-      if (!isInstitutional) {
+      if (!isInstitutional && !isSchoolAdmin) {
         req.session.userId = user.id;
         req.session.userRole = user.role;
       }
 
       const { password, ...userWithoutPassword } = user;
 
-      if (isInstitutional) {
+      if (isInstitutional || isSchoolAdmin) {
         return res.status(201).json({ ...userWithoutPassword, pendingApproval: true });
       }
 
@@ -248,7 +249,7 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      if (user.role === "teacher" && user.institutionType && user.approved === false) {
+      if ((user.role === "teacher" || user.role === "school_admin") && user.institutionType && user.approved === false) {
         return res.status(403).json({ message: "Vaš račun čeka odobrenje administratora." });
       }
 
@@ -1100,8 +1101,10 @@ export async function registerRoutes(
 
   app.get("/api/admin/pending-teachers", requireAdmin, async (_req, res) => {
     try {
-      const pending = await storage.getPendingTeachers();
-      const withoutPasswords = pending.map(({ password, ...u }) => u);
+      const pendingTeachers = await storage.getPendingTeachers();
+      const pendingSchoolAdmins = await storage.getPendingSchoolAdmins();
+      const all = [...pendingTeachers, ...pendingSchoolAdmins];
+      const withoutPasswords = all.map(({ password, ...u }) => u);
       return res.json(withoutPasswords);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -1110,11 +1113,19 @@ export async function registerRoutes(
 
   app.put("/api/admin/approve-teacher/:id", requireAdmin, async (req, res) => {
     try {
-      const { maxStudentAccounts } = req.body;
-      const user = await storage.updateUser(req.params.id as string, {
-        approved: true,
-        maxStudentAccounts: maxStudentAccounts || 30,
-      } as any);
+      const { maxStudentAccounts, maxTeacherAccounts } = req.body;
+      const targetUser = await storage.getUser(req.params.id as string);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const updateData: any = { approved: true };
+      if (targetUser.role === "school_admin") {
+        updateData.maxTeacherAccounts = maxTeacherAccounts || 10;
+        updateData.maxStudentAccounts = maxStudentAccounts || 200;
+      } else {
+        updateData.maxStudentAccounts = maxStudentAccounts || 30;
+      }
+      const user = await storage.updateUser(req.params.id as string, updateData);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -1717,7 +1728,7 @@ export async function registerRoutes(
   app.get("/api/school/stats", requireAuth, async (req, res) => {
     try {
       const userRole = req.session.userRole;
-      if (userRole !== "school" && userRole !== "admin") {
+      if (userRole !== "school" && userRole !== "school_admin" && userRole !== "admin") {
         return res.status(403).json({ message: "Pristup odbijen" });
       }
       const user = await storage.getUser(req.session.userId!);
@@ -1787,6 +1798,193 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching school stats:", error);
       res.status(500).json({ message: "Greška pri preuzimanju statistike" });
+    }
+  });
+
+  // ==================== PARENT-CHILD LINKING ====================
+
+  app.post("/api/parent/link-child", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Samo roditelji mogu slati zahtjeve" });
+      }
+      const { studentUsername } = req.body;
+      if (!studentUsername) {
+        return res.status(400).json({ message: "Unesite korisničko ime učenika" });
+      }
+
+      const student = await storage.getUserByUsername(studentUsername);
+      if (!student || student.role !== "student") {
+        return res.status(404).json({ message: "Učenik sa tim korisničkim imenom nije pronađen" });
+      }
+
+      if (!student.createdByTeacherId) {
+        return res.status(400).json({ message: "Ovaj učenik nema dodijeljenog učitelja" });
+      }
+
+      const existing = await storage.getPendingParentRequestForStudent(req.session.userId!, student.id);
+      if (existing) {
+        return res.status(400).json({ message: "Već ste poslali zahtjev za ovog učenika" });
+      }
+
+      if (student.parentId === req.session.userId) {
+        return res.status(400).json({ message: "Ovaj učenik je već povezan s vašim računom" });
+      }
+
+      const request = await storage.createParentChildRequest({
+        parentId: req.session.userId!,
+        studentId: student.id,
+        teacherId: student.createdByTeacherId,
+        status: "pending",
+      });
+
+      res.status(201).json(request);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/parent/link-requests", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Pristup odbijen" });
+      }
+      const requests = await storage.getParentChildRequestsByParentId(req.session.userId!);
+      const enriched = [];
+      for (const r of requests) {
+        const student = await storage.getUser(r.studentId);
+        enriched.push({
+          ...r,
+          studentName: student?.fullName || "Nepoznato",
+          studentUsername: student?.username || "",
+        });
+      }
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/teacher/parent-requests", requireTeacher, async (req, res) => {
+    try {
+      const requests = await storage.getParentChildRequestsByTeacherId(req.session.userId!);
+      const enriched = [];
+      for (const r of requests) {
+        const parent = await storage.getUser(r.parentId);
+        const student = await storage.getUser(r.studentId);
+        enriched.push({
+          ...r,
+          parentName: parent?.fullName || "Nepoznato",
+          parentEmail: parent?.email || "",
+          studentName: student?.fullName || "Nepoznato",
+          studentUsername: student?.username || "",
+        });
+      }
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/teacher/parent-request/:requestId", requireTeacher, async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Nevažeći status" });
+      }
+      const request = await storage.getParentChildRequest(req.params.requestId as string);
+      if (!request || request.teacherId !== req.session.userId) {
+        return res.status(404).json({ message: "Zahtjev nije pronađen" });
+      }
+
+      if (status === "approved") {
+        await storage.updateUser(request.studentId, { parentId: request.parentId } as any);
+      }
+
+      const updated = await storage.updateParentChildRequestStatus(request.id, status);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== SCHOOL ADMIN: MANAGE TEACHERS ====================
+
+  app.get("/api/school-admin/teachers", requireSchoolAdmin, async (req, res) => {
+    try {
+      const teachers = await storage.getTeachersBySchoolAdminId(req.session.userId!);
+      const withoutPasswords = teachers.map(({ password, ...u }) => u);
+      res.json(withoutPasswords);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/school-admin/create-teacher", requireSchoolAdmin, async (req, res) => {
+    try {
+      const admin = await storage.getUser(req.session.userId!);
+      if (!admin) return res.status(403).json({ message: "Pristup odbijen" });
+
+      const existingTeachers = await storage.getTeachersBySchoolAdminId(admin.id);
+      if (existingTeachers.length >= (admin.maxTeacherAccounts || 10)) {
+        return res.status(400).json({ message: `Dostigli ste maksimalan broj učiteljskih računa (${admin.maxTeacherAccounts || 10})` });
+      }
+
+      const { username, password, fullName, email, className } = req.body;
+      if (!username || !password || !fullName) {
+        return res.status(400).json({ message: "Korisničko ime, lozinka i puno ime su obavezni" });
+      }
+
+      const existing = await storage.getUserByUsername(username);
+      if (existing) {
+        return res.status(400).json({ message: "Korisničko ime je zauzeto" });
+      }
+
+      const passwordCheck = validatePassword(password);
+      if (!passwordCheck.valid) {
+        return res.status(400).json({ message: passwordCheck.message });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const teacher = await storage.createUser({
+        username,
+        password: hashedPassword,
+        fullName,
+        email: email || null,
+        className: className || null,
+        role: "teacher",
+        schoolName: admin.schoolName,
+        institutionType: "school",
+        institutionRole: "ucitelj",
+        approved: true,
+        maxStudentAccounts: admin.maxStudentAccounts || 30,
+        createdBySchoolAdminId: admin.id,
+      } as any);
+
+      const { password: _, ...teacherWithoutPassword } = teacher;
+      res.status(201).json(teacherWithoutPassword);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/school-admin/delete-teacher/:teacherId", requireSchoolAdmin, async (req, res) => {
+    try {
+      const teacher = await storage.getUser(req.params.teacherId as string);
+      if (!teacher || teacher.createdBySchoolAdminId !== req.session.userId) {
+        return res.status(404).json({ message: "Učitelj nije pronađen" });
+      }
+
+      const students = await storage.getStudentsByTeacherId(teacher.id);
+      for (const student of students) {
+        await storage.deleteQuizResultsByUserId(student.id);
+        await storage.deleteUser(student.id);
+      }
+
+      await storage.deleteUser(teacher.id);
+      res.json({ message: "Učitelj i njegovi učenici su obrisani" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

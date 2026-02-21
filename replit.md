@@ -37,8 +37,9 @@ Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici
 
 ## User Roles
 - **Admin** — Upravljanje cijelom platformom (knjige, kvizovi, korisnici, blog, poruke, partneri, izazovi, institucionalna odobrenja)
-- **Učitelj (Teacher)** — Pregled učenika, kreiranje učeničkih računa, CSV export, praćenje napretka, bonus bodovi, sedmični izazovi
-- **Roditelj (Parent)** — Pregled napretka djece i rezultata kvizova, porodično takmičenje kroz kategoriju A
+- **Školski administrator (School Admin)** — Registruje se preko "Škola" taba, zahtijeva admin odobrenje. Kreira učiteljske račune (limit: maxTeacherAccounts), prati statistiku škole. Dashboard: /skola
+- **Učitelj (Teacher)** — Kreiran od školskog admina ili admina. Pregled učenika, kreiranje učeničkih računa, CSV export, praćenje napretka, bonus bodovi, sedmični izazovi, odobravanje zahtjeva roditelja za povezivanje
+- **Roditelj (Parent)** — Šalje zahtjev za povezivanje s djetetom (unosi korisničko ime učenika), učitelj odobrava. Pregled napretka djece, porodično takmičenje kroz kategoriju A
 - **Čitalac (Reader)** — Nezavisni korisnik biblioteke, čitanje knjiga, kvizovi, bodovi (bez školske pripadnosti)
 - **Učenik (Student)** — Školski korisnik, pregled biblioteke, rješavanje kvizova, skupljanje bodova
 
@@ -65,6 +66,7 @@ shared/
 ### Učenik: /ucenik, /ucenik/biblioteka, /ucenik/knjiga/:id, /ucenik/kviz/:id, /ucenik/rezultati
 ### Učitelj: /ucitelj, /ucitelj/ucenici, /ucitelj/biblioteka
 ### Roditelj: /roditelj, /roditelj/djeca
+### Školski admin: /skola, /skola/ucitelji
 ### Admin: /admin, /admin/knjige, /admin/kvizovi, /admin/korisnici, /admin/blog, /admin/poruke, /admin/partneri, /admin/izazovi, /admin/odobrenja, /admin/zanrovi
 
 ## API Prefix: /api
@@ -149,7 +151,7 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - API: /api/blog/:id/comments (GET/POST/DELETE), /api/blog/:id/rating (GET/POST)
 
 ## Database Tables
-- users, books, genres, book_genres, quizzes, questions, quiz_results, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges
+- users, books, genres, book_genres, quizzes, questions, quiz_results, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges, parent_child_requests
 
 ## Deployment
 - Connected to GitHub: `https://github.com/sabahuddin/Reading-Booster`

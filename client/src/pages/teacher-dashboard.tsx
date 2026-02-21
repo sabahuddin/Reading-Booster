@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,11 @@ import {
   Plus,
   Mail,
   Star,
+  UserPlus,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
 
 export default function TeacherDashboard() {
@@ -57,6 +61,25 @@ export default function TeacherDashboard() {
   const { data: books = [] } = useQuery<any[]>({
     queryKey: ["/api/books"],
   });
+
+  const { data: parentRequests = [] } = useQuery<any[]>({
+    queryKey: ["/api/teacher/parent-requests"],
+  });
+
+  const handleParentRequest = useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: string; status: string }) => {
+      const res = await apiRequest("PUT", `/api/teacher/parent-request/${requestId}`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/parent-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+      toast({ title: "Zahtjev obrađen" });
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
+  const pendingParentRequests = parentRequests.filter((r: any) => r.status === "pending");
 
   const totalBooks = students.reduce((sum: number, s: any) => {
     const booksRead = s.booksRead || 0;
@@ -300,6 +323,53 @@ export default function TeacherDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {pendingParentRequests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Zahtjevi roditelja ({pendingParentRequests.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingParentRequests.map((req: any) => (
+                <div key={req.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                  <div>
+                    <p className="font-medium">{req.parentName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      želi se povezati s učenikom <strong>{req.studentName}</strong> ({req.studentUsername})
+                    </p>
+                    {req.parentEmail && <p className="text-xs text-muted-foreground">{req.parentEmail}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleParentRequest.mutate({ requestId: req.id, status: "approved" })}
+                      disabled={handleParentRequest.isPending}
+                      data-testid={`button-approve-parent-${req.id}`}
+                    >
+                      <CheckCircle2 className="mr-1 h-4 w-4" />
+                      Odobri
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleParentRequest.mutate({ requestId: req.id, status: "rejected" })}
+                      disabled={handleParentRequest.isPending}
+                      data-testid={`button-reject-parent-${req.id}`}
+                    >
+                      <XCircle className="mr-1 h-4 w-4" />
+                      Odbij
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
         <DialogContent>
