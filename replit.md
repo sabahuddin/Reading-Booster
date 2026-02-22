@@ -162,7 +162,7 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - Environment: `DATABASE_URL`, `SESSION_SECRET`, `NODE_ENV=production`
 
 ### Initial Data Setup
-If the production database is empty, restart the application in Coolify to trigger the automatic seeding process (`seedDatabase`, `ensureAllBooks`, `seedMissingQuizzes`).
+All book data, quizzes (227), and questions (2543) are stored in `server/seed-data.sql`. On startup, `loadSeedData()` checks if the database is empty and loads this file automatically. After that, `seedDatabase`, `ensureAllBooks`, and `seedMissingQuizzes` run to fill in any gaps. If the production database is empty, simply restart the application in Coolify to trigger the full seeding process.
 
 ### Kontakt
 - Kontakt forma za poruke

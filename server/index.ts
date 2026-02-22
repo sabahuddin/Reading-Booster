@@ -13,6 +13,7 @@ import { seedDatabase, ensureUsersSeeded } from "./seed";
 import { ensureAllBooks } from "./seed-all-books";
 import { seedMissingQuizzes } from "./seed-quizzes";
 import { fetchBookCovers } from "./fetch-covers";
+import { loadSeedData } from "./load-seed-data";
 
 declare module "express-session" {
   interface SessionData {
@@ -227,6 +228,7 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
       log(`serving on port ${port}`);
       runMigrations()
         .then(() => ensureUsersSeeded())
+        .then(() => loadSeedData())
         .then(() => seedDatabase())
         .then(() => ensureAllBooks())
         .then(() => seedMissingQuizzes())
