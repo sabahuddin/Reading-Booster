@@ -63,9 +63,9 @@ async function buildAll() {
   console.log("copying migrations...");
   await cp("migrations", "dist/migrations", { recursive: true });
 
-  console.log("copying seed-data.sql...");
-  await cp("server/seed-data.sql", "dist/seed-data.sql").catch(() => {
-    console.log("seed-data.sql not found, skipping...");
+  console.log("copying seed-data.json...");
+  await cp("server/seed-data.json", "dist/seed-data.json").catch(() => {
+    console.log("seed-data.json not found, skipping...");
   });
 }
 

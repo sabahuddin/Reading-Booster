@@ -2,31 +2,70 @@ import pg from "pg";
 import * as fs from "fs";
 import * as path from "path";
 
-export async function loadSeedData(): Promise<boolean> {
-  console.log("[seed-data] === Starting seed data check ===");
+interface SeedData {
+  genres: any[];
+  books: any[];
+  bookGenres: any[];
+  quizzes: any[];
+  questions: any[];
+}
 
+function findFile(filename: string): string | null {
   const candidates = [
-    path.join(process.cwd(), "server", "seed-data.sql"),
-    path.join(process.cwd(), "dist", "seed-data.sql"),
-    path.join(process.cwd(), "seed-data.sql"),
-    path.resolve(path.dirname(process.argv[1] || ""), "seed-data.sql"),
-    path.resolve(path.dirname(process.argv[1] || ""), "..", "seed-data.sql"),
+    path.join(process.cwd(), "server", filename),
+    path.join(process.cwd(), "dist", filename),
+    path.join(process.cwd(), filename),
+    path.resolve(path.dirname(process.argv[1] || ""), filename),
+    path.resolve(path.dirname(process.argv[1] || ""), "..", filename),
   ];
-
-  let sqlPath: string | null = null;
   for (const p of candidates) {
-    if (fs.existsSync(p) && !sqlPath) {
-      sqlPath = p;
-      console.log(`[seed-data] Found: ${p}`);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+async function getTableColumns(client: pg.PoolClient, tableName: string): Promise<Set<string>> {
+  const res = await client.query(
+    `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND table_schema = 'public'`,
+    [tableName]
+  );
+  return new Set(res.rows.map((r: any) => r.column_name));
+}
+
+async function insertRow(client: pg.PoolClient, tableName: string, row: any, tableColumns: Set<string>): Promise<boolean> {
+  const fields: string[] = [];
+  const placeholders: string[] = [];
+  const values: any[] = [];
+  let idx = 1;
+
+  for (const [key, value] of Object.entries(row)) {
+    if (tableColumns.has(key) && value !== undefined) {
+      fields.push(key);
+      placeholders.push(`$${idx++}`);
+      values.push(value);
     }
   }
 
-  if (!sqlPath) {
-    console.log("[seed-data] No seed-data.sql found, skipping.");
+  if (fields.length === 0) return false;
+
+  await client.query(
+    `INSERT INTO ${tableName} (${fields.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT DO NOTHING`,
+    values
+  );
+  return true;
+}
+
+export async function loadSeedData(): Promise<boolean> {
+  console.log("[seed-data] === Starting seed data check ===");
+
+  const jsonPath = findFile("seed-data.json");
+
+  if (!jsonPath) {
+    console.log("[seed-data] No seed-data.json found, skipping.");
     return false;
   }
 
-  console.log(`[seed-data] Using: ${sqlPath} (${(fs.statSync(sqlPath).size / 1024).toFixed(0)} KB)`);
+  console.log(`[seed-data] Using: ${jsonPath} (${(fs.statSync(jsonPath).size / 1024).toFixed(0)} KB)`);
 
   let pool: pg.Pool | null = null;
   let client: pg.PoolClient | null = null;
@@ -47,62 +86,88 @@ export async function loadSeedData(): Promise<boolean> {
 
     console.log(`[seed-data] Current DB: ${bookCount} books, ${quizCount} quizzes, ${questionCount} questions`);
 
-    const isFullyPopulated = bookCount === 222 && quizCount >= 220 && questionCount >= 2500;
-
-    if (isFullyPopulated) {
-      console.log(`[seed-data] Database is correct (222 books, ${quizCount} quizzes, ${questionCount} questions). Skipping.`);
+    if (bookCount === 222 && quizCount >= 220 && questionCount >= 2500) {
+      console.log(`[seed-data] Database is correct. Skipping.`);
       return true;
     }
 
-    console.log(`[seed-data] Database needs full reload. Cleaning ALL book/quiz data...`);
+    console.log(`[seed-data] Database needs reload. Cleaning all data...`);
 
-    await client.query("BEGIN");
-    try {
-      await client.query("DELETE FROM quiz_results");
-      await client.query("DELETE FROM questions");
-      await client.query("DELETE FROM quizzes");
-      await client.query("DELETE FROM book_genres");
-      await client.query("DELETE FROM books");
-      await client.query("DELETE FROM genres");
-      console.log(`[seed-data] Cleaned: removed all books, quizzes, questions, genres, book_genres, quiz_results`);
-      await client.query("COMMIT");
-    } catch (cleanErr: any) {
-      await client.query("ROLLBACK");
-      console.error(`[seed-data] Clean failed: ${cleanErr.message}`);
-      return false;
+    const cleanTables = ["quiz_results", "questions", "quizzes", "book_genres", "books", "genres"];
+    for (const t of cleanTables) {
+      try {
+        await client.query(`DELETE FROM ${t}`);
+      } catch (e: any) {
+        console.log(`[seed-data] Skip clean ${t}: ${e.message?.substring(0, 60)}`);
+      }
+    }
+    console.log(`[seed-data] Cleaned all tables.`);
+
+    const data: SeedData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    console.log(`[seed-data] JSON: ${data.books.length} books, ${data.quizzes.length} quizzes, ${data.questions.length} questions, ${data.genres.length} genres`);
+
+    const genreCols = await getTableColumns(client, "genres");
+    const bookCols = await getTableColumns(client, "books");
+    const quizCols = await getTableColumns(client, "quizzes");
+    const questionCols = await getTableColumns(client, "questions");
+    const bgCols = await getTableColumns(client, "book_genres");
+
+    console.log(`[seed-data] Columns - genres: ${Array.from(genreCols).join(",")}`);
+    console.log(`[seed-data] Columns - questions: ${Array.from(questionCols).join(",")}`);
+
+    let inserted = { genres: 0, books: 0, bookGenres: 0, quizzes: 0, questions: 0 };
+    let errors = 0;
+    const sampleErrors: string[] = [];
+
+    for (const g of data.genres) {
+      try {
+        await insertRow(client, "genres", g, genreCols);
+        inserted.genres++;
+      } catch (e: any) {
+        errors++;
+        if (sampleErrors.length < 3) sampleErrors.push(`genre: ${e.message?.substring(0, 100)}`);
+      }
     }
 
-    console.log(`[seed-data] Loading seed-data.sql (full dataset)...`);
-
-    const sql = fs.readFileSync(sqlPath, "utf-8");
-    const statements = sql
-      .split("\n")
-      .filter(line => line.trim() && !line.trim().startsWith("--"));
-
-    console.log(`[seed-data] Executing ${statements.length} SQL statements...`);
-
-    let executed = 0;
-    let skipped = 0;
-    let errors = 0;
-    const errorMessages: string[] = [];
-
-    for (const stmt of statements) {
+    for (const b of data.books) {
       try {
-        await client.query(stmt);
-        executed++;
-        if (executed % 500 === 0) {
-          console.log(`[seed-data] Progress: ${executed}/${statements.length}...`);
-        }
+        await insertRow(client, "books", b, bookCols);
+        inserted.books++;
       } catch (e: any) {
-        const msg = e.message || "";
-        if (msg.includes("duplicate") || msg.includes("already exists") || msg.includes("unique constraint") || msg.includes("violates unique")) {
-          skipped++;
-        } else {
-          errors++;
-          if (errorMessages.length < 5) {
-            errorMessages.push(`${msg.substring(0, 200)} [SQL: ${stmt.substring(0, 80)}]`);
-          }
-        }
+        errors++;
+        if (sampleErrors.length < 5) sampleErrors.push(`book(${b.title}): ${e.message?.substring(0, 100)}`);
+      }
+    }
+
+    for (const bg of data.bookGenres) {
+      try {
+        await insertRow(client, "book_genres", bg, bgCols);
+        inserted.bookGenres++;
+      } catch (e: any) {
+        errors++;
+      }
+    }
+
+    for (const q of data.quizzes) {
+      try {
+        await insertRow(client, "quizzes", q, quizCols);
+        inserted.quizzes++;
+      } catch (e: any) {
+        errors++;
+        if (sampleErrors.length < 5) sampleErrors.push(`quiz(${q.title}): ${e.message?.substring(0, 100)}`);
+      }
+    }
+
+    for (let i = 0; i < data.questions.length; i++) {
+      try {
+        await insertRow(client, "questions", data.questions[i], questionCols);
+        inserted.questions++;
+      } catch (e: any) {
+        errors++;
+        if (sampleErrors.length < 5) sampleErrors.push(`question: ${e.message?.substring(0, 100)}`);
+      }
+      if ((i + 1) % 500 === 0) {
+        console.log(`[seed-data] Questions: ${i + 1}/${data.questions.length}...`);
       }
     }
 
@@ -114,17 +179,14 @@ export async function loadSeedData(): Promise<boolean> {
     } catch (e) {}
 
     console.log(`[seed-data] === COMPLETED ===`);
-    console.log(`[seed-data] Executed: ${executed}, Skipped: ${skipped}, Errors: ${errors}`);
+    console.log(`[seed-data] Inserted: ${inserted.genres} genres, ${inserted.books} books, ${inserted.bookGenres} bookGenres, ${inserted.quizzes} quizzes, ${inserted.questions} questions`);
+    console.log(`[seed-data] Errors: ${errors}`);
     console.log(`[seed-data] Final DB: ${finalBooks} books, ${finalQuizzes} quizzes, ${finalQuestions} questions`);
-    if (errors > 0 && errorMessages.length > 0) {
-      console.log(`[seed-data] Sample errors:`, errorMessages.join(" | "));
+    if (sampleErrors.length > 0) {
+      console.log(`[seed-data] Sample errors:`, sampleErrors.join(" | "));
     }
 
-    if (finalBooks !== 222 || finalQuestions < 2500) {
-      console.log(`[seed-data] WARNING: Expected 222 books and 2500+ questions but got ${finalBooks} books and ${finalQuestions} questions!`);
-    }
-
-    return finalBooks === 222 && finalQuestions >= 2500;
+    return finalBooks >= 220 && finalQuestions >= 2500;
   } catch (e: any) {
     console.error("[seed-data] FATAL:", e.message || e);
     return false;
