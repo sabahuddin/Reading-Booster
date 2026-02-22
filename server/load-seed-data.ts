@@ -98,12 +98,8 @@ export async function loadSeedData(): Promise<boolean> {
     const existingQuestionIds = new Set(
       (await client.query("SELECT id FROM questions")).rows.map((r: any) => r.id)
     );
-    const existingBookQuizzes = new Set(
-      (await client.query("SELECT book_id FROM quizzes")).rows.map((r: any) => r.book_id)
-    );
-
     const newBooks = data.books.filter((b: any) => !existingBookIds.has(b.id));
-    const newQuizzes = data.quizzes.filter((q: any) => !existingQuizIds.has(q.id) && !existingBookQuizzes.has(q.book_id));
+    const newQuizzes = data.quizzes.filter((q: any) => !existingQuizIds.has(q.id));
     const newQuestions = data.questions.filter((q: any) => !existingQuestionIds.has(q.id));
 
     console.log(`[seed-data] New items to add: ${newBooks.length} books, ${newQuizzes.length} quizzes, ${newQuestions.length} questions`);
