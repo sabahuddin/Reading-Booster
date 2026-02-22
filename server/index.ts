@@ -230,9 +230,16 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
       runMigrations()
         .then(() => ensureUsersSeeded())
         .then(() => loadSeedData())
-        .then(() => seedDatabase())
-        .then(() => ensureAllBooks())
-        .then(() => seedMissingQuizzes())
+        .then((seedDataLoaded) => {
+          if (seedDataLoaded) {
+            console.log("[startup] seed-data.sql loaded all books/quizzes. Skipping legacy seeders.");
+            return;
+          }
+          console.log("[startup] seed-data.sql not available or failed. Running legacy seeders...");
+          return seedDatabase()
+            .then(() => ensureAllBooks())
+            .then(() => seedMissingQuizzes());
+        })
         .then(() => fetchBookCovers())
         .then(() => console.log("[startup] All startup tasks completed."))
         .catch((err) => console.error("[startup] STARTUP ERROR:", err));
