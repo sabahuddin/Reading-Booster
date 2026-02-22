@@ -1,13 +1,18 @@
 import pg from "pg";
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 
 export async function loadSeedData() {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const sqlPath = path.join(__dirname, "seed-data.sql");
+  let sqlPath = path.join(process.cwd(), "server", "seed-data.sql");
   
+  if (!fs.existsSync(sqlPath)) {
+    sqlPath = path.join(process.cwd(), "dist", "seed-data.sql");
+  }
+  
+  if (!fs.existsSync(sqlPath)) {
+    sqlPath = path.join(path.dirname(process.argv[1] || ""), "seed-data.sql");
+  }
+
   if (!fs.existsSync(sqlPath)) {
     console.log("[seed-data] No seed-data.sql found, skipping.");
     return;
