@@ -102,6 +102,46 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+app.get("/api/export-seed", async (_req, res) => {
+  const pg = await import("pg");
+  const pool = new pg.default.Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    const genres = (await pool.query("SELECT id, name, slug, sort_order FROM genres ORDER BY sort_order")).rows;
+    const books = (await pool.query("SELECT id, title, author, description, cover_image, age_group, page_count, pdf_url, purchase_url, genre, reading_difficulty, times_read, weekly_pick, isbn, publisher, publication_year, available_in_library, copies_available, location_in_library, recommended_for_grades, language, book_format, cobiss_id, publication_city FROM books ORDER BY title")).rows;
+    const quizzes = (await pool.query("SELECT id, book_id, title FROM quizzes ORDER BY title")).rows;
+    const questions = (await pool.query("SELECT id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, points FROM questions ORDER BY quiz_id, id")).rows;
+    const bookGenres = (await pool.query("SELECT * FROM book_genres")).rows;
+    res.json({ genres, books, bookGenres, quizzes, questions });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  } finally {
+    await pool.end();
+  }
+});
+
+app.get("/api/deploy-check", async (_req, res) => {
+  const pg = await import("pg");
+  const pool = new pg.default.Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    const books = await pool.query("SELECT COUNT(*) FROM books");
+    const questions = await pool.query("SELECT COUNT(*) FROM questions");
+    const quizzes = await pool.query("SELECT COUNT(*) FROM quizzes");
+    res.json({
+      version: "2026-02-22-v7-export",
+      deployedAt: new Date().toISOString(),
+      database: {
+        books: parseInt(books.rows[0].count),
+        quizzes: parseInt(quizzes.rows[0].count),
+        questions: parseInt(questions.rows[0].count),
+      }
+    });
+  } catch (e: any) {
+    res.json({ version: "2026-02-22-v7-export", error: e.message });
+  } finally {
+    await pool.end();
+  }
+});
+
 app.use("/api/", apiLimiter);
 
 app.get("/api/csrf-token", (req, res) => {
