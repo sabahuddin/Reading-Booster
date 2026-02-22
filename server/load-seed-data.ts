@@ -32,7 +32,7 @@ async function getTableColumns(client: pg.PoolClient, tableName: string): Promis
   return new Set(res.rows.map((r: any) => r.column_name));
 }
 
-async function insertRow(client: pg.PoolClient, tableName: string, row: any, tableColumns: Set<string>): Promise<boolean> {
+async function upsertRow(client: pg.PoolClient, tableName: string, row: any, tableColumns: Set<string>): Promise<boolean> {
   const fields: string[] = [];
   const placeholders: string[] = [];
   const values: any[] = [];
@@ -56,7 +56,7 @@ async function insertRow(client: pg.PoolClient, tableName: string, row: any, tab
 }
 
 export async function loadSeedData(): Promise<boolean> {
-  console.log("[seed-data] === Starting seed data check ===");
+  console.log("[seed-data] === Starting seed data load (additive only, never deletes) ===");
 
   const jsonPath = findFile("seed-data.json");
 
@@ -86,25 +86,32 @@ export async function loadSeedData(): Promise<boolean> {
 
     console.log(`[seed-data] Current DB: ${bookCount} books, ${quizCount} quizzes, ${questionCount} questions`);
 
-    if (bookCount === 222 && quizCount >= 220 && questionCount >= 2500) {
-      console.log(`[seed-data] Database is correct. Skipping.`);
+    const data: SeedData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    console.log(`[seed-data] Seed file has: ${data.books.length} books, ${data.quizzes.length} quizzes, ${data.questions.length} questions, ${data.genres.length} genres`);
+
+    const existingBookIds = new Set(
+      (await client.query("SELECT id FROM books")).rows.map((r: any) => r.id)
+    );
+    const existingQuizIds = new Set(
+      (await client.query("SELECT id FROM quizzes")).rows.map((r: any) => r.id)
+    );
+    const existingQuestionIds = new Set(
+      (await client.query("SELECT id FROM questions")).rows.map((r: any) => r.id)
+    );
+    const existingBookQuizzes = new Set(
+      (await client.query("SELECT book_id FROM quizzes")).rows.map((r: any) => r.book_id)
+    );
+
+    const newBooks = data.books.filter((b: any) => !existingBookIds.has(b.id));
+    const newQuizzes = data.quizzes.filter((q: any) => !existingQuizIds.has(q.id) && !existingBookQuizzes.has(q.book_id));
+    const newQuestions = data.questions.filter((q: any) => !existingQuestionIds.has(q.id));
+
+    console.log(`[seed-data] New items to add: ${newBooks.length} books, ${newQuizzes.length} quizzes, ${newQuestions.length} questions`);
+
+    if (newBooks.length === 0 && newQuizzes.length === 0 && newQuestions.length === 0) {
+      console.log(`[seed-data] Nothing new to add. All seed data already exists.`);
       return true;
     }
-
-    console.log(`[seed-data] Database needs reload. Cleaning all data...`);
-
-    const cleanTables = ["quiz_results", "questions", "quizzes", "book_genres", "books", "genres"];
-    for (const t of cleanTables) {
-      try {
-        await client.query(`DELETE FROM ${t}`);
-      } catch (e: any) {
-        console.log(`[seed-data] Skip clean ${t}: ${e.message?.substring(0, 60)}`);
-      }
-    }
-    console.log(`[seed-data] Cleaned all tables.`);
-
-    const data: SeedData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-    console.log(`[seed-data] JSON: ${data.books.length} books, ${data.quizzes.length} quizzes, ${data.questions.length} questions, ${data.genres.length} genres`);
 
     const genreCols = await getTableColumns(client, "genres");
     const bookCols = await getTableColumns(client, "books");
@@ -112,64 +119,63 @@ export async function loadSeedData(): Promise<boolean> {
     const questionCols = await getTableColumns(client, "questions");
     const bgCols = await getTableColumns(client, "book_genres");
 
-    console.log(`[seed-data] Columns - genres: ${Array.from(genreCols).join(",")}`);
-    console.log(`[seed-data] Columns - questions: ${Array.from(questionCols).join(",")}`);
-
     let inserted = { genres: 0, books: 0, bookGenres: 0, quizzes: 0, questions: 0 };
+    let skipped = 0;
     let errors = 0;
     const sampleErrors: string[] = [];
 
     for (const g of data.genres) {
       try {
-        await insertRow(client, "genres", g, genreCols);
+        await upsertRow(client, "genres", g, genreCols);
         inserted.genres++;
       } catch (e: any) {
-        errors++;
-        if (sampleErrors.length < 3) sampleErrors.push(`genre: ${e.message?.substring(0, 100)}`);
+        skipped++;
       }
     }
 
-    for (const b of data.books) {
+    for (const b of newBooks) {
       try {
-        await insertRow(client, "books", b, bookCols);
+        await upsertRow(client, "books", b, bookCols);
         inserted.books++;
       } catch (e: any) {
         errors++;
-        if (sampleErrors.length < 5) sampleErrors.push(`book(${b.title}): ${e.message?.substring(0, 100)}`);
+        if (sampleErrors.length < 3) sampleErrors.push(`book(${b.title}): ${e.message?.substring(0, 100)}`);
       }
     }
 
     for (const bg of data.bookGenres) {
       try {
-        await insertRow(client, "book_genres", bg, bgCols);
+        await upsertRow(client, "book_genres", bg, bgCols);
         inserted.bookGenres++;
       } catch (e: any) {
-        errors++;
+        skipped++;
       }
     }
 
-    for (const q of data.quizzes) {
+    for (const q of newQuizzes) {
       try {
-        await insertRow(client, "quizzes", q, quizCols);
+        await upsertRow(client, "quizzes", q, quizCols);
         inserted.quizzes++;
       } catch (e: any) {
         errors++;
-        if (sampleErrors.length < 5) sampleErrors.push(`quiz(${q.title}): ${e.message?.substring(0, 100)}`);
+        if (sampleErrors.length < 3) sampleErrors.push(`quiz(${q.title}): ${e.message?.substring(0, 100)}`);
       }
     }
 
-    for (let i = 0; i < data.questions.length; i++) {
+    let qInserted = 0;
+    for (const q of newQuestions) {
       try {
-        await insertRow(client, "questions", data.questions[i], questionCols);
-        inserted.questions++;
+        await upsertRow(client, "questions", q, questionCols);
+        qInserted++;
       } catch (e: any) {
         errors++;
-        if (sampleErrors.length < 5) sampleErrors.push(`question: ${e.message?.substring(0, 100)}`);
+        if (sampleErrors.length < 3) sampleErrors.push(`question: ${e.message?.substring(0, 100)}`);
       }
-      if ((i + 1) % 500 === 0) {
-        console.log(`[seed-data] Questions: ${i + 1}/${data.questions.length}...`);
+      if (qInserted % 500 === 0 && qInserted > 0) {
+        console.log(`[seed-data] Questions: ${qInserted}/${newQuestions.length}...`);
       }
     }
+    inserted.questions = qInserted;
 
     let finalBooks = 0, finalQuizzes = 0, finalQuestions = 0;
     try {
@@ -178,12 +184,12 @@ export async function loadSeedData(): Promise<boolean> {
       finalQuestions = parseInt((await client.query("SELECT COUNT(*) FROM questions")).rows[0].count, 10);
     } catch (e) {}
 
-    console.log(`[seed-data] === COMPLETED ===`);
-    console.log(`[seed-data] Inserted: ${inserted.genres} genres, ${inserted.books} books, ${inserted.bookGenres} bookGenres, ${inserted.quizzes} quizzes, ${inserted.questions} questions`);
-    console.log(`[seed-data] Errors: ${errors}`);
+    console.log(`[seed-data] === COMPLETED (additive) ===`);
+    console.log(`[seed-data] Added: ${inserted.books} books, ${inserted.quizzes} quizzes, ${inserted.questions} questions, ${inserted.genres} genres`);
+    console.log(`[seed-data] Skipped (already exist): ${skipped}, Errors: ${errors}`);
     console.log(`[seed-data] Final DB: ${finalBooks} books, ${finalQuizzes} quizzes, ${finalQuestions} questions`);
     if (sampleErrors.length > 0) {
-      console.log(`[seed-data] Sample errors:`, sampleErrors.join(" | "));
+      console.log(`[seed-data] Errors:`, sampleErrors.join(" | "));
     }
 
     return finalBooks >= 220 && finalQuestions >= 2500;
