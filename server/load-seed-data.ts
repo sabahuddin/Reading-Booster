@@ -65,12 +65,12 @@ export async function loadSeedData() {
 
     console.log(`[seed-data] Current DB state: ${bookCount} books, ${questionCount} questions`);
 
-    if (bookCount > 0 && questionCount > 100) {
-      console.log(`[seed-data] Database is already populated, skipping seed-data.sql`);
+    if (bookCount >= 222 && questionCount >= 2500) {
+      console.log(`[seed-data] Database is fully populated, skipping seed-data.sql`);
       return;
     }
 
-    console.log(`[seed-data] Loading seed-data.sql into database...`);
+    console.log(`[seed-data] Database incomplete (need 222 books & 2500+ questions), loading seed-data.sql...`);
 
     const sql = fs.readFileSync(sqlPath, "utf-8");
     const statements = sql
