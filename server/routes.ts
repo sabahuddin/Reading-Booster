@@ -189,6 +189,29 @@ export async function registerRoutes(
 
   app.use("/uploads", express.static(uploadsDir));
 
+  app.get("/api/deploy-check", async (_req, res) => {
+    const pg = await import("pg");
+    const pool = new pg.default.Pool({ connectionString: process.env.DATABASE_URL });
+    try {
+      const books = await pool.query("SELECT COUNT(*) FROM books");
+      const questions = await pool.query("SELECT COUNT(*) FROM questions");
+      const quizzes = await pool.query("SELECT COUNT(*) FROM quizzes");
+      res.json({
+        version: "2026-02-22-v2",
+        deployedAt: new Date().toISOString(),
+        database: {
+          books: parseInt(books.rows[0].count),
+          quizzes: parseInt(quizzes.rows[0].count),
+          questions: parseInt(questions.rows[0].count),
+        }
+      });
+    } catch (e: any) {
+      res.json({ version: "2026-02-22-v2", error: e.message });
+    } finally {
+      await pool.end();
+    }
+  });
+
   app.use("/api", sanitizeInput);
 
   // ==================== UPLOAD ROUTES ====================
