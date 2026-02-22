@@ -4,8 +4,6 @@ import * as path from "path";
 
 export async function loadSeedData() {
   console.log("[seed-data] === Starting seed data check ===");
-  console.log("[seed-data] CWD:", process.cwd());
-  console.log("[seed-data] argv[1]:", process.argv[1]);
 
   const candidates = [
     path.join(process.cwd(), "server", "seed-data.sql"),
@@ -13,30 +11,18 @@ export async function loadSeedData() {
     path.join(process.cwd(), "seed-data.sql"),
     path.resolve(path.dirname(process.argv[1] || ""), "seed-data.sql"),
     path.resolve(path.dirname(process.argv[1] || ""), "..", "seed-data.sql"),
-    path.resolve(path.dirname(process.argv[1] || ""), "..", "server", "seed-data.sql"),
   ];
 
   let sqlPath: string | null = null;
   for (const p of candidates) {
-    const exists = fs.existsSync(p);
-    console.log(`[seed-data] Checking: ${p} => ${exists ? "FOUND" : "not found"}`);
-    if (exists && !sqlPath) {
+    if (fs.existsSync(p) && !sqlPath) {
       sqlPath = p;
+      console.log(`[seed-data] Found: ${p}`);
     }
   }
 
   if (!sqlPath) {
-    console.log("[seed-data] ERROR: No seed-data.sql found in any location! Listing directories...");
-    try {
-      const cwd = process.cwd();
-      console.log("[seed-data] Files in CWD:", fs.readdirSync(cwd).filter(f => f.includes("seed") || f === "dist" || f === "server").join(", "));
-      const distDir = path.join(cwd, "dist");
-      if (fs.existsSync(distDir)) {
-        console.log("[seed-data] Files in dist/:", fs.readdirSync(distDir).join(", "));
-      }
-    } catch (e) {
-      console.log("[seed-data] Could not list directories");
-    }
+    console.log("[seed-data] No seed-data.sql found, skipping.");
     return;
   }
 
@@ -49,35 +35,38 @@ export async function loadSeedData() {
     client = await pool.connect();
 
     let bookCount = 0;
+    let quizCount = 0;
     let questionCount = 0;
     try {
-      const existingBooks = await client.query("SELECT COUNT(*) FROM books");
-      bookCount = parseInt(existingBooks.rows[0].count, 10);
+      bookCount = parseInt((await client.query("SELECT COUNT(*) FROM books")).rows[0].count, 10);
+      quizCount = parseInt((await client.query("SELECT COUNT(*) FROM quizzes")).rows[0].count, 10);
+      questionCount = parseInt((await client.query("SELECT COUNT(*) FROM questions")).rows[0].count, 10);
     } catch (e: any) {
-      console.log(`[seed-data] books table query failed: ${e.message?.substring(0, 100)}`);
-    }
-    try {
-      const existingQuestions = await client.query("SELECT COUNT(*) FROM questions");
-      questionCount = parseInt(existingQuestions.rows[0].count, 10);
-    } catch (e: any) {
-      console.log(`[seed-data] questions table query failed: ${e.message?.substring(0, 100)}`);
+      console.log(`[seed-data] Table query failed: ${e.message?.substring(0, 100)}`);
     }
 
-    console.log(`[seed-data] Current DB state: ${bookCount} books, ${questionCount} questions`);
+    console.log(`[seed-data] Current DB: ${bookCount} books, ${quizCount} quizzes, ${questionCount} questions`);
 
-    if (bookCount >= 222 && questionCount >= 2500) {
-      console.log(`[seed-data] Database is fully populated, skipping seed-data.sql`);
+    if (bookCount >= 220 && questionCount >= 2500) {
+      console.log(`[seed-data] Database is fully populated, skipping.`);
       return;
     }
 
-    console.log(`[seed-data] Database incomplete (need 222 books & 2500+ questions), loading seed-data.sql...`);
+    if (questionCount > 0 && questionCount < 2500) {
+      console.log(`[seed-data] Found incomplete quiz data (${questionCount} questions). Cleaning old quizzes and questions...`);
+      await client.query("DELETE FROM questions");
+      await client.query("DELETE FROM quizzes");
+      console.log(`[seed-data] Deleted old quizzes and questions.`);
+    }
+
+    console.log(`[seed-data] Loading seed-data.sql...`);
 
     const sql = fs.readFileSync(sqlPath, "utf-8");
     const statements = sql
       .split("\n")
       .filter(line => line.trim() && !line.trim().startsWith("--"));
 
-    console.log(`[seed-data] Found ${statements.length} SQL statements to execute`);
+    console.log(`[seed-data] Executing ${statements.length} SQL statements...`);
 
     let executed = 0;
     let skipped = 0;
@@ -89,7 +78,7 @@ export async function loadSeedData() {
         await client.query(stmt);
         executed++;
         if (executed % 500 === 0) {
-          console.log(`[seed-data] Progress: ${executed}/${statements.length} statements executed...`);
+          console.log(`[seed-data] Progress: ${executed}/${statements.length}...`);
         }
       } catch (e: any) {
         const msg = e.message || "";
@@ -104,23 +93,21 @@ export async function loadSeedData() {
       }
     }
 
-    let finalBookCount = 0;
-    let finalQuestionCount = 0;
+    let finalBooks = 0, finalQuizzes = 0, finalQuestions = 0;
     try {
-      const r1 = await client.query("SELECT COUNT(*) FROM books");
-      finalBookCount = parseInt(r1.rows[0].count, 10);
-      const r2 = await client.query("SELECT COUNT(*) FROM questions");
-      finalQuestionCount = parseInt(r2.rows[0].count, 10);
+      finalBooks = parseInt((await client.query("SELECT COUNT(*) FROM books")).rows[0].count, 10);
+      finalQuizzes = parseInt((await client.query("SELECT COUNT(*) FROM quizzes")).rows[0].count, 10);
+      finalQuestions = parseInt((await client.query("SELECT COUNT(*) FROM questions")).rows[0].count, 10);
     } catch (e) {}
 
-    console.log(`[seed-data] === COMPLETED ===`);
-    console.log(`[seed-data] Executed: ${executed}, Skipped duplicates: ${skipped}, Errors: ${errors}`);
-    console.log(`[seed-data] Database now has: ${finalBookCount} books, ${finalQuestionCount} questions`);
+    console.log(`[seed-data] === DONE ===`);
+    console.log(`[seed-data] Executed: ${executed}, Skipped: ${skipped}, Errors: ${errors}`);
+    console.log(`[seed-data] Final DB: ${finalBooks} books, ${finalQuizzes} quizzes, ${finalQuestions} questions`);
     if (errorMessages.length > 0) {
-      console.log(`[seed-data] Sample errors:`, errorMessages.slice(0, 5).join(" | "));
+      console.log(`[seed-data] Errors:`, errorMessages.slice(0, 5).join(" | "));
     }
   } catch (e: any) {
-    console.error("[seed-data] FATAL ERROR:", e.message || e);
+    console.error("[seed-data] FATAL:", e.message || e);
   } finally {
     if (client) client.release();
     if (pool) await pool.end();

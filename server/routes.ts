@@ -197,7 +197,7 @@ export async function registerRoutes(
       const questions = await pool.query("SELECT COUNT(*) FROM questions");
       const quizzes = await pool.query("SELECT COUNT(*) FROM quizzes");
       res.json({
-        version: "2026-02-22-v2",
+        version: "2026-02-22-v3-quiz-fix",
         deployedAt: new Date().toISOString(),
         database: {
           books: parseInt(books.rows[0].count),
