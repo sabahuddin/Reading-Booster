@@ -226,6 +226,7 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
     },
     () => {
       log(`serving on port ${port}`);
+      console.log(`[startup] NODE_ENV=${process.env.NODE_ENV}, CWD=${process.cwd()}`);
       runMigrations()
         .then(() => ensureUsersSeeded())
         .then(() => loadSeedData())
@@ -233,7 +234,8 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
         .then(() => ensureAllBooks())
         .then(() => seedMissingQuizzes())
         .then(() => fetchBookCovers())
-        .catch(console.error);
+        .then(() => console.log("[startup] All startup tasks completed."))
+        .catch((err) => console.error("[startup] STARTUP ERROR:", err));
     },
   );
 })();
