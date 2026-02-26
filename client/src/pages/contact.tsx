@@ -40,17 +40,17 @@ const contactInfo = [
   {
     icon: Mail,
     label: "Email",
-    value: "info@citajvise.hr",
+    value: "info@citanje.ba",
   },
   {
     icon: Phone,
     label: "Telefon",
-    value: "+385 1 234 5678",
+    value: "+387 60 320 20 10",
   },
   {
     icon: MapPin,
     label: "Adresa",
-    value: "Ilica 42, 10000 Zagreb, Hrvatska",
+    value: "Asima Bajraktarevića 3, 77245 Bužim, BiH",
   },
 ];
 
