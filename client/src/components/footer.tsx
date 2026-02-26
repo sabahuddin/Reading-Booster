@@ -88,7 +88,7 @@ export function Footer() {
 
         <div className="mt-12 border-t pt-8 text-center">
           <p className="text-base text-muted-foreground">
-            &copy; {new Date().getFullYear()} Čitanje. Sva prava pridržana.
+            &copy; {new Date().getFullYear()} Čitanje powered by Izdavačka kuća Ilum
           </p>
         </div>
       </div>
