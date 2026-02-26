@@ -12,6 +12,7 @@ import {
   FileText,
   Users,
 } from "lucide-react";
+import { SocialShare } from "@/components/social-share";
 import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 
@@ -108,6 +109,7 @@ export default function BookDetail() {
                 <p className="text-sm text-muted-foreground italic" data-testid="text-find-book">
                   Knjigu potražite u školskoj ili gradskoj biblioteci.
                 </p>
+                <SocialShare title={`${book.title} - ${book.author}`} url={`https://citanje.ba/knjiga/${book.id}`} compact />
               </div>
             </div>
 

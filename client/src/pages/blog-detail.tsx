@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { motion } from "framer-motion";
-import { Calendar, ArrowLeft, User, MessageSquare, Send, Trash2, BookOpen } from "lucide-react";
+import { Calendar, ArrowLeft, User, MessageSquare, Send, Trash2, BookOpen, Share2 } from "lucide-react";
+import { SocialShare } from "@/components/social-share";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -220,7 +221,11 @@ export default function BlogDetail() {
                 </div>
               </motion.article>
 
-              <div className="mt-12 border-t pt-8 not-prose">
+              <div className="mt-8 not-prose">
+                <SocialShare title={post.title} url={`https://citanje.ba/blog/${post.id}`} />
+              </div>
+
+              <div className="mt-8 border-t pt-8 not-prose">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Ocijenite ovaj tekst</h3>
