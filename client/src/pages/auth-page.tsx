@@ -219,7 +219,7 @@ export default function AuthPage() {
       if (result?.pendingApproval) {
         toast({
           title: "Zahtjev poslan!",
-          description: "Vaš zahtjev za registraciju škole je poslan. Administrator će odobriti vaš račun.",
+          description: "Vaš zahtjev za registraciju škole/razreda je poslan. Administrator će pregledati i odobriti vaš račun.",
         });
         setActiveTab("login");
       }
@@ -314,7 +314,7 @@ export default function AuthPage() {
                         disabled={login.isPending}
                         data-testid="button-login-submit"
                       >
-                        {login.isPending ? "Prijavljivanje..." : "Prijavi se"}
+                        {login.isPending ? "Prijavljivanje..." : "Prijavite se"}
                       </Button>
                     </form>
                   </Form>
@@ -440,9 +440,9 @@ export default function AuthPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="family_1_1">1 roditelj + 1 dijete — 15 KM</SelectItem>
-                                    <SelectItem value="family_1_3">1 roditelj + 3 djece — 20 KM</SelectItem>
-                                    <SelectItem value="family_2_3">2 roditelja + 3 djece — 25 KM</SelectItem>
+                                    <SelectItem value="family_1_1">1 roditelj + 1 dijete — 17 KM</SelectItem>
+                                    <SelectItem value="family_1_3">1 roditelj + 3 djece — 22 KM</SelectItem>
+                                    <SelectItem value="family_2_3">2 roditelja + 3 djece — 27 KM</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -490,7 +490,7 @@ export default function AuthPage() {
                         disabled={register.isPending}
                         data-testid="button-register-submit"
                       >
-                        {register.isPending ? "Registracija..." : "Registriraj se"}
+                        {register.isPending ? "Registracija..." : "Registrirajte se"}
                       </Button>
                     </form>
                   </Form>

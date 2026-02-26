@@ -14,9 +14,9 @@ const supportLinks = [
 ];
 
 const legalLinks = [
-  { href: "#", label: "Uvjeti korištenja" },
-  { href: "#", label: "Privatnost" },
-  { href: "#", label: "Kolačići" },
+  { href: "/uvjeti", label: "Uvjeti korištenja" },
+  { href: "/privatnost", label: "Privatnost" },
+  { href: "/kolacici", label: "Kolačići" },
 ];
 
 export function Footer() {

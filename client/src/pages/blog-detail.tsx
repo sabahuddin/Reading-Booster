@@ -160,8 +160,8 @@ export default function BlogDetail() {
             </div>
           ) : !post ? (
             <div className="text-center py-20">
-              <h2 className="text-3xl font-bold">Objava nije pronađena</h2>
-              <p className="mt-2 text-muted-foreground">Žao nam je, tražena objava ne postoji ili je uklonjena.</p>
+              <h2 className="text-3xl font-bold">Tekst nije pronađen</h2>
+              <p className="mt-2 text-muted-foreground">Žao nam je, traženi tekst ne postoji ili je uklonjen.</p>
             </div>
           ) : (
             <>

@@ -31,7 +31,7 @@ const fadeIn = {
 const features = [
   {
     icon: BookOpen,
-    title: "Puno knjiga",
+    title: "Mnogo knjiga",
     description:
       "Istraži našu veliku biblioteku punu zanimljivih knjiga za tvoj uzrast!",
   },
@@ -39,13 +39,13 @@ const features = [
     icon: Brain,
     title: "Zabavni kvizovi",
     description:
-      "Nakon čitanja, riješi kviz i pokaži koliko si naučio. Svaki tačan odgovor donosi bodove!",
+      "Nakon čitanja, riješi kviz i pokaži koliko znaš. Svaki tačan odgovor donosi ti bodove!",
   },
   {
     icon: TrendingUp,
     title: "Prati svoj napredak",
     description:
-      "Gledaj kako tvoji bodovi rastu! Prati koliko si knjiga pročitao i kvizova riješio.",
+      "Gledaj kako tvoji bodovi rastu! Prati koliko si knjiga pročitao/la i kvizova riješio/la.",
   },
   {
     icon: Users,
@@ -413,7 +413,7 @@ function AboutSection() {
             <div className="grid gap-6">
               <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
                 <h3 className="text-lg font-bold text-orange-900 mb-2">Zašto Čitanje?</h3>
-                <p className="text-muted-foreground">U digitalnom dobu, motivacija za čitanje fizičkih knjiga opada. Naša platforma koristi elemente igre (gamification) kako bi čitanje ponovo postalo uzbudljiva avantura za djecu i mlade.</p>
+                <p className="text-muted-foreground">U digitalnom dobu, motivacija za čitanje fizičkih knjiga opada. Naša platforma koristi elemente igre (gamification) kako bi čitanje ponovo postalo uzbudljiva avantura za djecu i mlade. Možda i za odrasle.</p>
               </div>
               
               <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
@@ -428,7 +428,7 @@ function AboutSection() {
               
               <div className="p-6 rounded-xl border-2 border-orange-100 bg-orange-50/30">
                 <h3 className="text-lg font-bold text-orange-900 mb-2">Kako to uraditi?</h3>
-                <p className="text-muted-foreground">Jednostavno: odaberi knjigu iz biblioteke, pročitaj je u fizičkom formatu, vrati se na platformu da riješiš kviz, osvoji bodove i prati svoj rang na tabeli najboljih čitalaca!</p>
+                <p className="text-muted-foreground">Jednostavno: odaberite knjigu iz biblioteke, pročitajte je u fizičkom formatu, vratite se na platformu i riješite kviz, osvojite bodove i pratite svoj rang na tabeli najboljih čitalaca!</p>
               </div>
             </div>
           </div>
@@ -453,7 +453,7 @@ function AboutSection() {
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">2</div>
                 <div>
                   <h4 className="font-bold text-xl mb-1">Porodično takmičenje</h4>
-                  <p className="text-muted-foreground">Roditelji se mogu registrovati, povezati sa svojom djecom i zajedno učestvovati u izazovima. Takmičite se ko će sakupiti više bodova kroz Beletristiku i Islam module!</p>
+                  <p className="text-muted-foreground">Roditelji se mogu registrirati, povezati sa svojom djecom i zajedno učestvovati u izazovima. Takmičite se ko će sakupiti više bodova!</p>
                 </div>
               </div>
 
@@ -471,11 +471,11 @@ function AboutSection() {
           <div className="mt-16 p-8 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white text-center shadow-xl" id="kontakt-sekcija">
             <h2 className="text-2xl font-bold mb-4">Postani dio naše priče</h2>
             <p className="text-orange-50 mb-6 text-lg">
-              Čitanje je projekat zajednice. Možete doprinijeti razvoju platforme kroz <strong>sponzorstva nagrada</strong> za najuspješnije čitaoce ili jednostavno <strong>dijeljenjem sadržaja</strong> i pozivanjem prijatelja da nam se pridruže.
+              Čitanje je projekat zajednice. Možete doprinijeti razvoju platforme kroz njeno sponzoriranje, <strong>sponzorstva nagrada</strong> za najuspješnije čitaoce ili jednostavno <strong>dijeljenjem sadržaja</strong> i pozivanjem prijatelja da nam se pridruže.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button variant="secondary" size="lg" asChild>
-                <Link href="/kontakt">Kontaktiraj nas</Link>
+                <Link href="/kontakt">Kontaktirajte nas</Link>
               </Button>
             </div>
           </div>
@@ -672,7 +672,7 @@ export default function LandingPage() {
             <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
               <BookOpen className="h-14 w-14 text-primary mx-auto mb-4" />
               <h3 className="text-3xl font-bold mb-3">Bogata biblioteka</h3>
-              <p className="text-lg text-muted-foreground">Stotine naslova prilagođenih svim uzrastima i interesovanjima.</p>
+              <p className="text-lg text-muted-foreground">Nekoliko stotina naslova prilagođenih svim uzrastima i interesovanjima. (A tek smo krenuli!).</p>
             </div>
             <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
               <Users className="h-14 w-14 text-primary mx-auto mb-4" />
@@ -701,7 +701,7 @@ export default function LandingPage() {
               Spreman za avanturu?
             </h2>
             <p className="mt-4 text-xl text-white/90">
-              Pridruži se hiljadama učenika koji već čitaju i osvajaju bodove!
+              Pridruži se brojnim učenicima koji već čitaju i osvajaju bodove!
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link href="/registracija">
@@ -710,7 +710,7 @@ export default function LandingPage() {
                   className="bg-white text-[hsl(24,85%,40%)] border-white/80"
                   data-testid="button-cta-bottom-register"
                 >
-                  Započni besplatno
+                  Započnite besplatno
                 </Button>
               </Link>
               <Link href="/kontakt">
@@ -719,7 +719,7 @@ export default function LandingPage() {
                   variant="outline"
                   className="text-white border-white hover:bg-white/10"
                 >
-                  Kontaktiraj nas
+                  Kontaktirajte nas
                 </Button>
               </Link>
             </div>

@@ -34,7 +34,7 @@ function StudentDashboardMock() {
             <BookOpen className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100">Čitalačka Ploča</h3>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100">Moja čitaonica</h3>
             <p className="text-xs text-slate-500">Dobrodošli, Ahmed!</p>
           </div>
         </div>
@@ -116,7 +116,7 @@ function ParentDashboardMock() {
             <Heart className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100">Roditeljska Ploča</h3>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100">Roditeljski pregled</h3>
             <p className="text-xs text-slate-500">Dobrodošli, Jasmina!</p>
           </div>
         </div>
@@ -190,7 +190,7 @@ function TeacherDashboardMock() {
             <GraduationCap className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100">Učiteljski Panel</h3>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100">Učiteljski pregled</h3>
             <p className="text-xs text-slate-500">Dobrodošli nazad, Amra Hodžić</p>
           </div>
         </div>
@@ -318,8 +318,8 @@ function SchoolDashboardMock() {
             <SchoolIcon className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100">OŠ Silvije Strahimir Kranjčević</h3>
-            <p className="text-xs text-slate-500">Statistika ustanove</p>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100">OŠ Ćamil Sijarić</h3>
+            <p className="text-xs text-slate-500">Statistika škole</p>
           </div>
         </div>
       </div>
@@ -406,9 +406,9 @@ export default function GuidePage() {
         <section className="relative py-24 bg-primary/5 overflow-hidden">
           <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
             <motion.div initial="hidden" animate="visible" variants={fadeIn}>
-              <h1 className="text-5xl md:text-6xl font-bold mb-6">Dobrodošli na Čitanje</h1>
+              <h1 className="text-5xl md:text-6xl font-bold mb-6">Dobrodošli na Čitanje.ba</h1>
               <p className="text-2xl text-muted-foreground leading-relaxed mb-8">
-                Čitanje je više od obične web stranice. To je digitalni most između dječije mašte i fizičke knjige. 
+                Čitanje je više od obične web stranice. To je digitalni most između čitalačke mašte i fizičke knjige. 
                 Naš cilj je vratiti radost čitanja u svakodnevnicu kroz igru, takmičenje i zajednički uspjeh.
               </p>
               <div className="h-1 w-24 bg-primary mx-auto rounded-full" />
@@ -453,7 +453,7 @@ export default function GuidePage() {
                           </li>
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                            <p><strong>Pročitaj je:</strong> Uzmi pravu, fizičku knjigu iz svoje školske biblioteke ili je kupi i uživaj u čitanju.</p>
+                            <p><strong>Pročitaj je:</strong> Uzmi pravu, fizičku knjigu iz svoje, školske ili gradske biblioteke (ili je kupi) i uživaj u čitanju.</p>
                           </li>
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
@@ -471,14 +471,14 @@ export default function GuidePage() {
                             <Sparkles className="w-4 h-4" /> Savjet
                           </h4>
                           <p className="text-base text-amber-800 dark:text-amber-200">
-                            Registruj se besplatno kao Čitalac i odmah počni sa čitanjem! Ako te učitelj/ica već registrovala, koristi podatke koje si dobio/la.
+                            Registriraj se besplatno kao Čitalac i odmah počni sa čitanjem! Ako su te učitelj/ica već registrirali, koristi podatke koje si dobio/la.
                           </p>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Tvoja čitalačka ploča</h4>
+                      <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Tvoja čitaonica</h4>
                       <StudentDashboardMock />
                     </div>
                   </div>
@@ -498,19 +498,19 @@ export default function GuidePage() {
                   <div className="space-y-8">
                     <div className="grid md:grid-cols-2 gap-8 items-start">
                       <div className="space-y-4">
-                        <p className="text-xl text-muted-foreground font-medium">Budite podrška svom djetetu na putu znanja.</p>
+                        <p className="text-xl text-muted-foreground font-medium">Budite podrška svom djetetu na putu stjecanja znanja.</p>
                         <ul className="space-y-4">
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
-                            <p><strong>Pratite napredak:</strong> Vidite koje knjige vaše dijete čita i kakve rezultate postiže na kvizovima.</p>
+                            <p><strong>Pratite njihov napredak:</strong> Vidite koje knjige vaše dijete čita i kakve rezultate postiže na kvizovima.</p>
                           </li>
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                            <p><strong>Porodično takmičenje:</strong> Registrujte svoj račun u kategoriji "Odrasli" i takmičite se ko će više pročitati!</p>
+                            <p><strong>Porodično takmičenje:</strong> Registrirajte svoj račun u kategoriji "Odrasli" i takmičite se ko će više pročitati!</p>
                           </li>
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
-                            <p><strong>Povezivanje:</strong> Ako je dijete dobilo račun u školi, jednostavno ga povežite sa svojim profilom.</p>
+                            <p><strong>Povezivanje:</strong> Ako je dijete dobilo račun u školi, jednostavno ga povežite sa svojim profilom i pratite vaše dijete.</p>
                           </li>
                         </ul>
                       </div>
@@ -520,14 +520,14 @@ export default function GuidePage() {
                             <Sparkles className="w-4 h-4" /> Savjet za roditelje
                           </h4>
                           <p className="text-base text-amber-800 dark:text-amber-200">
-                            Odaberite porodični paket i takmičite se zajedno sa djecom. Čitanje postaje zajednička porodična aktivnost!
+                            Odaberite porodični paket i takmičite se zajedno s djecom. Čitanje može postati zajednička porodična aktivnost!
                           </p>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Roditeljska ploča</h4>
+                      <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Roditeljski pregled</h4>
                       <ParentDashboardMock />
                     </div>
                   </div>
@@ -547,7 +547,7 @@ export default function GuidePage() {
                   <div className="space-y-8">
                     <div className="grid md:grid-cols-2 gap-8 items-start">
                       <div className="space-y-4">
-                        <p className="text-xl text-muted-foreground font-medium">Pretvorite lektiru u najdraži čas.</p>
+                        <p className="text-xl text-muted-foreground font-medium">Pretvorite lektiru u najdraži čas vaših učenika.</p>
                         <ul className="space-y-4">
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
@@ -555,7 +555,7 @@ export default function GuidePage() {
                           </li>
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                            <p><strong>Izvještaji:</strong> Jednim klikom generišite PDF izvještaj za cijeli razred ili eksportujte podatke u Excel format.</p>
+                            <p><strong>Izvještaji:</strong> Jednim klikom generirajte PDF izvještaj za cijeli razred ili eksportirajte podatke u Excel format.</p>
                           </li>
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
@@ -600,7 +600,7 @@ export default function GuidePage() {
                         <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800 mb-4">
                           <h4 className="font-bold text-orange-900 dark:text-orange-100 mb-1 text-sm">Napredno upravljanje</h4>
                           <p className="text-orange-800 dark:text-orange-200 text-sm">
-                            Kao institucionalni administrator, imate uvid u cijeli kolektiv, kreirate stotine računa i pratite statistiku na nivou ustanove.
+                            Kao školski administrator, imate uvid u cijeli kolektiv, kreirate stotine računa i pratite statistiku na nivou cijele škole.
                           </p>
                         </div>
                         <ul className="space-y-4">
@@ -610,7 +610,7 @@ export default function GuidePage() {
                           </li>
                           <li className="flex gap-4">
                             <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                            <p><strong>Monitoring:</strong> Analizirajte trendove čitanja kroz mjesece.</p>
+                            <p><strong>Monitoring:</strong> Analizirajte trendove čitanja na mjesečnom nivou.</p>
                           </li>
                         </ul>
                       </div>
@@ -620,7 +620,7 @@ export default function GuidePage() {
                             <Sparkles className="w-4 h-4" /> Za direktore
                           </h4>
                           <p className="text-base text-amber-800 dark:text-amber-200">
-                            Registrujte svoju školu kroz tab "Škola" na stranici za prijavu. Administrator će odobriti vaš zahtjev i dobićete pristup svim alatima.
+                            Registrujte svoju školu kroz tab "Škola" na stranici za prijavu. Administrator će odobriti vaš zahtjev i dobit ćete pristup svim alatima.
                           </p>
                         </div>
                       </div>
@@ -639,7 +639,7 @@ export default function GuidePage() {
 
         <section className="max-w-4xl mx-auto px-4 mt-24 text-center">
           <div className="p-10 rounded-3xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-2xl">
-            <h2 className="text-3xl font-bold mb-6">Postani dio naše priče</h2>
+            <h2 className="text-3xl font-bold mb-6">Postanite dio naše zajedničke priče</h2>
             <p className="text-xl text-orange-50 mb-8">
               Čitanje je projekat koji raste uz vašu pomoć. Podržite nas kroz sponzorstva nagrada ili jednostavno podijelite našu misiju sa drugima.
             </p>

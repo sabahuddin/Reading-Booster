@@ -46,6 +46,10 @@ import PublicBookDetail from "@/pages/public-book-detail";
 
 import FAQPage from "@/pages/faq";
 import GuidePage from "@/pages/guide";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
+import CookiesPage from "@/pages/cookies";
+import { CookieBanner } from "@/components/cookie-banner";
 import SchoolDashboard from "@/pages/school-dashboard";
 import SchoolAdminDashboard from "@/pages/school-admin-dashboard";
 
@@ -59,6 +63,9 @@ function Router() {
       <Route path="/kontakt" component={ContactPage} />
       <Route path="/faq" component={FAQPage} />
       <Route path="/vodic" component={GuidePage} />
+      <Route path="/uvjeti" component={TermsPage} />
+      <Route path="/privatnost" component={PrivacyPage} />
+      <Route path="/kolacici" component={CookiesPage} />
       <Route path="/biblioteka" component={PublicLibrary} />
       <Route path="/knjiga/:id" component={PublicBookDetail} />
       <Route path="/prijava" component={AuthPage} />
@@ -104,6 +111,7 @@ function App() {
         <ScrollToTop />
         <Toaster />
         <Router />
+        <CookieBanner />
       </TooltipProvider>
     </QueryClientProvider>
   );
