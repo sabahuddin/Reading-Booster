@@ -18,6 +18,7 @@ import {
   insertBlogPostSchema,
   insertBlogCommentSchema,
   insertBlogRatingSchema,
+  insertBookRatingSchema,
   insertContactMessageSchema,
   insertPartnerSchema,
   insertChallengeSchema,
@@ -1116,6 +1117,54 @@ export async function registerRoutes(
       const rating = await storage.upsertBlogRating(parsed.data);
       const avg = await storage.getAverageRating(req.params.id as string);
       return res.json({ rating, ...avg });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== BOOK RATING ROUTES ====================
+
+  app.get("/api/books/:id/rating", async (req, res) => {
+    try {
+      const avg = await storage.getAverageBookRating(req.params.id as string);
+      let userRating = null;
+      if ((req.session as any).userId) {
+        const ur = await storage.getUserBookRating(req.params.id as string, (req.session as any).userId);
+        userRating = ur?.rating || null;
+      }
+      return res.json({ ...avg, userRating });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/books/:id/rating", requireAuth, async (req, res) => {
+    try {
+      const parsed = insertBookRatingSchema.safeParse({
+        ...req.body,
+        bookId: req.params.id,
+        userId: (req.session as any).userId,
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+      }
+      if (parsed.data.rating < 1 || parsed.data.rating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+      const rating = await storage.upsertBookRating(parsed.data);
+      const avg = await storage.getAverageBookRating(req.params.id as string);
+      return res.json({ rating, ...avg });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== QUIZ COMPLETION COUNT ====================
+
+  app.get("/api/quizzes/:id/completions", async (req, res) => {
+    try {
+      const count = await storage.getQuizCompletionCount(req.params.id as string);
+      return res.json({ count });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

@@ -90,6 +90,7 @@ export const quizzes = pgTable("quizzes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   bookId: varchar("book_id").notNull(),
   title: text("title").notNull(),
+  quizAuthor: text("quiz_author"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -183,6 +184,21 @@ export const insertBlogRatingSchema = createInsertSchema(blogRatings).omit({
 });
 export type InsertBlogRating = z.infer<typeof insertBlogRatingSchema>;
 export type BlogRating = typeof blogRatings.$inferSelect;
+
+export const bookRatings = pgTable("book_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookId: varchar("book_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  rating: integer("rating").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBookRatingSchema = createInsertSchema(bookRatings).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertBookRating = z.infer<typeof insertBookRatingSchema>;
+export type BookRating = typeof bookRatings.$inferSelect;
 
 export const contactMessages = pgTable("contact_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

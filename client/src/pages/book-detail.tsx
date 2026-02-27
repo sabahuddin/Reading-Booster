@@ -13,6 +13,8 @@ import {
   Users,
 } from "lucide-react";
 import { SocialShare } from "@/components/social-share";
+import { BookRating } from "@/components/book-rating";
+import { useAuth } from "@/hooks/use-auth";
 import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 
@@ -26,6 +28,7 @@ export default function BookDetail() {
   const isReader = location.startsWith("/citanje");
   const basePath = isReader ? "/citanje" : "/ucenik";
   const dashboardRole = isReader ? "reader" : "student" as const;
+  const { isAuthenticated } = useAuth();
   const [, studentParams] = useRoute("/ucenik/knjiga/:id");
   const [, readerParams] = useRoute("/citanje/knjiga/:id");
   const bookId = studentParams?.id || readerParams?.id;
@@ -109,6 +112,7 @@ export default function BookDetail() {
                 <p className="text-sm text-muted-foreground italic" data-testid="text-find-book">
                   Knjigu potražite u školskoj ili gradskoj biblioteci.
                 </p>
+                <BookRating bookId={book.id} isAuthenticated={isAuthenticated} />
                 <SocialShare title={`${book.title} - ${book.author}`} url={`https://citanje.ba/knjiga/${book.id}`} compact />
               </div>
             </div>

@@ -38,6 +38,7 @@ import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLe
 const quizFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
   bookId: z.string().min(1, "Knjiga je obavezna"),
+  quizAuthor: z.string().optional(),
 });
 
 const questionFormSchema = z.object({
@@ -325,7 +326,7 @@ export default function AdminQuizzes() {
 
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizFormSchema),
-    defaultValues: { title: "", bookId: "" },
+    defaultValues: { title: "", bookId: "", quizAuthor: "" },
   });
 
   const createMutation = useMutation({
@@ -550,7 +551,10 @@ export default function AdminQuizzes() {
                       <div className="flex items-center">
                         <AccordionTrigger className="gap-2 flex-1" data-testid={`accordion-quiz-${quiz.id}`}>
                           <div className="flex items-center gap-3 text-left flex-1">
-                            <span className="font-medium flex-1">{quiz.title}</span>
+                            <span className="font-medium flex-1">
+                              {quiz.title}
+                              {quiz.quizAuthor && <span className="text-xs text-muted-foreground ml-2">({quiz.quizAuthor})</span>}
+                            </span>
                             <Badge variant="secondary" className="w-48 justify-center truncate">{getBookTitle(quiz.bookId)}</Badge>
                             <Badge variant="outline" className="w-24 justify-center" data-testid={`text-question-count-${quiz.id}`}>
                               <HelpCircle className="h-3 w-3 mr-1" />
@@ -664,6 +668,13 @@ export default function AdminQuizzes() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="quizAuthor" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Autor kviza (opcionalno)</FormLabel>
+                    <FormControl><Input {...field} placeholder="npr. Ime učitelja ili Citanje.ba" data-testid="input-quiz-author" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

@@ -65,6 +65,11 @@ export default function QuizPage() {
     queryKey: ["/api/subscription/status"],
   });
 
+  const { data: completionData } = useQuery<{ count: number }>({
+    queryKey: ["/api/quizzes", quizId, "completions"],
+    enabled: !!quizId,
+  });
+
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!quiz) throw new Error("Quiz not loaded");
@@ -254,6 +259,16 @@ export default function QuizPage() {
           <>
             <div>
               <h1 className="text-xl font-bold" data-testid="text-quiz-title">{quiz.title}</h1>
+              {quiz.quizAuthor && (
+                <p className="text-xs text-muted-foreground" data-testid="text-quiz-author">
+                  Autor kviza: {quiz.quizAuthor}
+                </p>
+              )}
+              {completionData && completionData.count > 0 && (
+                <p className="text-xs text-muted-foreground" data-testid="text-quiz-completions">
+                  Kviz je do sada {completionData.count} {completionData.count === 1 ? "put" : "puta"} urađen
+                </p>
+              )}
               <div className="flex items-center gap-3 flex-wrap mt-1">
                 <p className="text-sm text-muted-foreground">
                   Pitanje {currentQ + 1} od {totalQ}

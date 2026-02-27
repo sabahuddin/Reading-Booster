@@ -48,6 +48,9 @@ import {
   type InsertBookGenre,
   type ParentChildRequest,
   type InsertParentChildRequest,
+  type BookRating,
+  type InsertBookRating,
+  bookRatings,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -104,6 +107,13 @@ export interface IStorage {
   getUserRating(postId: string, userId: string): Promise<BlogRating | undefined>;
   upsertBlogRating(rating: InsertBlogRating): Promise<BlogRating>;
   getAverageRating(postId: string): Promise<{ average: number; count: number }>;
+
+  getBookRatingsByBookId(bookId: string): Promise<BookRating[]>;
+  getUserBookRating(bookId: string, userId: string): Promise<BookRating | undefined>;
+  upsertBookRating(rating: InsertBookRating): Promise<BookRating>;
+  getAverageBookRating(bookId: string): Promise<{ average: number; count: number }>;
+
+  getQuizCompletionCount(quizId: string): Promise<number>;
 
   createContactMessage(msg: InsertContactMessage): Promise<ContactMessage>;
   getAllContactMessages(): Promise<ContactMessage[]>;
@@ -403,6 +413,37 @@ export class DatabaseStorage implements IStorage {
     if (ratings.length === 0) return { average: 0, count: 0 };
     const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
     return { average: sum / ratings.length, count: ratings.length };
+  }
+
+  async getBookRatingsByBookId(bookId: string): Promise<BookRating[]> {
+    return db.select().from(bookRatings).where(eq(bookRatings.bookId, bookId));
+  }
+
+  async getUserBookRating(bookId: string, userId: string): Promise<BookRating | undefined> {
+    const [rating] = await db.select().from(bookRatings).where(and(eq(bookRatings.bookId, bookId), eq(bookRatings.userId, userId)));
+    return rating;
+  }
+
+  async upsertBookRating(rating: InsertBookRating): Promise<BookRating> {
+    const existing = await this.getUserBookRating(rating.bookId, rating.userId);
+    if (existing) {
+      const [updated] = await db.update(bookRatings).set({ rating: rating.rating }).where(eq(bookRatings.id, existing.id)).returning();
+      return updated;
+    }
+    const [created] = await db.insert(bookRatings).values(rating).returning();
+    return created;
+  }
+
+  async getAverageBookRating(bookId: string): Promise<{ average: number; count: number }> {
+    const ratings = await this.getBookRatingsByBookId(bookId);
+    if (ratings.length === 0) return { average: 0, count: 0 };
+    const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+    return { average: sum / ratings.length, count: ratings.length };
+  }
+
+  async getQuizCompletionCount(quizId: string): Promise<number> {
+    const results = await db.select().from(quizResults).where(eq(quizResults.quizId, quizId));
+    return results.length;
   }
 
   async createContactMessage(msg: InsertContactMessage): Promise<ContactMessage> {

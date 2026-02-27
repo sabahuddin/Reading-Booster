@@ -1,5 +1,5 @@
 import { Share2 } from "lucide-react";
-import { SiFacebook, SiWhatsapp, SiViber, SiTelegram, SiX } from "react-icons/si";
+import { SiFacebook, SiWhatsapp, SiViber, SiInstagram, SiTiktok, SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,10 +35,16 @@ export function SocialShare({ title, url, compact = false }: SocialShareProps) {
       href: `viber://forward?text=${encodedTitle}%20${encodedUrl}`,
     },
     {
-      name: "Telegram",
-      icon: SiTelegram,
-      color: "hover:text-[#26A5E4]",
-      href: `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`,
+      name: "Instagram",
+      icon: SiInstagram,
+      color: "hover:text-[#E4405F]",
+      href: `https://www.instagram.com/`,
+    },
+    {
+      name: "TikTok",
+      icon: SiTiktok,
+      color: "hover:text-foreground",
+      href: `https://www.tiktok.com/`,
     },
     {
       name: "X",
