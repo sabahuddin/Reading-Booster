@@ -993,6 +993,16 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.status(400).json({ message: "You have already taken this quiz" });
       }
 
+      const lastResult = await storage.getLastQuizResultForUser(userId);
+      if (lastResult) {
+        const cooldownMs = 30 * 60 * 1000;
+        const timeSinceLast = Date.now() - new Date(lastResult.completedAt).getTime();
+        if (timeSinceLast < cooldownMs) {
+          const minutesLeft = Math.ceil((cooldownMs - timeSinceLast) / 60000);
+          return res.status(429).json({ message: `Morate pričekati još ${minutesLeft} minuta prije sljedećeg kviza.` });
+        }
+      }
+
       const allQuestions = await storage.getQuestionsByQuizId(quizId);
       if (allQuestions.length === 0) {
         return res.status(404).json({ message: "No questions found for this quiz" });
@@ -1021,7 +1031,9 @@ Odgovori ISKLJUČIVO u JSON formatu:
         }
       }
 
-      let score = correctCount * ptsPerQ;
+      const passPercentage = totalServed > 0 ? (correctCount / totalServed) * 100 : 0;
+      const passed = passPercentage >= 50;
+      let score = passed ? correctCount * ptsPerQ : 0;
 
       const result = await storage.createQuizResult({
         userId,
@@ -1032,16 +1044,17 @@ Odgovori ISKLJUČIVO u JSON formatu:
         wrongAnswers: wrongCount,
       });
 
-      const updatedUser = await storage.getUser(userId);
-      if (updatedUser) {
-        await storage.updateUserPoints(userId, updatedUser.points + score);
+      if (passed) {
+        const updatedUser = await storage.getUser(userId);
+        if (updatedUser) {
+          await storage.updateUserPoints(userId, updatedUser.points + score);
+        }
+        if (quiz) {
+          await storage.incrementTimesRead(quiz.bookId);
+        }
       }
 
-      if (quiz) {
-        await storage.incrementTimesRead(quiz.bookId);
-      }
-
-      return res.status(201).json(result);
+      return res.status(201).json({ ...result, passed, passPercentage: Math.round(passPercentage) });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -1077,6 +1090,33 @@ Odgovori ISKLJUČIVO u JSON formatu:
     try {
       const results = await storage.getQuizResultsByUserId(req.session.userId!);
       return res.json(results);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/quiz-results/my/books", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const results = await storage.getQuizResultsByUserId(userId);
+      const passedResults = results.filter(r => r.totalQuestions > 0 && (r.correctAnswers / r.totalQuestions) >= 0.5);
+      const allQuizzes = await storage.getAllQuizzes();
+      const bookIds = [...new Set(passedResults.map(r => {
+        const quiz = allQuizzes.find(q => q.id === r.quizId);
+        return quiz?.bookId;
+      }).filter(Boolean))] as string[];
+      const booksRead = [];
+      for (const bookId of bookIds) {
+        const book = await storage.getBook(bookId);
+        if (book) {
+          const qResult = passedResults.find(r => {
+            const quiz = allQuizzes.find(q => q.id === r.quizId);
+            return quiz?.bookId === bookId;
+          });
+          booksRead.push({ ...book, quizScore: qResult?.score ?? 0, quizDate: qResult?.completedAt });
+        }
+      }
+      return res.json(booksRead);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

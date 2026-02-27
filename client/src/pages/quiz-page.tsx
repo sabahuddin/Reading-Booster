@@ -132,7 +132,7 @@ export default function QuizPage() {
         })),
       };
       const res = await apiRequest("POST", "/api/quiz-results", payload);
-      return res.json() as Promise<QuizResult>;
+      return res.json() as Promise<QuizResult & { passed?: boolean; passPercentage?: number }>;
     },
     onSuccess: (data) => {
       setResult(data);
@@ -234,13 +234,29 @@ export default function QuizPage() {
   }
 
   if (submitted && result) {
+    const extResult = result as QuizResult & { passed?: boolean; passPercentage?: number };
+    const passed = extResult.passed !== false;
+    const percentage = extResult.passPercentage ?? Math.round((result.correctAnswers / result.totalQuestions) * 100);
+
     return (
       <DashboardLayout role={dashboardRole}>
         <div className="max-w-xl mx-auto space-y-6">
           <div className="text-center space-y-4">
-            <Trophy className="mx-auto text-muted-foreground" />
-            <h1 className="text-2xl font-bold" data-testid="text-result-title">Kviz završen!</h1>
+            {passed ? (
+              <Trophy className="mx-auto h-12 w-12 text-green-500" />
+            ) : (
+              <XCircle className="mx-auto h-12 w-12 text-red-500" />
+            )}
+            <h1 className="text-2xl font-bold" data-testid="text-result-title">
+              {passed ? "Kviz završen!" : "Kviz nije položen"}
+            </h1>
             <p className="text-muted-foreground">{quiz?.title}</p>
+            {!passed && (
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm" data-testid="text-fail-message">
+                <p className="font-medium text-red-700 dark:text-red-300">Potrebno je najmanje 50% tačnih odgovora za prolaz.</p>
+                <p className="text-red-600 dark:text-red-400 mt-1">Vaš rezultat: {percentage}% — bodovi nisu dodijeljeni i knjiga nije uračunata.</p>
+              </div>
+            )}
           </div>
 
           <Card>
@@ -264,16 +280,17 @@ export default function QuizPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Osvojeni bodovi</p>
-                  <p className="text-3xl font-bold" data-testid="text-earned-points">
+                  <p className={`text-3xl font-bold ${passed ? "" : "text-red-500"}`} data-testid="text-earned-points">
                     {result.score}
                   </p>
                 </div>
               </div>
 
               <Progress
-                value={(result.correctAnswers / result.totalQuestions) * 100}
-                className="h-3"
+                value={percentage}
+                className={`h-3 ${!passed ? "[&>div]:bg-red-500" : ""}`}
               />
+              <p className="text-center text-sm text-muted-foreground">{percentage}% tačno</p>
 
               <div className="flex gap-3 flex-wrap justify-center pt-2">
                 <Button asChild variant="outline" data-testid="link-back-library">
