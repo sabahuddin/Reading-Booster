@@ -346,10 +346,14 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Kviz za ovu knjigu već postoji" });
       }
 
+      const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(503).json({ message: "AI generiranje nije dostupno. Postavite OPENAI_API_KEY environment varijablu." });
+      }
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+        apiKey,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined,
       });
 
       const ageLabels: Record<string, string> = {
