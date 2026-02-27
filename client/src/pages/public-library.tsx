@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { BookOpen, Search, FileText, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, Search, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight, Library } from "lucide-react";
 import type { Book, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 
@@ -24,7 +24,6 @@ const AGE_GROUPS = [
   { value: "O", label: "Omladina" },
   { value: "A", label: "Odrasli" },
 ];
-
 
 const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
@@ -57,7 +56,10 @@ function BookCard({ book }: { book: BookWithGenres }) {
 
 const BOOKS_PER_PAGE = 20;
 
+type TabType = "biblioteka" | "preporuke" | "prijedlog";
+
 export default function PublicLibrary() {
+  const [activeTab, setActiveTab] = useState<TabType>("biblioteka");
   const [search, setSearch] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("all");
   const [selectedAge, setSelectedAge] = useState("all");
@@ -72,15 +74,19 @@ export default function PublicLibrary() {
     queryKey: ["/api/genres"],
   });
 
-  const weeklyPick = books?.find((b) => b.weeklyPick);
+  const weeklyPicks = useMemo(() => {
+    if (!books) return [];
+    return books.filter(b => b.weeklyPick);
+  }, [books]);
+
   const mostRead = books ? [...books].sort((a, b) => b.timesRead - a.timesRead).find((b) => b.timesRead > 0) : null;
 
   const recommendedByGenre = useMemo(() => {
     if (!books || !allGenres) return [];
-    return allGenres.slice(0, 3).map((genre) => ({
+    return allGenres.map((genre) => ({
       genre: genre.slug,
       label: genre.name,
-      books: books.filter((b) => b.genres?.some(g => g.id === genre.id)).sort((a, b) => b.timesRead - a.timesRead).slice(0, 4),
+      books: books.filter((b) => b.genres?.some(g => g.id === genre.id)).sort((a, b) => b.timesRead - a.timesRead).slice(0, 8),
     })).filter(r => r.books.length > 0);
   }, [books, allGenres]);
 
@@ -105,52 +111,217 @@ export default function PublicLibrary() {
 
   const hasActiveFilters = search || selectedGenre !== "all" || selectedAge !== "all" || selectedDifficulty !== "all";
 
+  const tabs: { key: TabType; label: string; icon: typeof Library }[] = [
+    { key: "biblioteka", label: "Biblioteka", icon: Library },
+    { key: "preporuke", label: "Čitaoci preporučuju", icon: Heart },
+    { key: "prijedlog", label: "Prijedlog sedmice", icon: Star },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-8 space-y-8">
+        <div className="mx-auto max-w-7xl px-4 py-8 space-y-6">
           <div>
             <h1 className="text-4xl font-bold" data-testid="text-library-title">Biblioteka</h1>
             <p className="text-lg text-muted-foreground">Pregledaj knjige i testiraj svoje znanje.</p>
           </div>
 
-          {!hasActiveFilters && !isLoading && books && books.length > 0 && (
-            <div className="space-y-8">
-              {(weeklyPick || mostRead) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {weeklyPick && (
-                    <Card className="border-2 border-yellow-400/50 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20" data-testid="card-weekly-pick">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                          <Star className="h-5 w-5 text-yellow-500" />
-                          Prijedlog sedmice
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Link href={`/knjiga/${weeklyPick.id}`}>
-                          <div className="flex gap-4 items-start cursor-pointer hover:opacity-80 transition-opacity">
-                            <div className="w-20 aspect-[2/3] shrink-0 rounded-md overflow-hidden bg-muted">
-                              <BookCover title={weeklyPick.title} author={weeklyPick.author} ageGroup={weeklyPick.ageGroup} coverImage={weeklyPick.coverImage} />
-                            </div>
-                            <div className="space-y-1">
-                              <h3 className="font-bold text-xl">{weeklyPick.title}</h3>
-                              <p className="text-base text-muted-foreground">{weeklyPick.author}</p>
-                              <p className="text-base line-clamp-2">{weeklyPick.description}</p>
-                              <div className="flex gap-2 pt-1">
-                                <Badge variant="secondary">{AGE_LABELS[weeklyPick.ageGroup] || weeklyPick.ageGroup}</Badge>
-                                {(weeklyPick as BookWithGenres).genres && (weeklyPick as BookWithGenres).genres!.length > 0
-                                  ? (weeklyPick as BookWithGenres).genres!.map(g => <Badge key={g.id} variant="outline">{g.name}</Badge>)
-                                  : weeklyPick.genre && <Badge variant="outline">{weeklyPick.genre}</Badge>
-                                }
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
+          <div className="flex gap-1 border-b" data-testid="tabs-library">
+            {tabs.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => { setActiveTab(key); setCurrentPage(1); }}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                }`}
+                data-testid={`tab-${key}`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "biblioteka" && (
+            <>
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Pretraži knjige..."
+                      value={search}
+                      onChange={(e) => { setSearch(e.target.value); handleFilterChange(); }}
+                      className="pl-10"
+                      data-testid="input-search-books"
+                    />
+                  </div>
+                  <Select value={selectedGenre} onValueChange={(v) => { setSelectedGenre(v); handleFilterChange(); }}>
+                    <SelectTrigger className="w-[160px]" data-testid="select-filter-genre">
+                      <SelectValue placeholder="Žanr" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Svi žanrovi</SelectItem>
+                      {allGenres?.map((g) => (
+                        <SelectItem key={g.id} value={g.slug}>{g.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedAge} onValueChange={(v) => { setSelectedAge(v); handleFilterChange(); }}>
+                    <SelectTrigger className="w-[160px]" data-testid="select-filter-age">
+                      <SelectValue placeholder="Dob" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Sve dobi</SelectItem>
+                      {AGE_GROUPS.map((a) => (
+                        <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedDifficulty} onValueChange={(v) => { setSelectedDifficulty(v); handleFilterChange(); }}>
+                    <SelectTrigger className="w-[160px]" data-testid="select-filter-difficulty">
+                      <SelectValue placeholder="Težina" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Sve težine</SelectItem>
+                      <SelectItem value="lako">Lako</SelectItem>
+                      <SelectItem value="srednje">Srednje</SelectItem>
+                      <SelectItem value="tesko">Teško</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="p-4 space-y-3">
+                        <Skeleton className="aspect-[2/3] w-full rounded-md" />
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-5 w-16" />
+                          <Skeleton className="h-5 w-16" />
+                        </div>
                       </CardContent>
                     </Card>
+                  ))}
+                </div>
+              ) : !filtered || filtered.length === 0 ? (
+                <div className="text-center py-16">
+                  <BookOpen className="mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-xl font-medium">Nema knjiga</p>
+                  <p className="text-muted-foreground">
+                    {hasActiveFilters ? "Nema rezultata za tvoju pretragu." : "Knjige još nisu dodane."}
+                  </p>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => {
+                        setSearch("");
+                        setSelectedGenre("all");
+                        setSelectedAge("all");
+                        setSelectedDifficulty("all");
+                      }}
+                      data-testid="button-clear-filters"
+                    >
+                      Ukloni filtere
+                    </Button>
                   )}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {paginatedBooks?.map((book) => (
+                      <BookCard key={book.id} book={book} />
+                    ))}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 pt-8">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        data-testid="button-prev-page"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                        .reduce<(number | string)[]>((acc, p, i, arr) => {
+                          if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                          acc.push(p);
+                          return acc;
+                        }, [])
+                        .map((p, i) =>
+                          typeof p === "string" ? (
+                            <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground">...</span>
+                          ) : (
+                            <Button
+                              key={p}
+                              variant={currentPage === p ? "default" : "outline"}
+                              size="icon"
+                              onClick={() => setCurrentPage(p)}
+                              data-testid={`button-page-${p}`}
+                            >
+                              {p}
+                            </Button>
+                          )
+                        )}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        data-testid="button-next-page"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        {filtered?.length} knjiga
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
 
+          {activeTab === "preporuke" && (
+            <>
+              {isLoading ? (
+                <div className="space-y-8">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="space-y-3">
+                      <Skeleton className="h-7 w-40" />
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map((j) => (
+                          <Card key={j}>
+                            <CardContent className="p-4 space-y-3">
+                              <Skeleton className="aspect-[2/3] w-full rounded-md" />
+                              <Skeleton className="h-5 w-3/4" />
+                              <Skeleton className="h-4 w-1/2" />
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : recommendedByGenre.length === 0 ? (
+                <div className="text-center py-16">
+                  <Heart className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <p className="text-xl font-medium">Još nema preporuka</p>
+                  <p className="text-muted-foreground">Čitaoci još nisu dovoljno čitali da bi se pojavile preporuke.</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
                   {mostRead && (
                     <Card className="border-2 border-primary/30 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20" data-testid="card-most-read">
                       <CardHeader className="pb-3">
@@ -179,15 +350,7 @@ export default function PublicLibrary() {
                       </CardContent>
                     </Card>
                   )}
-                </div>
-              )}
 
-              {recommendedByGenre.length > 0 && (
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Heart className="h-5 w-5 text-red-400" />
-                    Čitaoci preporučuju
-                  </h2>
                   {recommendedByGenre.map(({ genre, label, books: genreBooks }) => (
                     <div key={genre} className="space-y-3">
                       <h3 className="text-xl font-semibold flex items-center gap-2">
@@ -203,149 +366,60 @@ export default function PublicLibrary() {
                   ))}
                 </div>
               )}
-            </div>
+            </>
           )}
 
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Sve knjige</h2>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Pretraži knjige..."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); handleFilterChange(); }}
-                  className="pl-10"
-                  data-testid="input-search-books"
-                />
-              </div>
-              <Select value={selectedGenre} onValueChange={(v) => { setSelectedGenre(v); handleFilterChange(); }}>
-                <SelectTrigger className="w-[160px]" data-testid="select-filter-genre">
-                  <SelectValue placeholder="Žanr" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Svi žanrovi</SelectItem>
-                  {allGenres?.map((g) => (
-                    <SelectItem key={g.id} value={g.slug}>{g.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedAge} onValueChange={(v) => { setSelectedAge(v); handleFilterChange(); }}>
-                <SelectTrigger className="w-[160px]" data-testid="select-filter-age">
-                  <SelectValue placeholder="Dob" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Sve dobi</SelectItem>
-                  {AGE_GROUPS.map((a) => (
-                    <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedDifficulty} onValueChange={(v) => { setSelectedDifficulty(v); handleFilterChange(); }}>
-                <SelectTrigger className="w-[160px]" data-testid="select-filter-difficulty">
-                  <SelectValue placeholder="Težina" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Sve težine</SelectItem>
-                  <SelectItem value="lako">Lako</SelectItem>
-                  <SelectItem value="srednje">Srednje</SelectItem>
-                  <SelectItem value="tesko">Teško</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Card key={i}>
-                  <CardContent className="p-4 space-y-3">
-                    <Skeleton className="aspect-[2/3] w-full rounded-md" />
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <div className="flex gap-2">
-                      <Skeleton className="h-5 w-16" />
-                      <Skeleton className="h-5 w-16" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : !filtered || filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <BookOpen className="mx-auto mb-4 text-muted-foreground" />
-              <p className="text-xl font-medium">Nema knjiga</p>
-              <p className="text-muted-foreground">
-                {hasActiveFilters ? "Nema rezultata za tvoju pretragu." : "Knjige još nisu dodane."}
-              </p>
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => {
-                    setSearch("");
-                    setSelectedGenre("all");
-                    setSelectedAge("all");
-                    setSelectedDifficulty("all");
-                  }}
-                  data-testid="button-clear-filters"
-                >
-                  Ukloni filtere
-                </Button>
-              )}
-            </div>
-          ) : (
+          {activeTab === "prijedlog" && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {paginatedBooks?.map((book) => (
-                  <BookCard key={book.id} book={book} />
-                ))}
-              </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-8">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    data-testid="button-prev-page"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
-                    .reduce<(number | string)[]>((acc, p, i, arr) => {
-                      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
-                      acc.push(p);
-                      return acc;
-                    }, [])
-                    .map((p, i) =>
-                      typeof p === "string" ? (
-                        <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground">...</span>
-                      ) : (
-                        <Button
-                          key={p}
-                          variant={currentPage === p ? "default" : "outline"}
-                          size="icon"
-                          onClick={() => setCurrentPage(p)}
-                          data-testid={`button-page-${p}`}
-                        >
-                          {p}
-                        </Button>
-                      )
-                    )}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    data-testid="button-next-page"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    {filtered?.length} knjiga
-                  </span>
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="p-4 space-y-3">
+                        <Skeleton className="aspect-[2/3] w-full rounded-md" />
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : weeklyPicks.length === 0 ? (
+                <div className="text-center py-16">
+                  <Star className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <p className="text-xl font-medium">Nema prijedloga za ovu sedmicu</p>
+                  <p className="text-muted-foreground">Uskoro ćemo dodati nove preporuke.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {weeklyPicks.map((pick) => (
+                    <Card key={pick.id} className="border-2 border-yellow-400/50 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20" data-testid={`card-weekly-pick-${pick.id}`}>
+                      <CardContent className="p-6">
+                        <Link href={`/knjiga/${pick.id}`}>
+                          <div className="flex gap-6 items-start cursor-pointer hover:opacity-80 transition-opacity">
+                            <div className="w-28 aspect-[2/3] shrink-0 rounded-md overflow-hidden bg-muted">
+                              <BookCover title={pick.title} author={pick.author} ageGroup={pick.ageGroup} coverImage={pick.coverImage} />
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                                <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Prijedlog sedmice</span>
+                              </div>
+                              <h3 className="font-bold text-xl">{pick.title}</h3>
+                              <p className="text-base text-muted-foreground">{pick.author}</p>
+                              <p className="text-base line-clamp-3">{pick.description}</p>
+                              <div className="flex gap-2 pt-1 flex-wrap">
+                                <Badge variant="secondary">{AGE_LABELS[pick.ageGroup] || pick.ageGroup}</Badge>
+                                {(pick as BookWithGenres).genres && (pick as BookWithGenres).genres!.length > 0
+                                  ? (pick as BookWithGenres).genres!.map(g => <Badge key={g.id} variant="outline">{g.name}</Badge>)
+                                  : pick.genre && <Badge variant="outline">{pick.genre}</Badge>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </>
