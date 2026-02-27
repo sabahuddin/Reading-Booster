@@ -111,6 +111,19 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 ### Kvizovi
 - Interaktivni kvizovi vezani za knjige
 - Bodovanje sa akumulacijom na profilu
+- Quiz author field (quizAuthor) — prikazuje ko je kreirao kviz
+- Quiz completion count — prikazuje koliko puta je kviz urađen
+- AI generacija kviza (admin): POST /api/admin/generate-quiz, koristi OpenAI (Replit AI Integrations), autor: "Citanje.ba"
+
+### Ocjena knjiga (Book Rating)
+- Korisnici mogu ocijeniti knjigu (1-5, BookOpen ikone)
+- Upsert sistem (jedna ocjena po korisniku po knjizi)
+- API: GET/POST /api/books/:id/rating
+- Prikazuje se na stranici knjige iznad social share
+
+### Dijeljenje na društvenim mrežama (Social Share)
+- Facebook, WhatsApp, Viber, Instagram, TikTok, X (Twitter)
+- Kopiraj link dugme
 
 ### Leaderboard
 - Javni top čitači na naslovnoj stranici
@@ -173,7 +186,7 @@ All book data, quizzes (227), and questions (2543) are stored in `server/seed-da
 - Stranica sa cijenama (/cijene)
 
 ## Database Tables
-- users, books, quizzes, questions, quiz_results, blog_posts, contact_messages, partners, challenges
+- users, books, genres, book_genres, quizzes, questions, quiz_results, book_ratings, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges, parent_child_requests
 
 ## User Fields
 - Standardni: username, password, role, firstName, lastName, email, points, booksRead

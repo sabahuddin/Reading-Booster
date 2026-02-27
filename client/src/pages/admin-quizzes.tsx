@@ -33,7 +33,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle } from "lucide-react";
+import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Sparkles } from "lucide-react";
 
 const quizFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
@@ -315,6 +315,8 @@ export default function AdminQuizzes() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<"title" | "book" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiBookId, setAiBookId] = useState("");
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<QuizWithCount[]>({
     queryKey: ["/api/quizzes"],
@@ -359,6 +361,29 @@ export default function AdminQuizzes() {
       toast({ title: "Greška", description: error.message, variant: "destructive" });
     },
   });
+
+  const aiGenerateMutation = useMutation({
+    mutationFn: async (bookId: string) => {
+      const res = await apiRequest("POST", "/api/admin/generate-quiz", { bookId });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "AI kviz generisan", description: data.message });
+      setAiDialogOpen(false);
+      setAiBookId("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Greška", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const booksWithoutQuiz = useMemo(() => {
+    if (!books || !quizzes) return [];
+    const bookIdsWithQuiz = new Set(quizzes.map(q => q.bookId));
+    return books.filter(b => !bookIdsWithQuiz.has(b.id));
+  }, [books, quizzes]);
 
   function downloadTemplate() {
     window.open("/api/admin/templates/quizzes", "_blank");
@@ -493,7 +518,15 @@ export default function AdminQuizzes() {
               className="hidden"
               data-testid="input-import-quizzes-file"
             />
-            <Button onClick={() => { form.reset({ title: "", bookId: "" }); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
+            <Button
+              onClick={() => { setAiBookId(""); setAiDialogOpen(true); }}
+              variant="outline"
+              data-testid="button-ai-generate-quiz"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI Generiraj kviz
+            </Button>
+            <Button onClick={() => { form.reset({ title: "", bookId: "", quizAuthor: "" }); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
               <Plus className="mr-2 h-4 w-4" />
               Dodaj kviz
             </Button>
@@ -707,6 +740,44 @@ export default function AdminQuizzes() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                <Sparkles className="inline mr-2 h-5 w-5" />
+                AI Generiraj kviz
+              </DialogTitle>
+              <DialogDescription>
+                Odaberite knjigu bez kviza. AI će automatski generisati 10 pitanja. Autor kviza: Citanje.ba
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Select value={aiBookId} onValueChange={setAiBookId}>
+                <SelectTrigger data-testid="select-ai-book">
+                  <SelectValue placeholder="Odaberite knjigu" />
+                </SelectTrigger>
+                <SelectContent>
+                  {booksWithoutQuiz.map((book) => (
+                    <SelectItem key={book.id} value={book.id}>{book.title} — {book.author}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {booksWithoutQuiz.length === 0 && (
+                <p className="text-sm text-muted-foreground">Sve knjige već imaju kviz.</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() => aiBookId && aiGenerateMutation.mutate(aiBookId)}
+                disabled={!aiBookId || aiGenerateMutation.isPending}
+                data-testid="button-confirm-ai-generate"
+              >
+                {aiGenerateMutation.isPending ? "Generiram..." : "Generiraj kviz"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

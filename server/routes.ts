@@ -333,6 +333,123 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/generate-quiz", requireAdmin, async (req, res) => {
+    try {
+      const { bookId } = req.body;
+      if (!bookId) return res.status(400).json({ message: "bookId je obavezan" });
+
+      const book = await storage.getBook(bookId);
+      if (!book) return res.status(404).json({ message: "Knjiga nije pronađena" });
+
+      const existingQuizzes = await storage.getQuizzesByBookId(bookId);
+      if (existingQuizzes.length > 0) {
+        return res.status(400).json({ message: "Kviz za ovu knjigu već postoji" });
+      }
+
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const ageLabels: Record<string, string> = {
+        R1: "djeca 6-9 godina",
+        R4: "djeca 10-12 godina",
+        R7: "tinejdžeri 13-15 godina",
+        O: "omladina 15-18 godina",
+        A: "odrasli 18+",
+      };
+      const ageDesc = ageLabels[book.ageGroup || "R4"] || "djeca";
+
+      const prompt = `Generiraj kviz sa 10 pitanja o knjizi "${book.title}" autora ${book.author}.
+Opis knjige: ${book.description || "Nema opisa."}
+Ciljana publika: ${ageDesc}
+Žanr: ${book.genre || "opći"}
+
+Svako pitanje mora imati:
+- Tekst pitanja (na bosanskom/hrvatskom jeziku)
+- 4 opcije odgovora (A, B, C, D)
+- Tačan odgovor (a, b, c ili d)
+- Bodove (1)
+
+Pitanja trebaju testirati razumijevanje sadržaja knjige, likova, radnje i tema.
+
+Odgovori ISKLJUČIVO u JSON formatu:
+{
+  "questions": [
+    {
+      "questionText": "Pitanje?",
+      "optionA": "Odgovor A",
+      "optionB": "Odgovor B",
+      "optionC": "Odgovor C",
+      "optionD": "Odgovor D",
+      "correctAnswer": "a",
+      "points": 1
+    }
+  ]
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 4096,
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) return res.status(500).json({ message: "AI nije generisao odgovor" });
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        return res.status(500).json({ message: "AI odgovor nije validan JSON" });
+      }
+
+      if (!parsed.questions || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+        return res.status(500).json({ message: "AI nije generisao pitanja" });
+      }
+
+      const quiz = await storage.createQuiz({
+        title: `Kviz: ${book.title}`,
+        bookId: book.id,
+        quizAuthor: "Citanje.ba",
+      });
+
+      let questionsCreated = 0;
+      for (const q of parsed.questions) {
+        try {
+          if (!q.questionText || !q.optionA || !q.optionB || !q.optionC || !q.optionD || !["a","b","c","d"].includes(q.correctAnswer)) {
+            console.warn("Skipping invalid AI question:", q);
+            continue;
+          }
+          await storage.createQuestion({
+            quizId: quiz.id,
+            questionText: q.questionText,
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC,
+            optionD: q.optionD,
+            correctAnswer: q.correctAnswer,
+            points: q.points || 1,
+          });
+          questionsCreated++;
+        } catch (e) {
+          console.error("Error creating question:", e);
+        }
+      }
+
+      return res.json({
+        message: `Kviz generisan sa ${questionsCreated} pitanja`,
+        quiz,
+        questionsCreated,
+      });
+    } catch (error: any) {
+      console.error("AI quiz generation error:", error);
+      return res.status(500).json({ message: error.message || "Greška pri generisanju kviza" });
+    }
+  });
+
   app.post("/api/admin/cleanup-books", requireAdmin, async (_req, res) => {
     try {
       const allBooks = await storage.getAllBooks();
