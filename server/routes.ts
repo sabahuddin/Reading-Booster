@@ -1971,9 +1971,9 @@ Odgovori ISKLJUČIVO u JSON formatu:
   app.get("/api/admin/templates/books", requireAdmin, (_req, res) => {
     const headers = "title;author;description;coverImage;content;ageGroup;genre;readingDifficulty;pageCount;pdfUrl;purchaseUrl;weeklyPick;publisher;publicationYear;publicationCity;isbn;cobissId;language;bookFormat";
     const exampleRows = [
-      '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"R4";"avantura_fantasy";"lako";"96";"";"";"ne";"Svjetlost";"2023";"Sarajevo";"9789958111234";"123456";"bosanski";"meki uvez"',
-      '"Ježeva kućica";"Branko Ćopić";"Priča o ježevoj kućici";"https://example.com/jez.jpg";"Sadržaj...";"R1";"bajke_basne";"lako";"48";"";"";"ne";"Veselin Masleša";"2020";"Sarajevo";"";"";"";"tvrdi uvez"',
-      '"Tvrđava";"Meša Selimović";"Roman o derviš Ahmetu Nurudinu";"https://example.com/tvrdjava.jpg";"Sadržaj...";"A";"beletristika";"tesko";"432";"";"";"ne";"Svjetlost";"2019";"Sarajevo";"9789958101234";"";"bosanski";""',
+      '"Mali princ";"Antoine de Saint-Exupéry";"Priča o malom princu koji putuje po planetama";"https://example.com/cover.jpg";"Sadržaj knjige...";"R4";"avantura_fantasy, lektira";"lako";"96";"";"";"ne";"Svjetlost";"2023";"Sarajevo";"9789958111234";"123456";"bosanski";"meki uvez"',
+      '"Ježeva kućica";"Branko Ćopić";"Priča o ježevoj kućici";"https://example.com/jez.jpg";"Sadržaj...";"R1";"bajke_basne, lektira";"lako";"48";"";"";"ne";"Veselin Masleša";"2020";"Sarajevo";"";"";"";"tvrdi uvez"',
+      '"Tvrđava";"Meša Selimović";"Roman o derviš Ahmetu Nurudinu";"https://example.com/tvrdjava.jpg";"Sadržaj...";"A";"beletristika, roman, klasici";"tesko";"432";"";"";"ne";"Svjetlost";"2019";"Sarajevo";"9789958101234";"";"bosanski";""',
     ];
     const csv = headers + "\n" + exampleRows.join("\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -2024,7 +2024,32 @@ Odgovori ISKLJUČIVO u JSON formatu:
             if (row.coverImage && row.coverImage.trim() && row.coverImage !== existingBook.coverImage) {
               await storage.updateBook(existingBook.id, { coverImage: row.coverImage.trim() });
               updatedCovers.push(row.title);
-            } else {
+            }
+            if (row.genre && row.genre.trim()) {
+              const genreMapExisting: Record<string, string> = {
+                "lektira": "lektira", "avantura i fantasy": "avantura_fantasy", "avantura": "avantura_fantasy",
+                "roman": "roman", "beletristika": "beletristika", "bajke i basne": "bajke_basne",
+                "bajke": "bajke_basne", "zanimljiva nauka": "zanimljiva_nauka", "poezija": "poezija", "islam": "islam",
+                "klasici": "klasici", "fantasy": "avantura_fantasy", "fantazija": "avantura_fantasy",
+                "biografija": "biografija", "historija": "historija", "drama": "drama",
+              };
+              const existGenreSlugs = row.genre.split(",").map((g: string) => {
+                const trimmed = g.trim().toLowerCase();
+                return genreMapExisting[trimmed] || trimmed;
+              }).filter(Boolean);
+              const allGenres = await storage.getAllGenres();
+              const existGenreIds = existGenreSlugs.map((slug: string) => {
+                const genre = allGenres.find(g => g.slug === slug);
+                return genre?.id;
+              }).filter(Boolean) as string[];
+              if (existGenreIds.length > 0 && existingBook.id) {
+                const currentGenres = await storage.getBookGenres(existingBook.id);
+                const currentIds = currentGenres.map(g => g.id);
+                const merged = [...new Set([...currentIds, ...existGenreIds])];
+                await storage.setBookGenres(existingBook.id, merged);
+              }
+            }
+            if (!updatedCovers.includes(row.title)) {
               skipped.push(row.title);
             }
             continue;
@@ -2044,18 +2069,24 @@ Odgovori ISKLJUČIVO u JSON formatu:
             "lektira": "lektira", "avantura i fantasy": "avantura_fantasy", "avantura": "avantura_fantasy",
             "roman": "roman", "beletristika": "beletristika", "bajke i basne": "bajke_basne",
             "bajke": "bajke_basne", "zanimljiva nauka": "zanimljiva_nauka", "poezija": "poezija", "islam": "islam",
+            "klasici": "klasici", "fantasy": "avantura_fantasy", "fantazija": "avantura_fantasy",
+            "biografija": "biografija", "historija": "historija", "drama": "drama",
           };
-          const rawGenre = (row.genre || "").trim().toLowerCase();
-          const mappedGenre = genreMap[rawGenre] || row.genre || "lektira";
+          const rawGenreField = (row.genre || "").trim();
+          const genreSlugs = rawGenreField.split(",").map(g => {
+            const trimmed = g.trim().toLowerCase();
+            return genreMap[trimmed] || trimmed || "lektira";
+          }).filter(Boolean);
+          const primaryGenre = genreSlugs[0] || "lektira";
 
-          await storage.createBook({
+          const newBook = await storage.createBook({
             title: row.title,
             author: row.author,
             description: row.description || "",
             coverImage: row.coverImage || "https://via.placeholder.com/200x300?text=Knjiga",
             content: row.content || row.description || "",
             ageGroup: mappedAge,
-            genre: mappedGenre,
+            genre: primaryGenre,
             readingDifficulty: (row.readingDifficulty as "lako" | "srednje" | "tesko") || "srednje",
             pageCount: parseInt(row.pageCount) || 100,
             pdfUrl: row.pdfUrl || null,
@@ -2069,6 +2100,17 @@ Odgovori ISKLJUČIVO u JSON formatu:
             language: row.language || "bosanski",
             bookFormat: row.bookFormat || null,
           });
+
+          if (genreSlugs.length > 0) {
+            const allGenres = await storage.getAllGenres();
+            const genreIds = genreSlugs.map(slug => {
+              const genre = allGenres.find(g => g.slug === slug);
+              return genre?.id;
+            }).filter(Boolean) as string[];
+            if (genreIds.length > 0) {
+              await storage.setBookGenres(newBook.id, genreIds);
+            }
+          }
           created.push(row.title);
         } catch (err: any) {
           errors.push(`Red ${i + 2} (${row.title}): ${err.message}`);
