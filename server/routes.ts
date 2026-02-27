@@ -793,11 +793,22 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
   app.post("/api/quizzes", requireAdmin, async (req, res) => {
     try {
-      const parsed = insertQuizSchema.safeParse(req.body);
+      const { questions: questionsData, ...quizData } = req.body;
+      const parsed = insertQuizSchema.safeParse(quizData);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
       }
       const quiz = await storage.createQuiz(parsed.data);
+
+      if (questionsData && Array.isArray(questionsData) && questionsData.length > 0) {
+        for (const q of questionsData) {
+          const qParsed = insertQuestionSchema.safeParse({ ...q, quizId: quiz.id });
+          if (qParsed.success) {
+            await storage.createQuestion(qParsed.data);
+          }
+        }
+      }
+
       return res.status(201).json(quiz);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });

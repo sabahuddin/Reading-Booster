@@ -327,23 +327,48 @@ export default function AdminQuizzes() {
   });
 
   const [addQuizBookSearch, setAddQuizBookSearch] = useState("");
+  const [wizardStep, setWizardStep] = useState<1 | 2>(1);
+  const [wizardBookId, setWizardBookId] = useState("");
+  const [wizardAuthor, setWizardAuthor] = useState("");
+  const [wizardQuestions, setWizardQuestions] = useState<QuestionFormValues[]>([]);
+  const [editingWizardIdx, setEditingWizardIdx] = useState<number | null>(null);
+
+  const wizardQuestionForm = useForm<QuestionFormValues>({
+    resolver: zodResolver(questionFormSchema),
+    defaultValues: { questionText: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "a", points: 1 },
+  });
 
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizFormSchema),
     defaultValues: { bookId: "", quizAuthor: "" },
   });
 
+  function resetWizard() {
+    setWizardStep(1);
+    setWizardBookId("");
+    setWizardAuthor("");
+    setWizardQuestions([]);
+    setEditingWizardIdx(null);
+    setAddQuizBookSearch("");
+    wizardQuestionForm.reset();
+  }
+
   const createMutation = useMutation({
-    mutationFn: async (data: QuizFormValues) => {
-      const bookTitle = bookMap.get(data.bookId) || "Nepoznata knjiga";
-      await apiRequest("POST", "/api/quizzes", { ...data, title: `Kviz: ${bookTitle}` });
+    mutationFn: async () => {
+      const bookTitle = bookMap.get(wizardBookId) || "Nepoznata knjiga";
+      await apiRequest("POST", "/api/quizzes", {
+        bookId: wizardBookId,
+        title: `Kviz: ${bookTitle}`,
+        quizAuthor: wizardAuthor || undefined,
+        questions: wizardQuestions,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      toast({ title: "Kviz dodan", description: "Novi kviz je uspješno kreiran." });
+      toast({ title: "Kviz dodan", description: `Kviz sa ${wizardQuestions.length} pitanja je uspješno kreiran.` });
       setQuizDialogOpen(false);
-      form.reset();
+      resetWizard();
     },
     onError: (error: Error) => {
       toast({ title: "Greška", description: error.message, variant: "destructive" });
@@ -539,7 +564,7 @@ export default function AdminQuizzes() {
               <Sparkles className="mr-2 h-4 w-4" />
               AI Generiraj kviz
             </Button>
-            <Button onClick={() => { form.reset({ bookId: "", quizAuthor: "" }); setAddQuizBookSearch(""); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
+            <Button onClick={() => { resetWizard(); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
               <Plus className="mr-2 h-4 w-4" />
               Dodaj kviz
             </Button>
@@ -684,80 +709,178 @@ export default function AdminQuizzes() {
           </div>
         )}
 
-        <Dialog open={quizDialogOpen} onOpenChange={setQuizDialogOpen}>
-          <DialogContent>
+        <Dialog open={quizDialogOpen} onOpenChange={(open) => { if (!open) resetWizard(); setQuizDialogOpen(open); }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Dodaj novi kviz</DialogTitle>
-              <DialogDescription>Odaberite knjigu — naslov kviza se generiše automatski.</DialogDescription>
+              <DialogTitle>Dodaj novi kviz {wizardStep === 2 && `— Kviz: ${bookMap.get(wizardBookId) || ""}`}</DialogTitle>
+              <DialogDescription>
+                {wizardStep === 1 ? "Korak 1: Odaberite knjigu i autora kviza." : `Korak 2: Dodajte pitanja (${wizardQuestions.length} dodano).`}
+              </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit((v) => createMutation.mutate(v))} className="space-y-4">
-                <FormField control={form.control} name="bookId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Knjiga</FormLabel>
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Pretraži knjige po naslovu ili autoru..."
-                        value={addQuizBookSearch}
-                        onChange={(e) => setAddQuizBookSearch(e.target.value)}
-                        data-testid="input-add-quiz-book-search"
-                      />
-                      {field.value && (
-                        <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-md">
-                          <span className="text-sm font-medium flex-1">Kviz: {bookMap.get(field.value) || ""}</span>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => field.onChange("")} data-testid="button-clear-book">
-                            ✕
-                          </Button>
-                        </div>
-                      )}
-                      {!field.value && (
-                        <div className="max-h-48 overflow-y-auto border rounded-md divide-y">
-                          {(books || [])
-                            .filter(b => {
-                              if (!addQuizBookSearch.trim()) return true;
-                              const q = addQuizBookSearch.toLowerCase();
-                              return b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
-                            })
-                            .slice(0, 50)
-                            .map(b => (
-                              <button
-                                key={b.id}
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
-                                onClick={() => { field.onChange(b.id); setAddQuizBookSearch(""); }}
-                                data-testid={`option-book-${b.id}`}
-                              >
-                                <span className="font-medium">{b.title}</span>
-                                <span className="text-muted-foreground ml-2">— {b.author}</span>
-                              </button>
-                            ))
-                          }
-                          {books && addQuizBookSearch.trim() && (books.filter(b => {
+
+            {wizardStep === 1 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Knjiga</label>
+                  <div className="space-y-2 mt-1">
+                    <Input
+                      placeholder="Pretraži knjige po naslovu ili autoru..."
+                      value={addQuizBookSearch}
+                      onChange={(e) => setAddQuizBookSearch(e.target.value)}
+                      data-testid="input-add-quiz-book-search"
+                    />
+                    {wizardBookId && (
+                      <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-md">
+                        <span className="text-sm font-medium flex-1">Kviz: {bookMap.get(wizardBookId) || ""}</span>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setWizardBookId("")} data-testid="button-clear-book">✕</Button>
+                      </div>
+                    )}
+                    {!wizardBookId && (
+                      <div className="max-h-48 overflow-y-auto border rounded-md divide-y">
+                        {(books || [])
+                          .filter(b => {
+                            if (!addQuizBookSearch.trim()) return true;
                             const q = addQuizBookSearch.toLowerCase();
                             return b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
-                          }).length === 0) && (
-                            <p className="px-3 py-2 text-sm text-muted-foreground">Nema rezultata.</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="quizAuthor" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Autor kviza (opcionalno)</FormLabel>
-                    <FormControl><Input {...field} placeholder="npr. Ime učitelja ili Citanje.ba" data-testid="input-quiz-author" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                          })
+                          .slice(0, 50)
+                          .map(b => (
+                            <button key={b.id} type="button" className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors" onClick={() => { setWizardBookId(b.id); setAddQuizBookSearch(""); }} data-testid={`option-book-${b.id}`}>
+                              <span className="font-medium">{b.title}</span>
+                              <span className="text-muted-foreground ml-2">— {b.author}</span>
+                            </button>
+                          ))
+                        }
+                        {books && addQuizBookSearch.trim() && (books.filter(b => { const q = addQuizBookSearch.toLowerCase(); return b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q); }).length === 0) && (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">Nema rezultata.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Autor kviza (opcionalno)</label>
+                  <Input value={wizardAuthor} onChange={(e) => setWizardAuthor(e.target.value)} placeholder="npr. Ime učitelja ili Citanje.ba" className="mt-1" data-testid="input-quiz-author" />
+                </div>
                 <DialogFooter>
-                  <Button type="submit" disabled={createMutation.isPending || !form.watch("bookId")} data-testid="button-submit-quiz">
-                    {createMutation.isPending ? "Spremanje..." : "Dodaj kviz"}
+                  <Button disabled={!wizardBookId} onClick={() => setWizardStep(2)} data-testid="button-wizard-next">
+                    Dalje — Dodaj pitanja
                   </Button>
                 </DialogFooter>
-              </form>
-            </Form>
+              </div>
+            )}
+
+            {wizardStep === 2 && (
+              <div className="space-y-4">
+                {wizardQuestions.length > 0 && (
+                  <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                    {wizardQuestions.map((q, i) => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2 text-sm">
+                        <span className="font-medium text-muted-foreground w-6">{i + 1}.</span>
+                        <span className="flex-1 truncate">{q.questionText}</span>
+                        <Badge variant="secondary" className="text-xs">{q.correctAnswer.toUpperCase()}</Badge>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => {
+                          setEditingWizardIdx(i);
+                          wizardQuestionForm.reset(wizardQuestions[i]);
+                        }} data-testid={`button-edit-wq-${i}`}><Pencil className="h-3 w-3" /></Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => {
+                          setWizardQuestions(prev => prev.filter((_, j) => j !== i));
+                          if (editingWizardIdx === i) { setEditingWizardIdx(null); wizardQuestionForm.reset(); }
+                        }} data-testid={`button-delete-wq-${i}`}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="border rounded-md p-3 space-y-3 bg-muted/30">
+                  <p className="text-sm font-medium">{editingWizardIdx !== null ? `Uredi pitanje ${editingWizardIdx + 1}` : "Novo pitanje"}</p>
+                  <Form {...wizardQuestionForm}>
+                    <div className="space-y-3">
+                      <FormField control={wizardQuestionForm.control} name="questionText" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Tekst pitanja</FormLabel>
+                          <FormControl><Input {...field} data-testid="input-wq-text" /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField control={wizardQuestionForm.control} name="optionA" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">A</FormLabel>
+                            <FormControl><Input {...field} data-testid="input-wq-a" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={wizardQuestionForm.control} name="optionB" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">B</FormLabel>
+                            <FormControl><Input {...field} data-testid="input-wq-b" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={wizardQuestionForm.control} name="optionC" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">C</FormLabel>
+                            <FormControl><Input {...field} data-testid="input-wq-c" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={wizardQuestionForm.control} name="optionD" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">D</FormLabel>
+                            <FormControl><Input {...field} data-testid="input-wq-d" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="flex gap-2">
+                        <FormField control={wizardQuestionForm.control} name="correctAnswer" render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel className="text-xs">Tačan odgovor</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl><SelectTrigger data-testid="select-wq-answer"><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="a">A</SelectItem>
+                                <SelectItem value="b">B</SelectItem>
+                                <SelectItem value="c">C</SelectItem>
+                                <SelectItem value="d">D</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={wizardQuestionForm.control} name="points" render={({ field }) => (
+                          <FormItem className="w-20">
+                            <FormLabel className="text-xs">Bodovi</FormLabel>
+                            <FormControl><Input type="number" {...field} data-testid="input-wq-points" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      <Button type="button" size="sm" variant="secondary" onClick={wizardQuestionForm.handleSubmit((vals) => {
+                        if (editingWizardIdx !== null) {
+                          setWizardQuestions(prev => prev.map((q, i) => i === editingWizardIdx ? vals : q));
+                          setEditingWizardIdx(null);
+                        } else {
+                          setWizardQuestions(prev => [...prev, vals]);
+                        }
+                        wizardQuestionForm.reset({ questionText: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "a", points: 1 });
+                      })} data-testid="button-add-wq">
+                        <Plus className="mr-1 h-3 w-3" />
+                        {editingWizardIdx !== null ? "Spremi izmjenu" : "Dodaj pitanje"}
+                      </Button>
+                    </div>
+                  </Form>
+                </div>
+
+                <DialogFooter className="flex gap-2">
+                  <Button variant="outline" onClick={() => setWizardStep(1)} data-testid="button-wizard-back">Nazad</Button>
+                  <Button disabled={wizardQuestions.length === 0 || createMutation.isPending} onClick={() => createMutation.mutate()} data-testid="button-submit-quiz">
+                    {createMutation.isPending ? "Spremanje..." : `Spremi kviz (${wizardQuestions.length} pitanja)`}
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
