@@ -89,6 +89,26 @@ export async function loadSeedData(): Promise<boolean> {
     const data: SeedData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
     console.log(`[seed-data] Seed file has: ${data.books.length} books, ${data.quizzes.length} quizzes, ${data.questions.length} questions, ${data.genres.length} genres`);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS deleted_items (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        item_type text NOT NULL,
+        item_id varchar NOT NULL,
+        deleted_at timestamp DEFAULT now()
+      )
+    `);
+
+    const deletedBookIds = new Set(
+      (await client.query("SELECT item_id FROM deleted_items WHERE item_type = 'book'")).rows.map((r: any) => r.item_id)
+    );
+    const deletedQuizIds = new Set(
+      (await client.query("SELECT item_id FROM deleted_items WHERE item_type = 'quiz'")).rows.map((r: any) => r.item_id)
+    );
+
+    if (deletedBookIds.size > 0 || deletedQuizIds.size > 0) {
+      console.log(`[seed-data] Respecting deletions: ${deletedBookIds.size} books, ${deletedQuizIds.size} quizzes permanently excluded`);
+    }
+
     const existingBookIds = new Set(
       (await client.query("SELECT id FROM books")).rows.map((r: any) => r.id)
     );
@@ -98,9 +118,12 @@ export async function loadSeedData(): Promise<boolean> {
     const existingQuestionIds = new Set(
       (await client.query("SELECT id FROM questions")).rows.map((r: any) => r.id)
     );
-    const newBooks = data.books.filter((b: any) => !existingBookIds.has(b.id));
-    const newQuizzes = data.quizzes.filter((q: any) => !existingQuizIds.has(q.id));
-    const newQuestions = data.questions.filter((q: any) => !existingQuestionIds.has(q.id));
+    const newBooks = data.books.filter((b: any) => !existingBookIds.has(b.id) && !deletedBookIds.has(b.id));
+    const newQuizzes = data.quizzes.filter((q: any) => !existingQuizIds.has(q.id) && !deletedQuizIds.has(q.id));
+    const deletedBookQuizIds = new Set(
+      data.quizzes.filter((q: any) => deletedBookIds.has(q.bookId)).map((q: any) => q.id)
+    );
+    const newQuestions = data.questions.filter((q: any) => !existingQuestionIds.has(q.id) && !deletedBookQuizIds.has(q.quizId));
 
     console.log(`[seed-data] New items to add: ${newBooks.length} books, ${newQuizzes.length} quizzes, ${newQuestions.length} questions`);
 

@@ -323,6 +323,13 @@ export const insertGenreSchema = createInsertSchema(genres).omit({
 export type InsertGenre = z.infer<typeof insertGenreSchema>;
 export type Genre = typeof genres.$inferSelect;
 
+export const deletedItems = pgTable("deleted_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  itemType: text("item_type").notNull(),
+  itemId: varchar("item_id").notNull(),
+  deletedAt: timestamp("deleted_at").defaultNow(),
+});
+
 export const bookGenres = pgTable("book_genres", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   bookId: varchar("book_id").notNull(),

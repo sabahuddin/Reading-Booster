@@ -18,6 +18,7 @@ import {
   bookBorrowings,
   genres,
   bookGenres,
+  deletedItems,
   parentChildRequests,
   type User,
   type InsertUser,
@@ -242,6 +243,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBook(id: string): Promise<void> {
+    await db.insert(deletedItems).values({ itemType: "book", itemId: id });
     await db.delete(books).where(eq(books.id, id));
   }
 
