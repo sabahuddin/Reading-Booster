@@ -89,6 +89,7 @@ export default function AdminBooks() {
   const zipInputRef = useRef<HTMLInputElement>(null);
   const [zipUploading, setZipUploading] = useState(false);
   const [migrating, setMigrating] = useState(false);
+  const [cleaningUp, setCleaningUp] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<"title" | "author" | null>(null);
@@ -337,6 +338,36 @@ export default function AdminBooks() {
     }
   }
 
+  async function handleCleanupBooks() {
+    setCleaningUp(true);
+    try {
+      const res = await fetch("/api/admin/cleanup-books", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Čišćenje nije uspjelo");
+      }
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+
+      let description = "";
+      if (data.titlesCleaned > 0) {
+        description += `Očišćeno ${data.titlesCleaned} naslova. `;
+      }
+      if (data.descsCleaned > 0) {
+        description += `Očišćeno ${data.descsCleaned} opisa. `;
+      }
+      if (data.titlesCleaned === 0 && data.descsCleaned === 0) {
+        description = "Sve je već čisto, nema promjena.";
+      }
+
+      toast({ title: "Čišćenje završeno", description });
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    } finally {
+      setCleaningUp(false);
+    }
+  }
+
   async function handleMigrateCovers() {
     setMigrating(true);
     try {
@@ -568,9 +599,14 @@ export default function AdminBooks() {
                   {zipUploading ? "Učitavanje..." : "Uvezi korice (ZIP)"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuLabel>Alati</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handleMigrateCovers} disabled={migrating} data-testid="button-migrate-covers">
                   <RefreshCw className={`mr-2 h-4 w-4 ${migrating ? "animate-spin" : ""}`} />
                   {migrating ? "Migracija u toku..." : "Preseli korice na server"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCleanupBooks} disabled={cleaningUp} data-testid="button-cleanup-books">
+                  <Trash2 className={`mr-2 h-4 w-4`} />
+                  {cleaningUp ? "Čišćenje u toku..." : "Očisti naslove i opise"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

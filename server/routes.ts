@@ -377,6 +377,62 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/cleanup-books", requireAdmin, async (_req, res) => {
+    try {
+      const allBooks = await storage.getAllBooks();
+      const titlesCleaned: string[] = [];
+      const descsCleaned: string[] = [];
+
+      for (const book of allBooks) {
+        const updates: Record<string, any> = {};
+
+        const cleanedTitle = book.title.replace(/\s*\([^)]*\)\s*$/, "").trim();
+        if (cleanedTitle !== book.title) {
+          updates.title = cleanedTitle;
+          titlesCleaned.push(`"${book.title}" → "${cleanedTitle}"`);
+        }
+
+        let desc = book.description || "";
+        const badPhrases = [
+          /Hrvatsko izdanje klasic?ia\.?\s*/gi,
+          /Srpsko izdanje klasic?ia\.?\s*/gi,
+          /Hrvatsko izdanje klasika\.?\s*/gi,
+          /Srpsko izdanje klasika\.?\s*/gi,
+        ];
+        for (const pattern of badPhrases) {
+          desc = desc.replace(pattern, "");
+        }
+        desc = desc.trim();
+
+        if (desc !== (book.description || "").trim()) {
+          descsCleaned.push(updates.title || book.title);
+        }
+
+        if (!desc || desc.length < 5) {
+          desc = "Opis nedostaje";
+        }
+
+        if (desc !== book.description) {
+          updates.description = desc;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await storage.updateBook(book.id, updates);
+        }
+      }
+
+      return res.json({
+        totalBooks: allBooks.length,
+        titlesCleaned: titlesCleaned.length,
+        titlesCleanedList: titlesCleaned,
+        descsCleaned: descsCleaned.length,
+        descsCleanedList: descsCleaned,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/upload/book", requireAdmin, uploadBookFile.single("book"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "Datoteka nije poslana" });
