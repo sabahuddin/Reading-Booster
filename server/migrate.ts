@@ -24,6 +24,87 @@ async function runManualMigrations() {
       }
     }
   }
+
+  await syncBookGenresFromLegacy();
+}
+
+async function syncBookGenresFromLegacy() {
+  try {
+    const legacyToSlug: Record<string, string> = {
+      "lektira": "lektira",
+      "klasik": "klasici",
+      "klasici": "klasici",
+      "avantura_fantasy": "avantura_fantasy",
+      "avantura i fantazija": "avantura_fantasy",
+      "fantazija": "avantura_fantasy",
+      "humor": "humor",
+      "roman": "roman",
+      "beletristika": "beletristika",
+      "bajke_basne": "bajke_basne",
+      "basne": "bajke_basne",
+      "zanimljiva_nauka": "zanimljiva_nauka",
+      "poezija": "poezija",
+      "islam": "islam",
+      "drama": "klasici",
+      "priče": "price_i_pjesme",
+      "priče i pjesme": "price_i_pjesme",
+      "price_i_pjesme": "price_i_pjesme",
+      "mitologija": "mitologija",
+      "detektivski roman": "detektivski_roman",
+      "detektivski_roman": "detektivski_roman",
+      "roman za djecu": "djeciji_roman",
+      "djeciji_roman": "djeciji_roman",
+      "pustolovni roman": "pustolovni_roman",
+      "pustolovni_roman": "pustolovni_roman",
+      "epika": "klasici",
+      "istorijski": "historijski_roman",
+      "historijski_roman": "historijski_roman",
+      "pripovijetke": "pripovjetke",
+      "pripovjetke": "pripovjetke",
+      "publicistika": "beletristika",
+      "autobiografija": "beletristika",
+      "pisma": "klasici",
+      "esej": "klasici",
+      "eseji": "klasici",
+      "SF": "avantura_fantasy",
+      "zabavna": "humor",
+      "memoari": "beletristika",
+      "krimi": "detektivski_roman",
+      "dnevnk": "beletristika",
+      "slikovnica": "slikovnica",
+      "zbirka_prica": "zbirka_prica",
+    };
+
+    const genresResult = await db.execute(sql`SELECT id, slug FROM genres`);
+    const genreMap = new Map<string, string>();
+    for (const row of genresResult.rows as any[]) {
+      genreMap.set(row.slug, row.id);
+    }
+
+    const booksResult = await db.execute(sql`
+      SELECT b.id, b.genre FROM books b
+      WHERE b.genre IS NOT NULL AND b.genre != ''
+      AND NOT EXISTS (SELECT 1 FROM book_genres bg WHERE bg.book_id = b.id)
+    `);
+
+    let added = 0;
+    for (const book of booksResult.rows as any[]) {
+      const targetSlug = legacyToSlug[book.genre] || book.genre;
+      const genreId = genreMap.get(targetSlug);
+      if (genreId) {
+        await db.execute(sql`INSERT INTO book_genres (book_id, genre_id) VALUES (${book.id}, ${genreId})`);
+        added++;
+      }
+    }
+
+    if (added > 0) {
+      console.log(`[migration] sync_book_genres_from_legacy: ${added} relations added`);
+    } else {
+      console.log(`[migration] sync_book_genres_from_legacy: already synced`);
+    }
+  } catch (e: any) {
+    console.error(`[migration] sync_book_genres_from_legacy: ERROR -`, e.message?.substring(0, 200));
+  }
 }
 
 export async function runMigrations() {
