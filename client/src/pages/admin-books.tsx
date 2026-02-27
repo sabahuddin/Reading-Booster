@@ -6,7 +6,7 @@ import { z } from "zod";
 import DashboardLayout from "@/components/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Book, Genre } from "@shared/schema";
+import type { Book, Genre, Quiz } from "@shared/schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle } from "lucide-react";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -87,6 +87,7 @@ export default function AdminBooks() {
   const [sortField, setSortField] = useState<"title" | "author" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filterNoCover, setFilterNoCover] = useState(false);
+  const [filterNoQuiz, setFilterNoQuiz] = useState(false);
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -95,6 +96,15 @@ export default function AdminBooks() {
   const { data: allGenres } = useQuery<Genre[]>({
     queryKey: ["/api/genres"],
   });
+
+  const { data: quizzes } = useQuery<Quiz[]>({
+    queryKey: ["/api/quizzes"],
+  });
+
+  const booksWithQuizSet = useMemo(() => {
+    if (!quizzes) return new Set<string>();
+    return new Set(quizzes.map(q => q.bookId));
+  }, [quizzes]);
 
   function toggleSort(field: "title" | "author") {
     if (sortField === field) {
@@ -115,11 +125,19 @@ export default function AdminBooks() {
     return books.filter(isMissingCover).length;
   }, [books]);
 
+  const noQuizCount = useMemo(() => {
+    if (!books) return 0;
+    return books.filter(b => !booksWithQuizSet.has(b.id)).length;
+  }, [books, booksWithQuizSet]);
+
   const filteredBooks = useMemo(() => {
     if (!books) return [];
     let result = books;
     if (filterNoCover) {
       result = result.filter(isMissingCover);
+    }
+    if (filterNoQuiz) {
+      result = result.filter(b => !booksWithQuizSet.has(b.id));
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -140,7 +158,7 @@ export default function AdminBooks() {
       });
     }
     return result;
-  }, [books, searchQuery, sortField, sortDir, filterNoCover]);
+  }, [books, searchQuery, sortField, sortDir, filterNoCover, filterNoQuiz, booksWithQuizSet]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBooks.length / BOOKS_PER_PAGE));
   const safePage = Math.max(1, Math.min(currentPage, totalPages));
@@ -310,6 +328,21 @@ export default function AdminBooks() {
         csvInputRef.current.value = "";
       }
     }
+  }
+
+  function downloadNoQuizCsv() {
+    const noQuizBooks = (books || []).filter(b => !booksWithQuizSet.has(b.id));
+    const headers = "title,author,ageGroup";
+    const rows = noQuizBooks.map(b => `"${b.title.replace(/"/g, '""')}","${b.author.replace(/"/g, '""')}","${b.ageGroup || ""}"`);
+    const csv = "\uFEFF" + headers + "\n" + rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "knjige_bez_kviza.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Preuzimanje", description: `CSV sa ${noQuizBooks.length} knjiga bez kviza se preuzima...` });
   }
 
   function downloadNoCoverCsv() {
@@ -491,6 +524,21 @@ export default function AdminBooks() {
           </Button>
           {filterNoCover && noCoverCount > 0 && (
             <Button variant="outline" onClick={downloadNoCoverCsv} className="whitespace-nowrap" data-testid="button-download-no-cover-csv">
+              <Download className="mr-2 h-4 w-4" />
+              Preuzmi CSV
+            </Button>
+          )}
+          <Button
+            variant={filterNoQuiz ? "default" : "outline"}
+            onClick={() => { setFilterNoQuiz(!filterNoQuiz); setCurrentPage(1); }}
+            className="whitespace-nowrap"
+            data-testid="button-filter-no-quiz"
+          >
+            <HelpCircle className="mr-2 h-4 w-4" />
+            Bez kviza {noQuizCount > 0 && `(${noQuizCount})`}
+          </Button>
+          {filterNoQuiz && noQuizCount > 0 && (
+            <Button variant="outline" onClick={downloadNoQuizCsv} className="whitespace-nowrap" data-testid="button-download-no-quiz-csv">
               <Download className="mr-2 h-4 w-4" />
               Preuzmi CSV
             </Button>
