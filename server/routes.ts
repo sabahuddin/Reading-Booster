@@ -1528,8 +1528,14 @@ export async function registerRoutes(
 
   app.get("/api/admin/templates/quizzes", requireAdmin, (_req, res) => {
     const headers = "bookTitle;quizTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer;points";
-    const example = '"Mali princ";"Kviz: Mali princ";"Koji cvijet je rastao na planeti malog princa?";"Ruža";"Tulipan";"Ljiljan";"Narcis";"a";"1"';
-    const csv = headers + "\n" + example;
+    const lines = [
+      headers,
+      '"Mali princ";"Kviz: Mali princ";"Koji cvijet je rastao na planeti malog princa?";"Ruža";"Tulipan";"Ljiljan";"Narcis";"a";"1"',
+      '"Mali princ";"Kviz: Mali princ";"Koliko planeta je posjetio mali princ?";"5";"6";"7";"8";"c";"1"',
+      '"Ježeva kućica";"Kviz: Ježeva kućica";"Ko je napisao Ježevu kućicu?";"Branko Ćopić";"Ivo Andrić";"Meša Selimović";"Petar Kočić";"a";"1"',
+      '"Ježeva kućica";"Kviz: Ježeva kućica";"Gdje je jež živio?";"U šumi";"Na livadi";"U bašti";"Na planini";"a";"1"',
+    ];
+    const csv = lines.join("\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=kvizovi_template.csv");
     return res.send("\uFEFF" + csv);
