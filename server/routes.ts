@@ -1614,6 +1614,62 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/template/covers", requireAdmin, (_req, res) => {
+    const headers = "title,author,coverImage";
+    const example = '"Mali princ","Antoine de Saint-Exupéry","https://example.com/mali-princ.jpg"';
+    const csv = headers + "\n" + example;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=korice_template.csv");
+    return res.send("\uFEFF" + csv);
+  });
+
+  app.post("/api/admin/import/covers", requireAdmin, uploadCSV.single("csv"), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "CSV datoteka je obavezna" });
+      const content = fs.readFileSync(req.file.path, "utf-8");
+      const rows = parseCSV(content);
+      if (rows.length === 0) return res.status(400).json({ message: "CSV je prazan ili neispravan format" });
+
+      const existingBooks = await storage.getAllBooks();
+      const booksByKey = new Map<string, typeof existingBooks[0]>();
+      for (const b of existingBooks) {
+        booksByKey.set(`${b.title.toLowerCase()}::${b.author.toLowerCase()}`, b);
+        booksByKey.set(b.title.toLowerCase(), b);
+      }
+
+      const updated: string[] = [];
+      const notFound: string[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        try {
+          if (!row.title || !row.coverImage) {
+            errors.push(`Red ${i + 2}: Naslov i coverImage su obavezni`);
+            continue;
+          }
+          const key = row.author
+            ? `${row.title.toLowerCase()}::${row.author.toLowerCase()}`
+            : row.title.toLowerCase();
+          const book = booksByKey.get(key);
+          if (!book) {
+            notFound.push(row.title);
+            continue;
+          }
+          await storage.updateBook(book.id, { coverImage: row.coverImage });
+          updated.push(row.title);
+        } catch (err: any) {
+          errors.push(`Red ${i + 2} (${row.title}): ${err.message}`);
+        }
+      }
+
+      fs.unlinkSync(req.file.path);
+      return res.json({ updated: updated.length, notFound: notFound.length, notFoundTitles: notFound, errors, titles: updated });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/admin/import/quizzes", requireAdmin, uploadCSV.single("csv"), async (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ message: "CSV datoteka je obavezna" });

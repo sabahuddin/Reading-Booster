@@ -77,9 +77,11 @@ export default function AdminBooks() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const bookFileInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+  const coverCsvInputRef = useRef<HTMLInputElement>(null);
   const [coverUploading, setCoverUploading] = useState(false);
   const [bookFileUploading, setBookFileUploading] = useState(false);
   const [csvImporting, setCsvImporting] = useState(false);
+  const [coverCsvImporting, setCoverCsvImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<"title" | "author" | null>(null);
@@ -294,6 +296,51 @@ export default function AdminBooks() {
     }
   }
 
+  async function handleCoverCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setCoverCsvImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("csv", file);
+      
+      const res = await fetch("/api/admin/import/covers", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Import failed");
+      }
+      
+      const data = await res.json();
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      
+      let description = `Ažurirano ${data.updated || 0} korica.`;
+      if (data.notFound > 0) {
+        description += ` Nije pronađeno ${data.notFound} knjiga: ${data.notFoundTitles?.join(", ")}`;
+      }
+      if (data.errors && data.errors.length > 0) {
+        description += ` Greške: ${data.errors.join(", ")}`;
+      }
+      
+      toast({ 
+        title: "Import korica završen", 
+        description: description,
+      });
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    } finally {
+      setCoverCsvImporting(false);
+      if (coverCsvInputRef.current) {
+        coverCsvInputRef.current.value = "";
+      }
+    }
+  }
+
   function openCreate() {
     setEditingBook(null);
     setSelectedGenreIds([]);
@@ -371,6 +418,18 @@ export default function AdminBooks() {
               className="hidden"
               onChange={handleCsvImport}
               data-testid="input-import-books-file"
+            />
+            <Button onClick={() => coverCsvInputRef.current?.click()} variant="outline" disabled={coverCsvImporting} data-testid="button-import-covers-csv">
+              <Image className="mr-2 h-4 w-4" />
+              {coverCsvImporting ? "Učitavanje..." : "Uvezi korice"}
+            </Button>
+            <input
+              type="file"
+              ref={coverCsvInputRef}
+              accept=".csv"
+              className="hidden"
+              onChange={handleCoverCsvImport}
+              data-testid="input-import-covers-file"
             />
             <Button onClick={openCreate} data-testid="button-add-book">
               <Plus className="mr-2 h-4 w-4" />
