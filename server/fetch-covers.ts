@@ -173,7 +173,12 @@ export async function fetchBookCovers() {
   const needsCover = allBooks.filter(b => !isValidCover(b.coverImage));
 
   if (needsCover.length === 0) {
-    console.log("All books have external cover URLs.");
+    console.log("All books have external cover URLs or use generated placeholders.");
+    return;
+  }
+
+  if (needsCover.length > 10) {
+    console.log(`${needsCover.length} books need cover URLs — skipping auto-fetch on startup (use admin panel to fetch).`);
     return;
   }
 

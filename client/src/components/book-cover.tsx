@@ -31,6 +31,8 @@ function isPlaceholderImage(url: string | null | undefined): boolean {
   if (url.includes("placehold.co")) return true;
   if (url.includes("placeholder")) return true;
   if (url.includes("book-placeholder")) return true;
+  if (url.includes("buybook.ba")) return true;
+  if (url.includes("Buybook_Footer_Logo")) return true;
   return false;
 }
 
