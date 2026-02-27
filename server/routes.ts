@@ -65,6 +65,17 @@ const uploadLogo = multer({ storage: logoStorage, limits: { fileSize: 5 * 1024 *
   else cb(new Error("Samo slike su dozvoljene"));
 }});
 
+const zipDir = path.join(uploadsDir, "zip");
+fs.mkdirSync(zipDir, { recursive: true });
+const zipStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, zipDir),
+  filename: (_req, file, cb) => cb(null, `${Date.now()}-${randomBytes(4).toString("hex")}.zip`),
+});
+const uploadZip = multer({ storage: zipStorage, limits: { fileSize: 200 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+  if (file.mimetype === "application/zip" || file.mimetype === "application/x-zip-compressed" || file.originalname.endsWith(".zip")) cb(null, true);
+  else cb(new Error("Samo ZIP datoteke su dozvoljene"));
+}});
+
 const csvDir = path.join(uploadsDir, "csv");
 fs.mkdirSync(csvDir, { recursive: true });
 const csvStorage = multer.diskStorage({
@@ -222,6 +233,66 @@ export async function registerRoutes(
     }
     const url = `/uploads/covers/${req.file.filename}`;
     return res.json({ url });
+  });
+
+  app.post("/api/admin/upload/covers-zip", requireAdmin, uploadZip.single("zip"), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "ZIP datoteka je obavezna" });
+      
+      const AdmZip = (await import("adm-zip")).default;
+      const zip = new AdmZip(req.file.path);
+      const entries = zip.getEntries();
+      
+      const allBooks = await storage.getAllBooks();
+      const booksByTitle = new Map<string, typeof allBooks[0]>();
+      for (const b of allBooks) {
+        booksByTitle.set(b.title.toLowerCase(), b);
+      }
+
+      const imageExts = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+      const updated: string[] = [];
+      const notFound: string[] = [];
+      const skippedFiles: string[] = [];
+
+      for (const entry of entries) {
+        if (entry.isDirectory) continue;
+        const fileName = path.basename(entry.entryName);
+        if (fileName.startsWith(".") || fileName.startsWith("__")) continue;
+        
+        const ext = path.extname(fileName).toLowerCase();
+        if (!imageExts.includes(ext)) {
+          skippedFiles.push(fileName);
+          continue;
+        }
+
+        const titleFromFile = path.basename(fileName, ext).trim();
+        const book = booksByTitle.get(titleFromFile.toLowerCase());
+        if (!book) {
+          notFound.push(titleFromFile);
+          continue;
+        }
+
+        const newFilename = `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`;
+        const destPath = path.join(uploadsDir, "covers", newFilename);
+        fs.writeFileSync(destPath, entry.getData());
+
+        const coverUrl = `/uploads/covers/${newFilename}`;
+        await storage.updateBook(book.id, { coverImage: coverUrl });
+        updated.push(book.title);
+      }
+
+      fs.unlinkSync(req.file.path);
+      return res.json({
+        updated: updated.length,
+        updatedTitles: updated,
+        notFound: notFound.length,
+        notFoundTitles: notFound,
+        skipped: skippedFiles.length,
+        skippedFiles,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
   });
 
   app.post("/api/upload/book", requireAdmin, uploadBookFile.single("book"), (req, res) => {

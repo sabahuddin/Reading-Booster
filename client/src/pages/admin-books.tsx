@@ -30,7 +30,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, FolderArchive } from "lucide-react";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -82,6 +86,8 @@ export default function AdminBooks() {
   const [bookFileUploading, setBookFileUploading] = useState(false);
   const [csvImporting, setCsvImporting] = useState(false);
   const [coverCsvImporting, setCoverCsvImporting] = useState(false);
+  const zipInputRef = useRef<HTMLInputElement>(null);
+  const [zipUploading, setZipUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<"title" | "author" | null>(null);
@@ -330,6 +336,45 @@ export default function AdminBooks() {
     }
   }
 
+  async function handleZipUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setZipUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("zip", file);
+      
+      const res = await fetch("/api/admin/upload/covers-zip", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Upload failed");
+      }
+      
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      
+      let description = `Ažurirano ${data.updated} korica.`;
+      if (data.notFound > 0) {
+        description += ` Nije pronađeno ${data.notFound}: ${data.notFoundTitles?.slice(0, 5).join(", ")}${data.notFoundTitles?.length > 5 ? "..." : ""}`;
+      }
+      if (data.skipped > 0) {
+        description += ` Preskočeno ${data.skipped} ne-slika.`;
+      }
+      
+      toast({ title: "ZIP upload završen", description });
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    } finally {
+      setZipUploading(false);
+      if (zipInputRef.current) zipInputRef.current.value = "";
+    }
+  }
+
   function downloadNoQuizCsv() {
     const noQuizBooks = (books || []).filter(b => !booksWithQuizSet.has(b.id));
     const headers = "title,author,ageGroup";
@@ -467,34 +512,38 @@ export default function AdminBooks() {
             <h1 className="text-2xl font-bold" data-testid="text-books-title">Upravljanje knjigama</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={handleDownloadTemplate} variant="outline" data-testid="button-download-books-template">
-              <Download className="mr-2 h-4 w-4" />
-              Preuzmi šablon
-            </Button>
-            <Button onClick={() => csvInputRef.current?.click()} variant="outline" disabled={csvImporting} data-testid="button-import-books-csv">
-              <Upload className="mr-2 h-4 w-4" />
-              {csvImporting ? "Učitavanje..." : "Uvezi CSV"}
-            </Button>
-            <input
-              type="file"
-              ref={csvInputRef}
-              accept=".csv"
-              className="hidden"
-              onChange={handleCsvImport}
-              data-testid="input-import-books-file"
-            />
-            <Button onClick={() => coverCsvInputRef.current?.click()} variant="outline" disabled={coverCsvImporting} data-testid="button-import-covers-csv">
-              <Image className="mr-2 h-4 w-4" />
-              {coverCsvImporting ? "Učitavanje..." : "Uvezi korice"}
-            </Button>
-            <input
-              type="file"
-              ref={coverCsvInputRef}
-              accept=".csv"
-              className="hidden"
-              onChange={handleCoverCsvImport}
-              data-testid="input-import-covers-file"
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" data-testid="button-import-menu">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Uvoz / Izvoz
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Knjige</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleDownloadTemplate} data-testid="button-download-books-template">
+                  <Download className="mr-2 h-4 w-4" />
+                  Preuzmi CSV šablon
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => csvInputRef.current?.click()} disabled={csvImporting} data-testid="button-import-books-csv">
+                  <Upload className="mr-2 h-4 w-4" />
+                  {csvImporting ? "Učitavanje..." : "Uvezi knjige (CSV)"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Korice</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => coverCsvInputRef.current?.click()} disabled={coverCsvImporting} data-testid="button-import-covers-csv">
+                  <Image className="mr-2 h-4 w-4" />
+                  {coverCsvImporting ? "Učitavanje..." : "Uvezi korice (CSV)"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => zipInputRef.current?.click()} disabled={zipUploading} data-testid="button-upload-covers-zip">
+                  <FolderArchive className="mr-2 h-4 w-4" />
+                  {zipUploading ? "Učitavanje..." : "Uvezi korice (ZIP)"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <input type="file" ref={csvInputRef} accept=".csv" className="hidden" onChange={handleCsvImport} data-testid="input-import-books-file" />
+            <input type="file" ref={coverCsvInputRef} accept=".csv" className="hidden" onChange={handleCoverCsvImport} data-testid="input-import-covers-file" />
+            <input type="file" ref={zipInputRef} accept=".zip" className="hidden" onChange={handleZipUpload} data-testid="input-upload-covers-zip" />
             <Button onClick={openCreate} data-testid="button-add-book">
               <Plus className="mr-2 h-4 w-4" />
               Dodaj knjigu
