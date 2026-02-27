@@ -14,6 +14,7 @@ import { ensureAllBooks } from "./seed-all-books";
 import { seedMissingQuizzes } from "./seed-quizzes";
 import { fetchBookCovers } from "./fetch-covers";
 import { loadSeedData } from "./load-seed-data";
+import { ogMiddleware } from "./og-middleware";
 
 declare module "express-session" {
   interface SessionData {
@@ -249,6 +250,8 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
 
     return res.status(status).json({ message });
   });
+
+  app.use(ogMiddleware());
 
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
