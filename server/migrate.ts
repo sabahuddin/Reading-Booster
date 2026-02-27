@@ -75,6 +75,17 @@ async function syncBookGenresFromLegacy() {
       "zbirka_prica": "zbirka_prica",
     };
 
+    const dupResult = await db.execute(sql`
+      DELETE FROM book_genres
+      WHERE id NOT IN (
+        SELECT MIN(id) FROM book_genres GROUP BY book_id, genre_id
+      )
+    `);
+    const dupCount = (dupResult as any).rowCount || 0;
+    if (dupCount > 0) {
+      console.log(`[migration] removed ${dupCount} duplicate book_genres entries`);
+    }
+
     const genresResult = await db.execute(sql`SELECT id, slug FROM genres`);
     const genreMap = new Map<string, string>();
     for (const row of genresResult.rows as any[]) {
@@ -84,7 +95,6 @@ async function syncBookGenresFromLegacy() {
     const booksResult = await db.execute(sql`
       SELECT b.id, b.genre FROM books b
       WHERE b.genre IS NOT NULL AND b.genre != ''
-      AND NOT EXISTS (SELECT 1 FROM book_genres bg WHERE bg.book_id = b.id)
     `);
 
     let added = 0;
@@ -92,15 +102,20 @@ async function syncBookGenresFromLegacy() {
       const targetSlug = legacyToSlug[book.genre] || book.genre;
       const genreId = genreMap.get(targetSlug);
       if (genreId) {
-        await db.execute(sql`INSERT INTO book_genres (book_id, genre_id) VALUES (${book.id}, ${genreId})`);
-        added++;
+        const exists = await db.execute(sql`
+          SELECT 1 FROM book_genres WHERE book_id = ${book.id} AND genre_id = ${genreId} LIMIT 1
+        `);
+        if ((exists.rows as any[]).length === 0) {
+          await db.execute(sql`INSERT INTO book_genres (book_id, genre_id) VALUES (${book.id}, ${genreId})`);
+          added++;
+        }
       }
     }
 
     if (added > 0) {
       console.log(`[migration] sync_book_genres_from_legacy: ${added} relations added`);
     } else {
-      console.log(`[migration] sync_book_genres_from_legacy: already synced`);
+      console.log(`[migration] sync_book_genres_from_legacy: all synced`);
     }
   } catch (e: any) {
     console.error(`[migration] sync_book_genres_from_legacy: ERROR -`, e.message?.substring(0, 200));
