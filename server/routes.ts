@@ -318,7 +318,7 @@ export async function registerRoutes(
     }
   });
 
-  const { createCoverFetchStatus, fetchAllBookCovers: fetchAllCovers, isValidCover: isValidCoverFn } = await import("./fetch-covers");
+  const { createCoverFetchStatus, fetchAllBookCovers: fetchAllCovers, isValidCover: isValidCoverFn, downloadImageToLocal, migrateExternalCoversToLocal, isExternalCover } = await import("./fetch-covers");
   const coverFetchStatus = createCoverFetchStatus();
 
   app.post("/api/admin/fetch-covers", requireAdmin, async (_req, res) => {
@@ -367,6 +367,7 @@ export async function registerRoutes(
       done: coverFetchStatus.done,
       pendingReview: coverFetchStatus.pendingReview,
       pendingCount: coverFetchStatus.pendingReview.length,
+      logs: coverFetchStatus.logs.slice(-5),
     });
   });
 
@@ -374,10 +375,15 @@ export async function registerRoutes(
     try {
       const { bookId, imageUrl } = req.body;
       if (!bookId || !imageUrl) return res.status(400).json({ message: "bookId i imageUrl su obavezni" });
-      await storage.updateBook(bookId, { coverImage: imageUrl });
+      const localPath = await downloadImageToLocal(imageUrl);
+      if (localPath) {
+        await storage.updateBook(bookId, { coverImage: localPath });
+      } else {
+        await storage.updateBook(bookId, { coverImage: imageUrl });
+      }
       coverFetchStatus.pendingReview = coverFetchStatus.pendingReview.filter(c => c.bookId !== bookId);
       coverFetchStatus.found++;
-      return res.json({ message: "Korica odobrena" });
+      return res.json({ message: "Korica odobrena", localPath: localPath || imageUrl });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -391,6 +397,33 @@ export async function registerRoutes(
       coverFetchStatus.failed++;
       return res.json({ message: "Korica odbijena" });
     } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/migrate-covers-local", requireAdmin, async (req, res) => {
+    if (coverFetchStatus.running) {
+      return res.status(409).json({ message: "Druga operacija sa koricama je u toku." });
+    }
+    try {
+      coverFetchStatus.running = true;
+      coverFetchStatus.done = false;
+      coverFetchStatus.logs = [];
+
+      res.json({ message: "Migracija eksternih korica pokrenuta" });
+
+      migrateExternalCoversToLocal((msg) => {
+        coverFetchStatus.logs.push(msg);
+      }).then((result) => {
+        coverFetchStatus.logs.push(`Završeno: ${result.migrated} migrirano, ${result.failed} neuspješno od ${result.total} ukupno.`);
+        coverFetchStatus.done = true;
+        coverFetchStatus.running = false;
+      }).catch(() => {
+        coverFetchStatus.done = true;
+        coverFetchStatus.running = false;
+      });
+    } catch (error: any) {
+      coverFetchStatus.running = false;
       return res.status(500).json({ message: error.message });
     }
   });

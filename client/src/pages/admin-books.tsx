@@ -383,6 +383,41 @@ export default function AdminBooks() {
     return () => stopPolling();
   }, [stopPolling]);
 
+  useEffect(() => {
+    async function loadPendingReview() {
+      try {
+        const res = await fetch("/api/admin/fetch-covers/status");
+        if (!res.ok) return;
+        const status = await res.json();
+        if (status.pendingReview && status.pendingReview.length > 0) {
+          setPendingReview(status.pendingReview);
+        }
+        if (status.running) {
+          setMigrating(true);
+          setCoverProgress(`${status.processed}/${status.total} obrađeno — ${status.found} pronađeno`);
+          pollRef.current = setInterval(async () => {
+            try {
+              const sRes = await fetch("/api/admin/fetch-covers/status");
+              if (!sRes.ok) return;
+              const s = await sRes.json();
+              const pendingText = s.pendingCount > 0 ? `, ${s.pendingCount} čeka odobrenje` : "";
+              setCoverProgress(`${s.processed}/${s.total} obrađeno — ${s.found} pronađeno, ${s.failed} bez korice${pendingText}`);
+              if (s.done) {
+                stopPolling();
+                setMigrating(false);
+                queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+                if (s.pendingReview && s.pendingReview.length > 0) {
+                  setPendingReview(s.pendingReview);
+                }
+              }
+            } catch {}
+          }, 2000);
+        }
+      } catch {}
+    }
+    loadPendingReview();
+  }, []);
+
   async function handleMigrateCovers() {
     setMigrating(true);
     setCoverProgress("Pokrećem pretragu...");
@@ -468,6 +503,41 @@ export default function AdminBooks() {
     }
     setPendingReview([]);
     setCoverProgress("");
+  }
+
+  async function handleMigrateExternalToLocal() {
+    setMigrating(true);
+    setCoverProgress("Pokrećem migraciju eksternih korica na server...");
+    try {
+      const res = await fetch("/api/admin/migrate-covers-local", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Migracija nije uspjela");
+      }
+      toast({ title: "Migracija pokrenuta", description: "Preuzimanje eksternih slika na server u toku." });
+
+      pollRef.current = setInterval(async () => {
+        try {
+          const statusRes = await fetch("/api/admin/fetch-covers/status");
+          if (!statusRes.ok) return;
+          const status = await statusRes.json();
+          if (status.logs && status.logs.length > 0) {
+            setCoverProgress(status.logs[status.logs.length - 1]);
+          }
+          if (status.done) {
+            stopPolling();
+            setMigrating(false);
+            queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+            toast({ title: "Migracija završena", description: status.logs[status.logs.length - 1] || "Sve korice su preuzete." });
+            setTimeout(() => setCoverProgress(""), 10000);
+          }
+        } catch {}
+      }, 2000);
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+      setMigrating(false);
+      setCoverProgress("");
+    }
   }
 
   async function handleZipUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -678,6 +748,10 @@ export default function AdminBooks() {
                 <DropdownMenuItem onClick={handleMigrateCovers} disabled={migrating} data-testid="button-migrate-covers">
                   <RefreshCw className={`mr-2 h-4 w-4 ${migrating ? "animate-spin" : ""}`} />
                   {migrating ? "Pretraga u toku..." : "Pronađi korice (knjiga.ba)"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMigrateExternalToLocal} disabled={migrating} data-testid="button-migrate-external">
+                  <Download className="mr-2 h-4 w-4" />
+                  Preuzmi eksterne korice na server
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleCleanupBooks} disabled={cleaningUp} data-testid="button-cleanup-books">
                   <Trash2 className={`mr-2 h-4 w-4`} />

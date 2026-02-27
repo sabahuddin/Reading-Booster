@@ -1,6 +1,12 @@
 import { db } from "./db";
 import { books } from "../shared/schema";
 import { eq } from "drizzle-orm";
+import * as fs from "fs";
+import * as path from "path";
+import { randomUUID } from "crypto";
+
+const coversDir = path.join(process.cwd(), "uploads", "covers");
+fs.mkdirSync(coversDir, { recursive: true });
 
 function slugify(text: string): string {
   return text
@@ -124,12 +130,44 @@ async function searchKnjigaBaCandidates(title: string, author: string): Promise<
   return candidates;
 }
 
+export async function downloadImageToLocal(imageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(imageUrl, 15000);
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get("content-type") || "";
+    let ext = ".jpg";
+    if (contentType.includes("png")) ext = ".png";
+    else if (contentType.includes("webp")) ext = ".webp";
+    else if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = ".jpg";
+    else {
+      const urlLower = imageUrl.toLowerCase();
+      if (urlLower.endsWith(".png")) ext = ".png";
+      else if (urlLower.endsWith(".webp")) ext = ".webp";
+    }
+
+    const filename = `${randomUUID()}${ext}`;
+    const filePath = path.join(coversDir, filename);
+
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    if (buffer.length < 1000) return null;
+
+    fs.writeFileSync(filePath, buffer);
+    return `/uploads/covers/${filename}`;
+  } catch {
+    return null;
+  }
+}
+
 export function isValidCover(url: string | null | undefined): boolean {
   if (!url) return false;
   if (url.includes("placehold")) return false;
   if (url.includes("via.placeholder")) return false;
   if (url.includes("placeholder")) return false;
-  if (url.startsWith("/uploads/")) return false;
+  if (url.startsWith("/uploads/covers/") && url.length > 20) return true;
+  if (url.startsWith("/uploads/") && !url.startsWith("/uploads/covers/")) return false;
   if (url.includes("knjiga.ba/media/catalog/product")) return true;
   if (url.includes("buybook.ba")) return false;
   if (url.includes("books.google.com")) return true;
@@ -137,14 +175,21 @@ export function isValidCover(url: string | null | undefined): boolean {
   return url.startsWith("http");
 }
 
+export function isExternalCover(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return url.startsWith("http") && !url.startsWith("/uploads/");
+}
+
 export async function searchCoverForBook(title: string, author: string): Promise<string | null> {
   const candidates = await searchKnjigaBaCandidates(title, author);
   const exact = candidates.find(c => c.similarity >= 0.7);
-  return exact ? exact.imageUrl : null;
+  if (!exact) return null;
+  const localPath = await downloadImageToLocal(exact.imageUrl);
+  return localPath;
 }
 
 export async function fetchBookCovers() {
-  console.log("Fetching book covers (URL mode - no local download)...");
+  console.log("Fetching book covers (download to local)...");
 
   const allBooks = await db.select({
     id: books.id,
@@ -156,23 +201,23 @@ export async function fetchBookCovers() {
   const needsCover = allBooks.filter(b => !isValidCover(b.coverImage));
 
   if (needsCover.length === 0) {
-    console.log("All books have external cover URLs or use generated placeholders.");
+    console.log("All books have covers.");
     return;
   }
 
   if (needsCover.length > 10) {
-    console.log(`${needsCover.length} books need cover URLs — skipping auto-fetch on startup (use admin panel to fetch).`);
+    console.log(`${needsCover.length} books need covers — skipping auto-fetch on startup (use admin panel to fetch).`);
     return;
   }
 
-  console.log(`Found ${needsCover.length} books needing cover URLs.`);
+  console.log(`Found ${needsCover.length} books needing covers.`);
   let found = 0;
 
   for (const book of needsCover) {
-    const imageUrl = await searchCoverForBook(book.title, book.author);
-    if (imageUrl) {
-      await db.update(books).set({ coverImage: imageUrl }).where(eq(books.id, book.id));
-      console.log(`  [OK] ${book.title}`);
+    const localPath = await searchCoverForBook(book.title, book.author);
+    if (localPath) {
+      await db.update(books).set({ coverImage: localPath }).where(eq(books.id, book.id));
+      console.log(`  [OK] ${book.title} → ${localPath}`);
       found++;
     } else {
       console.log(`  [MISS] ${book.title}`);
@@ -180,7 +225,7 @@ export async function fetchBookCovers() {
     await new Promise(r => setTimeout(r, 300));
   }
 
-  console.log(`Covers: ${found} URLs set, ${needsCover.length - found} still missing.`);
+  console.log(`Covers: ${found} downloaded, ${needsCover.length - found} still missing.`);
 }
 
 export type CoverFetchStatus = {
@@ -226,10 +271,16 @@ export async function fetchAllBookCovers(
     const candidates = await searchKnjigaBaCandidates(book.title, book.author);
 
     if (candidates.length > 0 && candidates[0].similarity >= 0.7) {
-      await db.update(books).set({ coverImage: candidates[0].imageUrl }).where(eq(books.id, book.id));
-      status.found++;
+      const localPath = await downloadImageToLocal(candidates[0].imageUrl);
+      if (localPath) {
+        await db.update(books).set({ coverImage: localPath }).where(eq(books.id, book.id));
+        status.found++;
+        if (onProgress) onProgress(`[${status.processed + 1}/${status.total}] ✓ ${book.title}`);
+      } else {
+        status.failed++;
+        if (onProgress) onProgress(`[${status.processed + 1}/${status.total}] ✗ ${book.title} (download neuspješan)`);
+      }
       status.processed++;
-      if (onProgress) onProgress(`[${status.processed}/${status.total}] ✓ ${book.title}`);
     } else if (candidates.length > 0 && candidates[0].similarity >= 0.3) {
       const best = candidates[0];
       status.pendingReview.push({
@@ -252,4 +303,35 @@ export async function fetchAllBookCovers(
   }
 
   return { found: status.found, failed: status.failed, total: status.total };
+}
+
+export async function migrateExternalCoversToLocal(
+  onProgress?: (msg: string) => void,
+): Promise<{ migrated: number; failed: number; total: number }> {
+  const allBooks = await db.select({
+    id: books.id,
+    title: books.title,
+    coverImage: books.coverImage,
+  }).from(books);
+
+  const externalBooks = allBooks.filter(b => isExternalCover(b.coverImage));
+  let migrated = 0;
+  let failed = 0;
+
+  if (onProgress) onProgress(`Pronađeno ${externalBooks.length} knjiga sa eksternim koricama.`);
+
+  for (const book of externalBooks) {
+    const localPath = await downloadImageToLocal(book.coverImage!);
+    if (localPath) {
+      await db.update(books).set({ coverImage: localPath }).where(eq(books.id, book.id));
+      migrated++;
+      if (onProgress) onProgress(`[${migrated + failed}/${externalBooks.length}] ✓ ${book.title}`);
+    } else {
+      failed++;
+      if (onProgress) onProgress(`[${migrated + failed}/${externalBooks.length}] ✗ ${book.title}`);
+    }
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  return { migrated, failed, total: externalBooks.length };
 }
