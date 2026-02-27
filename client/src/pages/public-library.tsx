@@ -31,21 +31,21 @@ function BookCard({ book }: { book: BookWithGenres }) {
   return (
     <Link href={`/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
       <Card className="hover-elevate h-full">
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-3 space-y-2">
           <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden" data-testid={`img-book-cover-${book.id}`}>
             <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
           </div>
           <div>
-            <h3 className="font-semibold text-base line-clamp-2" data-testid={`text-book-title-${book.id}`}>
+            <h3 className="font-semibold text-sm line-clamp-2 leading-tight" data-testid={`text-book-title-${book.id}`}>
               {book.title}
             </h3>
-            <p className="text-base text-muted-foreground">{book.author}</p>
+            <p className="text-sm text-muted-foreground">{book.author}</p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary">{AGE_LABELS[book.ageGroup] || book.ageGroup}</Badge>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant="secondary" className="text-xs">{AGE_LABELS[book.ageGroup] || book.ageGroup}</Badge>
             {book.genres && book.genres.length > 0
-              ? book.genres.map(g => <Badge key={g.id} variant="outline">{g.name}</Badge>)
-              : book.genre && <Badge variant="outline">{book.genre}</Badge>
+              ? book.genres.slice(0, 2).map(g => <Badge key={g.id} variant="outline" className="text-xs">{g.name}</Badge>)
+              : book.genre && <Badge variant="outline" className="text-xs">{book.genre}</Badge>
             }
           </div>
         </CardContent>
@@ -73,6 +73,16 @@ export default function PublicLibrary() {
   const { data: allGenres } = useQuery<Genre[]>({
     queryKey: ["/api/genres"],
   });
+
+  const genreCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    if (books && allGenres) {
+      for (const g of allGenres) {
+        map.set(g.id, books.filter(b => b.genres?.some(bg => bg.id === g.id)).length);
+      }
+    }
+    return map;
+  }, [books, allGenres]);
 
   const weeklyPicks = useMemo(() => {
     if (!books) return [];
@@ -146,8 +156,122 @@ export default function PublicLibrary() {
           </div>
 
           {activeTab === "biblioteka" && (
-            <>
-              <div className="space-y-4">
+            <div className="flex gap-6">
+              <aside className="hidden lg:block w-52 shrink-0" data-testid="sidebar-genres">
+                <div className="sticky top-4 space-y-4">
+                  <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Žanrovi</h3>
+                  <nav className="space-y-0.5">
+                    <button
+                      onClick={() => { setSelectedGenre("all"); handleFilterChange(); }}
+                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                        selectedGenre === "all"
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "hover:bg-muted text-foreground"
+                      }`}
+                      data-testid="sidebar-genre-all"
+                    >
+                      Sve knjige
+                    </button>
+                    {allGenres?.map((g) => (
+                        <button
+                          key={g.id}
+                          onClick={() => { setSelectedGenre(g.slug); handleFilterChange(); }}
+                          aria-pressed={selectedGenre === g.slug}
+                          className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center justify-between ${
+                            selectedGenre === g.slug
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : "hover:bg-muted text-foreground"
+                          }`}
+                          data-testid={`sidebar-genre-${g.slug}`}
+                        >
+                          <span>{g.name}</span>
+                          <span className={`text-xs ${selectedGenre === g.slug ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{genreCounts.get(g.id) || 0}</span>
+                        </button>
+                    ))}
+                  </nav>
+
+                  <div className="border-t pt-4 space-y-2">
+                    <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Dob</h3>
+                    <nav className="space-y-0.5">
+                      <button
+                        onClick={() => { setSelectedAge("all"); handleFilterChange(); }}
+                        className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                          selectedAge === "all"
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "hover:bg-muted text-foreground"
+                        }`}
+                        data-testid="sidebar-age-all"
+                      >
+                        Sve dobi
+                      </button>
+                      {AGE_GROUPS.map((a) => (
+                        <button
+                          key={a.value}
+                          onClick={() => { setSelectedAge(a.value); handleFilterChange(); }}
+                          className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                            selectedAge === a.value
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : "hover:bg-muted text-foreground"
+                          }`}
+                          data-testid={`sidebar-age-${a.value}`}
+                        >
+                          {a.label}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+
+                  <div className="border-t pt-4 space-y-2">
+                    <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Težina</h3>
+                    <nav className="space-y-0.5">
+                      <button
+                        onClick={() => { setSelectedDifficulty("all"); handleFilterChange(); }}
+                        className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                          selectedDifficulty === "all"
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "hover:bg-muted text-foreground"
+                        }`}
+                        data-testid="sidebar-difficulty-all"
+                      >
+                        Sve težine
+                      </button>
+                      {[{ v: "lako", l: "Lako" }, { v: "srednje", l: "Srednje" }, { v: "tesko", l: "Teško" }].map((d) => (
+                        <button
+                          key={d.v}
+                          onClick={() => { setSelectedDifficulty(d.v); handleFilterChange(); }}
+                          className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                            selectedDifficulty === d.v
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : "hover:bg-muted text-foreground"
+                          }`}
+                          data-testid={`sidebar-difficulty-${d.v}`}
+                        >
+                          {d.l}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSearch("");
+                        setSelectedGenre("all");
+                        setSelectedAge("all");
+                        setSelectedDifficulty("all");
+                      }}
+                      data-testid="button-clear-filters-sidebar"
+                    >
+                      Ukloni filtere
+                    </Button>
+                  )}
+                </div>
+              </aside>
+
+              <div className="flex-1 min-w-0 space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -159,138 +283,141 @@ export default function PublicLibrary() {
                       data-testid="input-search-books"
                     />
                   </div>
-                  <Select value={selectedGenre} onValueChange={(v) => { setSelectedGenre(v); handleFilterChange(); }}>
-                    <SelectTrigger className="w-[160px]" data-testid="select-filter-genre">
-                      <SelectValue placeholder="Žanr" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Svi žanrovi</SelectItem>
-                      {allGenres?.map((g) => (
-                        <SelectItem key={g.id} value={g.slug}>{g.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedAge} onValueChange={(v) => { setSelectedAge(v); handleFilterChange(); }}>
-                    <SelectTrigger className="w-[160px]" data-testid="select-filter-age">
-                      <SelectValue placeholder="Dob" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Sve dobi</SelectItem>
-                      {AGE_GROUPS.map((a) => (
-                        <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedDifficulty} onValueChange={(v) => { setSelectedDifficulty(v); handleFilterChange(); }}>
-                    <SelectTrigger className="w-[160px]" data-testid="select-filter-difficulty">
-                      <SelectValue placeholder="Težina" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Sve težine</SelectItem>
-                      <SelectItem value="lako">Lako</SelectItem>
-                      <SelectItem value="srednje">Srednje</SelectItem>
-                      <SelectItem value="tesko">Teško</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Card key={i}>
-                      <CardContent className="p-4 space-y-3">
-                        <Skeleton className="aspect-[2/3] w-full rounded-md" />
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <div className="flex gap-2">
-                          <Skeleton className="h-5 w-16" />
-                          <Skeleton className="h-5 w-16" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : !filtered || filtered.length === 0 ? (
-                <div className="text-center py-16">
-                  <BookOpen className="mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-xl font-medium">Nema knjiga</p>
-                  <p className="text-muted-foreground">
-                    {hasActiveFilters ? "Nema rezultata za tvoju pretragu." : "Knjige još nisu dodane."}
-                  </p>
+                  <div className="flex gap-2 lg:hidden">
+                    <Select value={selectedGenre} onValueChange={(v) => { setSelectedGenre(v); handleFilterChange(); }}>
+                      <SelectTrigger className="w-[140px]" data-testid="select-filter-genre">
+                        <SelectValue placeholder="Žanr" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Svi žanrovi</SelectItem>
+                        {allGenres?.map((g) => (
+                          <SelectItem key={g.id} value={g.slug}>{g.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={selectedAge} onValueChange={(v) => { setSelectedAge(v); handleFilterChange(); }}>
+                      <SelectTrigger className="w-[140px]" data-testid="select-filter-age">
+                        <SelectValue placeholder="Dob" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Sve dobi</SelectItem>
+                        {AGE_GROUPS.map((a) => (
+                          <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={selectedDifficulty} onValueChange={(v) => { setSelectedDifficulty(v); handleFilterChange(); }}>
+                      <SelectTrigger className="w-[140px]" data-testid="select-filter-difficulty">
+                        <SelectValue placeholder="Težina" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Sve težine</SelectItem>
+                        <SelectItem value="lako">Lako</SelectItem>
+                        <SelectItem value="srednje">Srednje</SelectItem>
+                        <SelectItem value="tesko">Teško</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {hasActiveFilters && (
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => {
-                        setSearch("");
-                        setSelectedGenre("all");
-                        setSelectedAge("all");
-                        setSelectedDifficulty("all");
-                      }}
-                      data-testid="button-clear-filters"
-                    >
-                      Ukloni filtere
-                    </Button>
+                    <span className="text-sm text-muted-foreground self-center">
+                      {filtered?.length ?? 0} knjiga
+                    </span>
                   )}
                 </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {paginatedBooks?.map((book) => (
-                      <BookCard key={book.id} book={book} />
+
+                {isLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                      <Card key={i}>
+                        <CardContent className="p-3 space-y-2">
+                          <Skeleton className="aspect-[2/3] w-full rounded-md" />
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 pt-8">
+                ) : !filtered || filtered.length === 0 ? (
+                  <div className="text-center py-16">
+                    <BookOpen className="mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-xl font-medium">Nema knjiga</p>
+                    <p className="text-muted-foreground">
+                      {hasActiveFilters ? "Nema rezultata za tvoju pretragu." : "Knjige još nisu dodane."}
+                    </p>
+                    {hasActiveFilters && (
                       <Button
                         variant="outline"
-                        size="icon"
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        data-testid="button-prev-page"
+                        className="mt-4"
+                        onClick={() => {
+                          setSearch("");
+                          setSelectedGenre("all");
+                          setSelectedAge("all");
+                          setSelectedDifficulty("all");
+                        }}
+                        data-testid="button-clear-filters"
                       >
-                        <ChevronLeft className="h-4 w-4" />
+                        Ukloni filtere
                       </Button>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
-                        .reduce<(number | string)[]>((acc, p, i, arr) => {
-                          if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
-                          acc.push(p);
-                          return acc;
-                        }, [])
-                        .map((p, i) =>
-                          typeof p === "string" ? (
-                            <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground">...</span>
-                          ) : (
-                            <Button
-                              key={p}
-                              variant={currentPage === p ? "default" : "outline"}
-                              size="icon"
-                              onClick={() => setCurrentPage(p)}
-                              data-testid={`button-page-${p}`}
-                            >
-                              {p}
-                            </Button>
-                          )
-                        )}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        data-testid="button-next-page"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <span className="ml-2 text-sm text-muted-foreground">
-                        {filtered?.length} knjiga
-                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {paginatedBooks?.map((book) => (
+                        <BookCard key={book.id} book={book} />
+                      ))}
                     </div>
-                  )}
-                </>
-              )}
-            </>
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-8">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          data-testid="button-prev-page"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                          .reduce<(number | string)[]>((acc, p, i, arr) => {
+                            if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((p, i) =>
+                            typeof p === "string" ? (
+                              <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground">...</span>
+                            ) : (
+                              <Button
+                                key={p}
+                                variant={currentPage === p ? "default" : "outline"}
+                                size="icon"
+                                onClick={() => setCurrentPage(p)}
+                                data-testid={`button-page-${p}`}
+                              >
+                                {p}
+                              </Button>
+                            )
+                          )}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          data-testid="button-next-page"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <span className="ml-2 text-sm text-muted-foreground">
+                          {filtered?.length} knjiga
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           )}
 
           {activeTab === "preporuke" && (
