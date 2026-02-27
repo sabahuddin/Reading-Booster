@@ -36,7 +36,6 @@ import {
 import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Sparkles } from "lucide-react";
 
 const quizFormSchema = z.object({
-  title: z.string().min(1, "Naslov je obavezan"),
   bookId: z.string().min(1, "Knjiga je obavezna"),
   quizAuthor: z.string().optional(),
 });
@@ -317,6 +316,7 @@ export default function AdminQuizzes() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiBookId, setAiBookId] = useState("");
+  const [aiBookSearch, setAiBookSearch] = useState("");
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<QuizWithCount[]>({
     queryKey: ["/api/quizzes"],
@@ -326,14 +326,17 @@ export default function AdminQuizzes() {
     queryKey: ["/api/books"],
   });
 
+  const [addQuizBookSearch, setAddQuizBookSearch] = useState("");
+
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizFormSchema),
-    defaultValues: { title: "", bookId: "", quizAuthor: "" },
+    defaultValues: { bookId: "", quizAuthor: "" },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: QuizFormValues) => {
-      await apiRequest("POST", "/api/quizzes", data);
+      const bookTitle = bookMap.get(data.bookId) || "Nepoznata knjiga";
+      await apiRequest("POST", "/api/quizzes", { ...data, title: `Kviz: ${bookTitle}` });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
@@ -529,14 +532,14 @@ export default function AdminQuizzes() {
               data-testid="input-import-quizzes-file"
             />
             <Button
-              onClick={() => { setAiBookId(""); setAiDialogOpen(true); }}
+              onClick={() => { setAiBookId(""); setAiBookSearch(""); setAiDialogOpen(true); }}
               variant="outline"
               data-testid="button-ai-generate-quiz"
             >
               <Sparkles className="mr-2 h-4 w-4" />
               AI Generiraj kviz
             </Button>
-            <Button onClick={() => { form.reset({ title: "", bookId: "", quizAuthor: "" }); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
+            <Button onClick={() => { form.reset({ bookId: "", quizAuthor: "" }); setAddQuizBookSearch(""); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
               <Plus className="mr-2 h-4 w-4" />
               Dodaj kviz
             </Button>
@@ -685,32 +688,59 @@ export default function AdminQuizzes() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Dodaj novi kviz</DialogTitle>
-              <DialogDescription>Unesite podatke za novi kviz.</DialogDescription>
+              <DialogDescription>Odaberite knjigu — naslov kviza se generiše automatski.</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit((v) => createMutation.mutate(v))} className="space-y-4">
-                <FormField control={form.control} name="title" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Naslov kviza</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-quiz-title" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
                 <FormField control={form.control} name="bookId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Knjiga</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-quiz-book">
-                          <SelectValue placeholder="Odaberite knjigu" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {books?.map((book) => (
-                          <SelectItem key={book.id} value={book.id}>{book.title}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Pretraži knjige po naslovu ili autoru..."
+                        value={addQuizBookSearch}
+                        onChange={(e) => setAddQuizBookSearch(e.target.value)}
+                        data-testid="input-add-quiz-book-search"
+                      />
+                      {field.value && (
+                        <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-md">
+                          <span className="text-sm font-medium flex-1">Kviz: {bookMap.get(field.value) || ""}</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => field.onChange("")} data-testid="button-clear-book">
+                            ✕
+                          </Button>
+                        </div>
+                      )}
+                      {!field.value && (
+                        <div className="max-h-48 overflow-y-auto border rounded-md divide-y">
+                          {(books || [])
+                            .filter(b => {
+                              if (!addQuizBookSearch.trim()) return true;
+                              const q = addQuizBookSearch.toLowerCase();
+                              return b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+                            })
+                            .slice(0, 50)
+                            .map(b => (
+                              <button
+                                key={b.id}
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                                onClick={() => { field.onChange(b.id); setAddQuizBookSearch(""); }}
+                                data-testid={`option-book-${b.id}`}
+                              >
+                                <span className="font-medium">{b.title}</span>
+                                <span className="text-muted-foreground ml-2">— {b.author}</span>
+                              </button>
+                            ))
+                          }
+                          {books && addQuizBookSearch.trim() && (books.filter(b => {
+                            const q = addQuizBookSearch.toLowerCase();
+                            return b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+                          }).length === 0) && (
+                            <p className="px-3 py-2 text-sm text-muted-foreground">Nema rezultata.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -722,7 +752,7 @@ export default function AdminQuizzes() {
                   </FormItem>
                 )} />
                 <DialogFooter>
-                  <Button type="submit" disabled={createMutation.isPending} data-testid="button-submit-quiz">
+                  <Button type="submit" disabled={createMutation.isPending || !form.watch("bookId")} data-testid="button-submit-quiz">
                     {createMutation.isPending ? "Spremanje..." : "Dodaj kviz"}
                   </Button>
                 </DialogFooter>
@@ -759,22 +789,56 @@ export default function AdminQuizzes() {
                 AI Generiraj kviz
               </DialogTitle>
               <DialogDescription>
-                Odaberite knjigu bez kviza. AI će automatski generisati 10 pitanja. Autor kviza: Citanje.ba
+                Odaberite knjigu. AI će automatski generisati 20 pitanja. Autor kviza: Čitanje
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <Select value={aiBookId} onValueChange={setAiBookId}>
-                <SelectTrigger data-testid="select-ai-book">
-                  <SelectValue placeholder="Odaberite knjigu" />
-                </SelectTrigger>
-                <SelectContent>
-                  {booksWithoutQuiz.map((book) => (
-                    <SelectItem key={book.id} value={book.id}>{book.title} — {book.author}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {booksWithoutQuiz.length === 0 && (
-                <p className="text-sm text-muted-foreground">Sve knjige već imaju kviz.</p>
+            <div className="space-y-3">
+              <Input
+                placeholder="Pretraži knjige po naslovu ili autoru..."
+                value={aiBookSearch}
+                onChange={(e) => setAiBookSearch(e.target.value)}
+                data-testid="input-ai-book-search"
+              />
+              {aiBookId && (
+                <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-md">
+                  <span className="text-sm font-medium flex-1">Kviz: {bookMap.get(aiBookId) || ""}</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setAiBookId("")} data-testid="button-clear-ai-book">
+                    ✕
+                  </Button>
+                </div>
+              )}
+              {!aiBookId && (
+                <div className="max-h-48 overflow-y-auto border rounded-md divide-y">
+                  {booksWithoutQuiz
+                    .filter(b => {
+                      if (!aiBookSearch.trim()) return true;
+                      const q = aiBookSearch.toLowerCase();
+                      return b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+                    })
+                    .slice(0, 50)
+                    .map(b => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        onClick={() => { setAiBookId(b.id); setAiBookSearch(""); }}
+                        data-testid={`option-ai-book-${b.id}`}
+                      >
+                        <span className="font-medium">{b.title}</span>
+                        <span className="text-muted-foreground ml-2">— {b.author}</span>
+                      </button>
+                    ))
+                  }
+                  {booksWithoutQuiz.length === 0 && (
+                    <p className="px-3 py-2 text-sm text-muted-foreground">Sve knjige već imaju kviz.</p>
+                  )}
+                  {booksWithoutQuiz.length > 0 && aiBookSearch.trim() && booksWithoutQuiz.filter(b => {
+                    const q = aiBookSearch.toLowerCase();
+                    return b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+                  }).length === 0 && (
+                    <p className="px-3 py-2 text-sm text-muted-foreground">Nema rezultata.</p>
+                  )}
+                </div>
               )}
             </div>
             <DialogFooter>
