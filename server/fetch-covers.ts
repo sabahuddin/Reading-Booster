@@ -37,12 +37,36 @@ async function fetchWithTimeout(url: string, timeoutMs = 10000): Promise<Respons
   }
 }
 
-async function searchKnjigaBa(title: string, author: string): Promise<string | null> {
+function similarity(a: string, b: string): number {
+  const na = normalizeTitle(a);
+  const nb = normalizeTitle(b);
+  if (na === nb) return 1;
+  if (na.includes(nb) || nb.includes(na)) return 0.8;
+
+  const wordsA = a.toLowerCase().replace(/[^a-zčćšžđ0-9 ]/g, "").split(/\s+/).filter(w => w.length > 2);
+  const wordsB = b.toLowerCase().replace(/[^a-zčćšžđ0-9 ]/g, "").split(/\s+/).filter(w => w.length > 2);
+  if (wordsA.length === 0 || wordsB.length === 0) return 0;
+  const matching = wordsA.filter(w => wordsB.some(wb => wb.includes(w) || w.includes(wb)));
+  return matching.length / Math.max(wordsA.length, wordsB.length);
+}
+
+export type CoverCandidate = {
+  bookId: string;
+  bookTitle: string;
+  bookAuthor: string;
+  foundTitle: string;
+  imageUrl: string;
+  confidence: "exact" | "similar";
+  similarityScore: number;
+};
+
+async function searchKnjigaBaCandidates(title: string, author: string): Promise<Array<{ foundTitle: string; imageUrl: string; similarity: number }>> {
+  const candidates: Array<{ foundTitle: string; imageUrl: string; similarity: number }> = [];
   try {
     const query = slugify(title);
     const url = `https://www.knjiga.ba/catalogsearch/result/?q=${query}`;
     const res = await fetchWithTimeout(url);
-    if (!res.ok) return null;
+    if (!res.ok) return candidates;
     const html = await res.text();
 
     const productLinks = [...html.matchAll(/href="(https:\/\/www\.knjiga\.ba\/[^"]*\.html)"/g)]
@@ -50,8 +74,6 @@ async function searchKnjigaBa(title: string, author: string): Promise<string | n
       .filter(l => !l.includes("catalogsearch") && !l.includes("customer"));
 
     const uniqueLinks = [...new Set(productLinks)];
-    const normTitle = normalizeTitle(title);
-    const normAuthor = normalizeTitle(author);
 
     for (const link of uniqueLinks.slice(0, 5)) {
       try {
@@ -60,18 +82,19 @@ async function searchKnjigaBa(title: string, author: string): Promise<string | n
         const pHtml = await pRes.text();
 
         const pageTitleMatch = pHtml.match(/<title[^>]*>([^<]*)<\/title>/i);
-        const pageTitle = pageTitleMatch ? normalizeTitle(pageTitleMatch[1]) : "";
-        const pageContent = normalizeTitle(pHtml.replace(/<[^>]*>/g, " ").substring(0, 5000));
+        const rawPageTitle = pageTitleMatch ? pageTitleMatch[1].replace(/\s*[-|].*knjiga\.ba.*/i, "").trim() : "";
 
-        const titleMatch = pageTitle.includes(normTitle) || pageContent.includes(normTitle);
-        const authorMatch = pageContent.includes(normAuthor);
+        const h1Match = pHtml.match(/<h1[^>]*>([^<]*)<\/h1>/i);
+        const productName = h1Match ? h1Match[1].trim() : rawPageTitle;
 
-        if (titleMatch || authorMatch) {
+        const sim = Math.max(similarity(title, productName), similarity(title, rawPageTitle));
+
+        if (sim >= 0.3) {
           const allImgs = [...pHtml.matchAll(/src="(https:\/\/www\.knjiga\.ba\/media\/catalog\/product[^"]+\.(jpg|jpeg|png|webp))"/gi)]
             .map(m => m[1]);
-          for (const img of allImgs) {
-            const direct = img.replace(/\/cache\/1\/[^/]+\/[^/]+\/[^/]+\//g, "/");
-            return direct;
+          if (allImgs.length > 0) {
+            const direct = allImgs[0].replace(/\/cache\/1\/[^/]+\/[^/]+\/[^/]+\//g, "/");
+            candidates.push({ foundTitle: productName || rawPageTitle, imageUrl: direct, similarity: sim });
           }
         }
       } catch { continue; }
@@ -83,64 +106,25 @@ async function searchKnjigaBa(title: string, author: string): Promise<string | n
       .map(m => m[1].trim());
 
     for (let i = 0; i < titleTokens.length && i < searchImgs.length; i++) {
-      const n = normalizeTitle(titleTokens[i]);
-      if (n.includes(normTitle) || normTitle.includes(n)) {
-        return searchImgs[i].replace(/\/cache\/1\/[^/]+\/[^/]+\/[^/]+\//g, "/");
-      }
-    }
-  } catch { }
-  return null;
-}
-
-async function searchBuybook(title: string): Promise<string | null> {
-  try {
-    const query = encodeURIComponent(title);
-    const url = `https://buybook.ba/search?q=${query}&type=product`;
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) return null;
-    const html = await res.text();
-
-    const normTitle = normalizeTitle(title);
-
-    const productBlocks = html.split(/class="[^"]*product-card[^"]*"/);
-    for (const block of productBlocks.slice(1, 6)) {
-      const blockNorm = normalizeTitle(block.replace(/<[^>]*>/g, " ").substring(0, 500));
-      if (blockNorm.includes(normTitle)) {
-        const imgMatch = block.match(/(src|data-src)="(\/\/buybook\.ba\/cdn\/shop\/files\/[^"]+\.(jpg|jpeg|png|webp)[^"]*)"/i);
-        if (imgMatch) {
-          let imgUrl = imgMatch[2];
-          if (imgUrl.startsWith("//")) imgUrl = "https:" + imgUrl;
-          imgUrl = imgUrl.replace(/&width=\d+/, "&width=600");
-          return imgUrl;
+      const sim = similarity(title, titleTokens[i]);
+      if (sim >= 0.3) {
+        const existing = candidates.find(c => c.foundTitle === titleTokens[i]);
+        if (!existing) {
+          candidates.push({
+            foundTitle: titleTokens[i],
+            imageUrl: searchImgs[i].replace(/\/cache\/1\/[^/]+\/[^/]+\/[^/]+\//g, "/"),
+            similarity: sim,
+          });
         }
       }
     }
-
-    const imgMatch = html.match(/(src|data-src)="(\/\/buybook\.ba\/cdn\/shop\/files\/[^"]+\.(jpg|jpeg|png|webp)[^"]*)"/i);
-    if (imgMatch) {
-      let imgUrl = imgMatch[2];
-      if (imgUrl.startsWith("//")) imgUrl = "https:" + imgUrl;
-      return imgUrl;
-    }
   } catch { }
-  return null;
+
+  candidates.sort((a, b) => b.similarity - a.similarity);
+  return candidates;
 }
 
-async function searchLaguna(title: string): Promise<string | null> {
-  try {
-    const slug = slugify(title).replace(/\+/g, "_");
-    const url = `https://www.laguna.rs/s_${slug}.html`;
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) return null;
-    const html = await res.text();
-
-    const imgMatch = html.match(/src="(https?:\/\/[^"]*laguna[^"]*\.(jpg|jpeg|png|webp)[^"]*)"/i);
-    if (imgMatch) return imgMatch[1];
-  } catch { }
-  return null;
-}
-
-function isValidCover(url: string | null | undefined): boolean {
+export function isValidCover(url: string | null | undefined): boolean {
   if (!url) return false;
   if (url.includes("placehold")) return false;
   if (url.includes("via.placeholder")) return false;
@@ -154,10 +138,9 @@ function isValidCover(url: string | null | undefined): boolean {
 }
 
 export async function searchCoverForBook(title: string, author: string): Promise<string | null> {
-  let imageUrl = await searchKnjigaBa(title, author);
-  if (imageUrl) return imageUrl;
-
-  return null;
+  const candidates = await searchKnjigaBaCandidates(title, author);
+  const exact = candidates.find(c => c.similarity >= 0.7);
+  return exact ? exact.imageUrl : null;
 }
 
 export async function fetchBookCovers() {
@@ -200,7 +183,28 @@ export async function fetchBookCovers() {
   console.log(`Covers: ${found} URLs set, ${needsCover.length - found} still missing.`);
 }
 
-export async function fetchAllBookCovers(onProgress?: (msg: string) => void): Promise<{ found: number; failed: number; total: number }> {
+export type CoverFetchStatus = {
+  running: boolean;
+  total: number;
+  processed: number;
+  found: number;
+  failed: number;
+  done: boolean;
+  pendingReview: CoverCandidate[];
+  logs: string[];
+};
+
+export function createCoverFetchStatus(): CoverFetchStatus {
+  return {
+    running: false, total: 0, processed: 0, found: 0, failed: 0, done: false,
+    pendingReview: [], logs: [],
+  };
+}
+
+export async function fetchAllBookCovers(
+  status: CoverFetchStatus,
+  onProgress?: (msg: string) => void,
+): Promise<{ found: number; failed: number; total: number }> {
   const allBooks = await db.select({
     id: books.id,
     title: books.title,
@@ -210,24 +214,42 @@ export async function fetchAllBookCovers(onProgress?: (msg: string) => void): Pr
 
   const needsCover = allBooks.filter(b => !isValidCover(b.coverImage));
 
-  const total = needsCover.length;
-  let found = 0;
-  let failed = 0;
+  status.total = needsCover.length;
+  status.found = 0;
+  status.failed = 0;
+  status.processed = 0;
+  status.pendingReview = [];
 
-  if (onProgress) onProgress(`Pronađeno ${total} knjiga bez korica od ${allBooks.length} ukupno.`);
+  if (onProgress) onProgress(`Pronađeno ${needsCover.length} knjiga bez korica od ${allBooks.length} ukupno.`);
 
   for (const book of needsCover) {
-    const imageUrl = await searchCoverForBook(book.title, book.author);
-    if (imageUrl) {
-      await db.update(books).set({ coverImage: imageUrl }).where(eq(books.id, book.id));
-      found++;
-      if (onProgress) onProgress(`[${found + failed}/${total}] ✓ ${book.title}`);
+    const candidates = await searchKnjigaBaCandidates(book.title, book.author);
+
+    if (candidates.length > 0 && candidates[0].similarity >= 0.7) {
+      await db.update(books).set({ coverImage: candidates[0].imageUrl }).where(eq(books.id, book.id));
+      status.found++;
+      status.processed++;
+      if (onProgress) onProgress(`[${status.processed}/${status.total}] ✓ ${book.title}`);
+    } else if (candidates.length > 0 && candidates[0].similarity >= 0.3) {
+      const best = candidates[0];
+      status.pendingReview.push({
+        bookId: book.id,
+        bookTitle: book.title,
+        bookAuthor: book.author,
+        foundTitle: best.foundTitle,
+        imageUrl: best.imageUrl,
+        confidence: "similar",
+        similarityScore: Math.round(best.similarity * 100),
+      });
+      status.processed++;
+      if (onProgress) onProgress(`[${status.processed}/${status.total}] ? ${book.title} → "${best.foundTitle}" (${Math.round(best.similarity * 100)}%)`);
     } else {
-      failed++;
-      if (onProgress) onProgress(`[${found + failed}/${total}] ✗ ${book.title}`);
+      status.failed++;
+      status.processed++;
+      if (onProgress) onProgress(`[${status.processed}/${status.total}] ✗ ${book.title}`);
     }
     await new Promise(r => setTimeout(r, 300));
   }
 
-  return { found, failed, total };
+  return { found: status.found, failed: status.failed, total: status.total };
 }

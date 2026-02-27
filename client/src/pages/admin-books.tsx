@@ -369,6 +369,7 @@ export default function AdminBooks() {
   }
 
   const [coverProgress, setCoverProgress] = useState("");
+  const [pendingReview, setPendingReview] = useState<Array<{ bookId: string; bookTitle: string; bookAuthor: string; foundTitle: string; imageUrl: string; similarityScore: number }>>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -393,23 +394,32 @@ export default function AdminBooks() {
       }
       const data = await res.json();
       setCoverProgress(`Pretraga pokrenuta: ${data.total} knjiga bez korica`);
-      toast({ title: "Pretraga pokrenuta", description: `${data.total} knjiga za obradu. Pratite progres ispod dugmeta.` });
+      toast({ title: "Pretraga pokrenuta", description: `${data.total} knjiga za obradu. Pratite progres.` });
 
       pollRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch("/api/admin/fetch-covers/status");
           if (!statusRes.ok) return;
           const status = await statusRes.json();
-          setCoverProgress(`${status.processed}/${status.total} obrađeno — ${status.found} pronađeno, ${status.failed} bez korice`);
+          const pendingText = status.pendingCount > 0 ? `, ${status.pendingCount} čeka odobrenje` : "";
+          setCoverProgress(`${status.processed}/${status.total} obrađeno — ${status.found} pronađeno, ${status.failed} bez korice${pendingText}`);
           if (status.done) {
             stopPolling();
             setMigrating(false);
             queryClient.invalidateQueries({ queryKey: ["/api/books"] });
-            toast({
-              title: "Pretraga korica završena",
-              description: `Pronađeno ${status.found} korica od ${status.total} knjiga. Neuspješno: ${status.failed}.`,
-            });
-            setTimeout(() => setCoverProgress(""), 10000);
+            if (status.pendingReview && status.pendingReview.length > 0) {
+              setPendingReview(status.pendingReview);
+              toast({
+                title: "Pretraga završena",
+                description: `${status.found} pronađeno automatski, ${status.pendingReview.length} čeka vaše odobrenje.`,
+              });
+            } else {
+              toast({
+                title: "Pretraga korica završena",
+                description: `Pronađeno ${status.found} korica od ${status.total} knjiga. Neuspješno: ${status.failed}.`,
+              });
+              setTimeout(() => setCoverProgress(""), 10000);
+            }
           }
         } catch {}
       }, 2000);
@@ -418,6 +428,46 @@ export default function AdminBooks() {
       setMigrating(false);
       setCoverProgress("");
     }
+  }
+
+  async function handleApprove(bookId: string, imageUrl: string) {
+    try {
+      await fetch("/api/admin/fetch-covers/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId, imageUrl }),
+      });
+      setPendingReview(prev => prev.filter(c => c.bookId !== bookId));
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      toast({ title: "Korica odobrena" });
+    } catch {}
+  }
+
+  async function handleReject(bookId: string) {
+    try {
+      await fetch("/api/admin/fetch-covers/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId }),
+      });
+      setPendingReview(prev => prev.filter(c => c.bookId !== bookId));
+    } catch {}
+  }
+
+  async function handleApproveAll() {
+    for (const item of pendingReview) {
+      await handleApprove(item.bookId, item.imageUrl);
+    }
+    setPendingReview([]);
+    setCoverProgress("");
+  }
+
+  async function handleRejectAll() {
+    for (const item of pendingReview) {
+      await handleReject(item.bookId);
+    }
+    setPendingReview([]);
+    setCoverProgress("");
   }
 
   async function handleZipUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -647,8 +697,41 @@ export default function AdminBooks() {
 
         {coverProgress && (
           <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 flex items-center gap-3" data-testid="cover-progress">
-            <RefreshCw className={`h-4 w-4 text-primary ${migrating ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 text-primary shrink-0 ${migrating ? "animate-spin" : ""}`} />
             <span className="text-sm font-medium">{coverProgress}</span>
+          </div>
+        )}
+
+        {pendingReview.length > 0 && (
+          <div className="border rounded-lg overflow-hidden" data-testid="cover-review-panel">
+            <div className="bg-yellow-50 dark:bg-yellow-950 border-b px-4 py-3 flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Slični naslovi pronađeni — {pendingReview.length} čeka odobrenje</h3>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={handleApproveAll} data-testid="button-approve-all">Odobri sve</Button>
+                <Button size="sm" variant="ghost" onClick={handleRejectAll} data-testid="button-reject-all">Odbaci sve</Button>
+              </div>
+            </div>
+            <div className="max-h-96 overflow-y-auto divide-y">
+              {pendingReview.map((item) => (
+                <div key={item.bookId} className="flex items-center gap-4 p-3 hover:bg-muted/50">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.foundTitle}
+                    className="w-12 h-16 object-cover rounded border shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).src = ""; }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">Vaša knjiga: <span className="text-primary">{item.bookTitle}</span></p>
+                    <p className="text-sm text-muted-foreground truncate">Pronađeno: <span className="font-medium">{item.foundTitle}</span></p>
+                    <p className="text-xs text-muted-foreground">Sličnost: {item.similarityScore}% • {item.bookAuthor}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button size="sm" onClick={() => handleApprove(item.bookId, item.imageUrl)} data-testid={`button-approve-${item.bookId}`}>Da</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleReject(item.bookId)} data-testid={`button-reject-${item.bookId}`}>Ne</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
