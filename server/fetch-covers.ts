@@ -147,8 +147,7 @@ function isValidCover(url: string | null | undefined): boolean {
   if (url.includes("placeholder")) return false;
   if (url.startsWith("/uploads/")) return false;
   if (url.includes("knjiga.ba/media/catalog/product")) return true;
-  if (url.includes("buybook.ba/cdn/shop")) return true;
-  if (url.includes("laguna.rs")) return true;
+  if (url.includes("buybook.ba")) return false;
   if (url.includes("books.google.com")) return true;
   if (url.includes("openlibrary.org")) return true;
   return url.startsWith("http");
@@ -156,12 +155,6 @@ function isValidCover(url: string | null | undefined): boolean {
 
 export async function searchCoverForBook(title: string, author: string): Promise<string | null> {
   let imageUrl = await searchKnjigaBa(title, author);
-  if (imageUrl) return imageUrl;
-
-  imageUrl = await searchBuybook(title);
-  if (imageUrl) return imageUrl;
-
-  imageUrl = await searchLaguna(title);
   if (imageUrl) return imageUrl;
 
   return null;

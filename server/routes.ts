@@ -361,7 +361,7 @@ export async function registerRoutes(
       };
       const ageDesc = ageLabels[book.ageGroup || "R4"] || "djeca";
 
-      const prompt = `Generiraj kviz sa 10 pitanja o knjizi "${book.title}" autora ${book.author}.
+      const prompt = `Generiraj kviz sa 20 pitanja o knjizi "${book.title}" autora ${book.author}.
 Opis knjige: ${book.description || "Nema opisa."}
 Ciljana publika: ${ageDesc}
 Žanr: ${book.genre || "opći"}
@@ -393,7 +393,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
         model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
-        max_tokens: 4096,
+        max_tokens: 8192,
       });
 
       const content = response.choices[0]?.message?.content;

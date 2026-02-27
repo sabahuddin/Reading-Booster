@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -19,6 +19,7 @@ import {
   FileQuestion,
   Lock,
   Crown,
+  Timer,
 } from "lucide-react";
 import type { Quiz, Question, QuizResult, Book } from "@shared/schema";
 import { DifficultyIcon } from "@/components/difficulty-icon";
@@ -47,6 +48,10 @@ export default function QuizPage() {
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [autoSubmitTriggered, setAutoSubmitTriggered] = useState(false);
 
   const { data: quiz, isLoading } = useQuery<QuizWithQuestions>({
     queryKey: ["/api/quizzes", quizId],
@@ -69,6 +74,52 @@ export default function QuizPage() {
     queryKey: ["/api/quizzes", quizId, "completions"],
     enabled: !!quizId,
   });
+
+  const isLastQuestion = useCallback(() => {
+    if (!quiz) return false;
+    return currentQ >= (quiz.questions ?? []).length - 1;
+  }, [quiz, currentQ]);
+
+  const moveToNext = useCallback(() => {
+    if (!quiz) return;
+    const questions = quiz.questions ?? [];
+    const totalQ = questions.length;
+    if (currentQ < totalQ - 1) {
+      setCurrentQ(p => p + 1);
+    } else {
+      setAutoSubmitTriggered(true);
+    }
+  }, [quiz, currentQ]);
+
+  useEffect(() => {
+    if (submitted || !quizStarted || !quiz || quiz.questions.length === 0) return;
+    setTimeLeft(30);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          moveToNext();
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [currentQ, submitted, quizStarted, quiz, moveToNext]);
+
+  useEffect(() => {
+    if (quiz && quiz.questions.length > 0 && !quizStarted && !submitted) {
+      setQuizStarted(true);
+    }
+  }, [quiz, quizStarted, submitted]);
+
+  useEffect(() => {
+    if (submitted && timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, [submitted]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -102,6 +153,13 @@ export default function QuizPage() {
       });
     },
   });
+
+  useEffect(() => {
+    if (autoSubmitTriggered && !submitted && !submitMutation.isPending) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      submitMutation.mutate();
+    }
+  }, [autoSubmitTriggered]);
 
   const questions = quiz?.questions ?? [];
   const totalQ = questions.length;
@@ -273,6 +331,10 @@ export default function QuizPage() {
                 <p className="text-sm text-muted-foreground">
                   Pitanje {currentQ + 1} od {totalQ}
                 </p>
+                <Badge variant={timeLeft <= 5 ? "destructive" : timeLeft <= 10 ? "default" : "outline"} data-testid="badge-timer" className="tabular-nums">
+                  <Timer className="mr-1 h-3 w-3" />
+                  {timeLeft}s
+                </Badge>
                 {book?.readingDifficulty && (
                   <DifficultyIcon difficulty={book.readingDifficulty} size="sm" />
                 )}

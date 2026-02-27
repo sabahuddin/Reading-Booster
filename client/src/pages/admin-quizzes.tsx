@@ -441,9 +441,18 @@ export default function AdminQuizzes() {
     }
   }
 
+  const bookMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (books) {
+      for (const b of books) {
+        map.set(b.id, b.title);
+      }
+    }
+    return map;
+  }, [books]);
+
   function getBookTitle(bookId: string): string {
-    const book = books?.find((b) => b.id === bookId);
-    return book?.title ?? "Nepoznata knjiga";
+    return bookMap.get(bookId) ?? "Nepoznata knjiga";
   }
 
   function toggleSort(field: "title" | "book") {
@@ -464,18 +473,19 @@ export default function AdminQuizzes() {
       result = result.filter(
         (quiz) =>
           quiz.title.toLowerCase().includes(q) ||
-          getBookTitle(quiz.bookId).toLowerCase().includes(q)
+          (bookMap.get(quiz.bookId) ?? "").toLowerCase().includes(q) ||
+          (quiz.quizAuthor ?? "").toLowerCase().includes(q)
       );
     }
     if (sortField) {
       result = [...result].sort((a, b) => {
-        const valA = sortField === "book" ? getBookTitle(a.bookId).toLowerCase() : a.title.toLowerCase();
-        const valB = sortField === "book" ? getBookTitle(b.bookId).toLowerCase() : b.title.toLowerCase();
+        const valA = sortField === "book" ? (bookMap.get(a.bookId) ?? "").toLowerCase() : a.title.toLowerCase();
+        const valB = sortField === "book" ? (bookMap.get(b.bookId) ?? "").toLowerCase() : b.title.toLowerCase();
         return sortDir === "asc" ? valA.localeCompare(valB, "hr") : valB.localeCompare(valA, "hr");
       });
     }
     return result;
-  }, [quizzes, searchQuery, books, sortField, sortDir]);
+  }, [quizzes, searchQuery, bookMap, sortField, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filteredQuizzes.length / QUIZZES_PER_PAGE));
   const safePage = Math.max(1, Math.min(currentPage, totalPages));

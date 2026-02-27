@@ -113,7 +113,8 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - Bodovanje sa akumulacijom na profilu
 - Quiz author field (quizAuthor) — prikazuje ko je kreirao kviz
 - Quiz completion count — prikazuje koliko puta je kviz urađen
-- AI generacija kviza (admin): POST /api/admin/generate-quiz, koristi OpenAI (Replit AI Integrations), autor: "Citanje.ba"
+- AI generacija kviza (admin): POST /api/admin/generate-quiz, koristi OpenAI (Replit AI Integrations), 20 pitanja, autor: "Citanje.ba"
+- Timer: 30 sekundi po pitanju, auto-advance na sljedeće pitanje, auto-submit na posljednjem
 
 ### Ocjena knjiga (Book Rating)
 - Korisnici mogu ocijeniti knjigu (1-5, BookOpen ikone)
