@@ -442,9 +442,9 @@ export default function AdminQuizzes() {
       }
 
       const result = await response.json();
-      const { quizzesCreated, questionsCreated, errors } = result;
+      const { quizzesCreated, questionsAdded, errors } = result;
 
-      const successMessage = `Uvezeno ${quizzesCreated} kvizova i ${questionsCreated} pitanja`;
+      const successMessage = `Uvezeno ${quizzesCreated} novih kvizova, ${questionsAdded} pitanja dodano`;
       const description = errors && errors.length > 0 ? errors.join("; ") : undefined;
 
       toast({

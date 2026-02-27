@@ -788,7 +788,17 @@ Odgovori ISKLJUČIVO u JSON formatu:
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
-      const questionsList = await storage.getQuestionsByQuizId(quiz.id);
+      let questionsList = await storage.getQuestionsByQuizId(quiz.id);
+
+      const isAdmin = req.session?.userId ? (await storage.getUser(req.session.userId))?.role === "admin" : false;
+      if (!isAdmin && questionsList.length > 20) {
+        for (let i = questionsList.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [questionsList[i], questionsList[j]] = [questionsList[j], questionsList[i]];
+        }
+        questionsList = questionsList.slice(0, 20);
+      }
+
       return res.json({ ...quiz, questions: questionsList });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -922,8 +932,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.status(400).json({ message: "You have already taken this quiz" });
       }
 
-      const questionsList = await storage.getQuestionsByQuizId(quizId);
-      if (questionsList.length === 0) {
+      const allQuestions = await storage.getQuestionsByQuizId(quizId);
+      if (allQuestions.length === 0) {
         return res.status(404).json({ message: "No questions found for this quiz" });
       }
 
@@ -932,11 +942,15 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const pointsPerQuestion: Record<string, number> = { R1: 1, R4: 3, R7: 5, O: 7, A: 10 };
       const ptsPerQ = pointsPerQuestion[book?.ageGroup || "R1"] || 1;
 
+      const submittedQuestionIds = new Set(answers.map((a: any) => a.questionId));
+      const servedQuestions = allQuestions.filter(q => submittedQuestionIds.has(q.id));
+      const totalServed = servedQuestions.length;
+
       let correctCount = 0;
       let wrongCount = 0;
 
       for (const answer of answers) {
-        const question = questionsList.find((q) => q.id === answer.questionId);
+        const question = servedQuestions.find((q) => q.id === answer.questionId);
         if (question) {
           if (answer.selectedAnswer === question.correctAnswer) {
             correctCount++;
@@ -952,7 +966,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
         userId,
         quizId,
         score,
-        totalQuestions: questionsList.length,
+        totalQuestions: totalServed,
         correctAnswers: correctCount,
         wrongAnswers: wrongCount,
       });
@@ -1866,13 +1880,13 @@ Odgovori ISKLJUČIVO u JSON formatu:
   });
 
   app.get("/api/admin/templates/quizzes", requireAdmin, (_req, res) => {
-    const headers = "bookTitle;quizTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer;points";
+    const headers = "bookTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer";
     const lines = [
       headers,
-      '"Mali princ";"Kviz: Mali princ";"Koji cvijet je rastao na planeti malog princa?";"Ruža";"Tulipan";"Ljiljan";"Narcis";"a";"1"',
-      '"Mali princ";"Kviz: Mali princ";"Koliko planeta je posjetio mali princ?";"5";"6";"7";"8";"c";"1"',
-      '"Ježeva kućica";"Kviz: Ježeva kućica";"Ko je napisao Ježevu kućicu?";"Branko Ćopić";"Ivo Andrić";"Meša Selimović";"Petar Kočić";"a";"1"',
-      '"Ježeva kućica";"Kviz: Ježeva kućica";"Gdje je jež živio?";"U šumi";"Na livadi";"U bašti";"Na planini";"a";"1"',
+      '"Mali princ";"Koji cvijet je rastao na planeti malog princa?";"Ruža";"Tulipan";"Ljiljan";"Narcis";"a"',
+      '"Mali princ";"Koliko planeta je posjetio mali princ?";"5";"6";"7";"8";"c"',
+      '"Ježeva kućica";"Ko je napisao Ježevu kućicu?";"Branko Ćopić";"Ivo Andrić";"Meša Selimović";"Petar Kočić";"a"',
+      '"Ježeva kućica";"Gdje je jež živio?";"U šumi";"Na livadi";"U bašti";"Na planini";"a"',
     ];
     const csv = lines.join("\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -2030,7 +2044,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
       if (rows.length === 0) return res.status(400).json({ message: "CSV je prazan ili neispravan format" });
 
       const allBooks = await storage.getAllBooks();
-      const quizMap = new Map<string, { bookId: string; title: string; questions: Array<{ questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string; points: number }> }>();
+      const bookQuestionsMap = new Map<string, { bookId: string; bookTitle: string; questions: Array<{ questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string; points: number }> }>();
       const errors: string[] = [];
 
       for (let i = 0; i < rows.length; i++) {
@@ -2045,14 +2059,12 @@ Odgovori ISKLJUČIVO u JSON formatu:
           continue;
         }
 
-        const quizTitle = row.quizTitle || `Kviz: ${book.title}`;
-        const key = `${book.id}::${quizTitle}`;
-        if (!quizMap.has(key)) {
-          quizMap.set(key, { bookId: book.id, title: quizTitle, questions: [] });
+        if (!bookQuestionsMap.has(book.id)) {
+          bookQuestionsMap.set(book.id, { bookId: book.id, bookTitle: book.title, questions: [] });
         }
         const validAnswers = ["a", "b", "c", "d"];
         const correctAnswer = validAnswers.includes((row.correctAnswer || "").toLowerCase()) ? row.correctAnswer.toLowerCase() : "a";
-        quizMap.get(key)!.questions.push({
+        bookQuestionsMap.get(book.id)!.questions.push({
           questionText: row.questionText,
           optionA: row.optionA || "",
           optionB: row.optionB || "",
@@ -2064,14 +2076,19 @@ Odgovori ISKLJUČIVO u JSON formatu:
       }
 
       let quizzesCreated = 0;
-      let questionsCreated = 0;
+      let questionsAdded = 0;
 
-      const quizEntries = Array.from(quizMap.values());
-      for (const quizData of quizEntries) {
+      for (const data of bookQuestionsMap.values()) {
         try {
-          const quiz = await storage.createQuiz({ bookId: quizData.bookId, title: quizData.title });
-          quizzesCreated++;
-          for (const q of quizData.questions) {
+          const existingQuizzes = await storage.getQuizzesByBookId(data.bookId);
+          let quiz;
+          if (existingQuizzes.length > 0) {
+            quiz = existingQuizzes[0];
+          } else {
+            quiz = await storage.createQuiz({ bookId: data.bookId, title: data.bookTitle, quizAuthor: "Čitanje.ba" });
+            quizzesCreated++;
+          }
+          for (const q of data.questions) {
             await storage.createQuestion({
               quizId: quiz.id,
               questionText: q.questionText,
@@ -2082,15 +2099,15 @@ Odgovori ISKLJUČIVO u JSON formatu:
               correctAnswer: q.correctAnswer as "a" | "b" | "c" | "d",
               points: q.points,
             });
-            questionsCreated++;
+            questionsAdded++;
           }
         } catch (err: any) {
-          errors.push(`Kviz "${quizData.title}": ${err.message}`);
+          errors.push(`Knjiga "${data.bookTitle}": ${err.message}`);
         }
       }
 
       fs.unlinkSync(req.file.path);
-      return res.json({ quizzesCreated, questionsCreated, errors });
+      return res.json({ quizzesCreated, questionsAdded, errors });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
