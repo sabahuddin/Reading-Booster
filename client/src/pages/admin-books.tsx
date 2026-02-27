@@ -371,23 +371,16 @@ export default function AdminBooks() {
   async function handleMigrateCovers() {
     setMigrating(true);
     try {
-      const res = await fetch("/api/admin/migrate-covers", { method: "POST" });
+      const res = await fetch("/api/admin/fetch-covers", { method: "POST" });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || "Migracija nije uspjela");
+        throw new Error(err.message || "Pretraga korica nije uspjela");
       }
       const data = await res.json();
       queryClient.invalidateQueries({ queryKey: ["/api/books"] });
 
-      let description = `Preuzeto ${data.downloaded} korica na server.`;
-      if (data.alreadyLocal > 0) {
-        description += ` Već lokalno: ${data.alreadyLocal}.`;
-      }
-      if (data.broken > 0) {
-        description += ` Neispravno: ${data.broken} (link obrisan).`;
-      }
-
-      toast({ title: "Migracija završena", description });
+      const description = `Pronađeno ${data.found} korica od ${data.total} knjiga bez korica. Neuspješno: ${data.failed}.`;
+      toast({ title: "Pretraga korica završena", description });
     } catch (err: any) {
       toast({ title: "Greška", description: err.message, variant: "destructive" });
     } finally {
@@ -602,7 +595,7 @@ export default function AdminBooks() {
                 <DropdownMenuLabel>Alati</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handleMigrateCovers} disabled={migrating} data-testid="button-migrate-covers">
                   <RefreshCw className={`mr-2 h-4 w-4 ${migrating ? "animate-spin" : ""}`} />
-                  {migrating ? "Migracija u toku..." : "Preseli korice na server"}
+                  {migrating ? "Pretraga u toku..." : "Pronađi korice (knjiga.ba)"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleCleanupBooks} disabled={cleaningUp} data-testid="button-cleanup-books">
                   <Trash2 className={`mr-2 h-4 w-4`} />

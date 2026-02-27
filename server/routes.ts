@@ -316,82 +316,16 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/migrate-covers", requireAdmin, async (_req, res) => {
+  app.post("/api/admin/fetch-covers", requireAdmin, async (_req, res) => {
     try {
-      const allBooks = await storage.getAllBooks();
-      const downloaded: string[] = [];
-      const broken: string[] = [];
-      const alreadyLocal: string[] = [];
-      const errors: string[] = [];
-
-      for (const book of allBooks) {
-        const cover = book.coverImage;
-        if (!cover || cover.trim() === "") {
-          broken.push(book.title);
-          continue;
-        }
-
-        if (cover.startsWith("/uploads/")) {
-          alreadyLocal.push(book.title);
-          continue;
-        }
-
-        if (!cover.startsWith("http://") && !cover.startsWith("https://")) {
-          await storage.updateBook(book.id, { coverImage: "" });
-          broken.push(book.title);
-          continue;
-        }
-
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 10000);
-          const response = await fetch(cover, {
-            signal: controller.signal,
-            headers: { "User-Agent": "Mozilla/5.0 (compatible; CoverMigrator/1.0)" },
-          });
-          clearTimeout(timeout);
-
-          if (!response.ok) {
-            await storage.updateBook(book.id, { coverImage: "" });
-            broken.push(book.title);
-            continue;
-          }
-
-          const contentType = response.headers.get("content-type") || "";
-          if (!contentType.startsWith("image/")) {
-            await storage.updateBook(book.id, { coverImage: "" });
-            broken.push(book.title);
-            continue;
-          }
-
-          const buffer = Buffer.from(await response.arrayBuffer());
-          let ext = ".jpg";
-          if (contentType.includes("png")) ext = ".png";
-          else if (contentType.includes("webp")) ext = ".webp";
-          else if (contentType.includes("gif")) ext = ".gif";
-
-          const newFilename = `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`;
-          const destPath = path.join(uploadsDir, "covers", newFilename);
-          fs.writeFileSync(destPath, buffer);
-
-          const localUrl = `/uploads/covers/${newFilename}`;
-          await storage.updateBook(book.id, { coverImage: localUrl });
-          downloaded.push(book.title);
-        } catch (err: any) {
-          await storage.updateBook(book.id, { coverImage: "" });
-          broken.push(book.title);
-          errors.push(`${book.title}: ${err.message}`);
-        }
-      }
-
+      const { fetchAllBookCovers } = await import("./fetch-covers");
+      const logs: string[] = [];
+      const result = await fetchAllBookCovers((msg) => logs.push(msg));
       return res.json({
-        total: allBooks.length,
-        downloaded: downloaded.length,
-        downloadedTitles: downloaded,
-        broken: broken.length,
-        brokenTitles: broken,
-        alreadyLocal: alreadyLocal.length,
-        errors,
+        total: result.total,
+        found: result.found,
+        failed: result.failed,
+        logs,
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });

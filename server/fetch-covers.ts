@@ -1,12 +1,6 @@
 import { db } from "./db";
 import { books } from "../shared/schema";
 import { eq } from "drizzle-orm";
-import * as fs from "fs";
-import * as path from "path";
-import { randomBytes } from "crypto";
-
-const uploadsDir = path.join(process.cwd(), "uploads", "covers");
-fs.mkdirSync(uploadsDir, { recursive: true });
 
 function slugify(text: string): string {
   return text
@@ -67,7 +61,6 @@ async function searchKnjigaBa(title: string, author: string): Promise<string | n
 
         const pageTitleMatch = pHtml.match(/<title[^>]*>([^<]*)<\/title>/i);
         const pageTitle = pageTitleMatch ? normalizeTitle(pageTitleMatch[1]) : "";
-
         const pageContent = normalizeTitle(pHtml.replace(/<[^>]*>/g, " ").substring(0, 5000));
 
         const titleMatch = pageTitle.includes(normTitle) || pageContent.includes(normTitle);
@@ -86,7 +79,6 @@ async function searchKnjigaBa(title: string, author: string): Promise<string | n
 
     const searchImgs = [...html.matchAll(/src="(https:\/\/www\.knjiga\.ba\/media\/catalog\/product\/cache\/1\/small_image\/120x\/[^"]+)"/g)]
       .map(m => m[1]);
-
     const titleTokens = [...html.matchAll(/<h2[^>]*class="product-name"[^>]*>.*?<a[^>]*>([^<]*)<\/a>/gs)]
       .map(m => m[1].trim());
 
@@ -148,33 +140,35 @@ async function searchLaguna(title: string): Promise<string | null> {
   return null;
 }
 
-async function downloadImage(imageUrl: string): Promise<string | null> {
-  try {
-    const res = await fetchWithTimeout(imageUrl, 15000);
-    if (!res.ok) return null;
+function isValidCover(url: string | null | undefined): boolean {
+  if (!url) return false;
+  if (url.includes("placehold")) return false;
+  if (url.includes("via.placeholder")) return false;
+  if (url.includes("placeholder")) return false;
+  if (url.startsWith("/uploads/")) return false;
+  if (url.includes("knjiga.ba/media/catalog/product")) return true;
+  if (url.includes("buybook.ba/cdn/shop")) return true;
+  if (url.includes("laguna.rs")) return true;
+  if (url.includes("books.google.com")) return true;
+  if (url.includes("openlibrary.org")) return true;
+  return url.startsWith("http");
+}
 
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("image")) return null;
+export async function searchCoverForBook(title: string, author: string): Promise<string | null> {
+  let imageUrl = await searchKnjigaBa(title, author);
+  if (imageUrl) return imageUrl;
 
-    const buffer = Buffer.from(await res.arrayBuffer());
-    if (buffer.length < 1000) return null;
+  imageUrl = await searchBuybook(title);
+  if (imageUrl) return imageUrl;
 
-    let ext = ".jpg";
-    if (contentType.includes("png")) ext = ".png";
-    else if (contentType.includes("webp")) ext = ".webp";
+  imageUrl = await searchLaguna(title);
+  if (imageUrl) return imageUrl;
 
-    const filename = `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`;
-    const filePath = path.join(uploadsDir, filename);
-    fs.writeFileSync(filePath, buffer);
-
-    return `/uploads/covers/${filename}`;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export async function fetchBookCovers() {
-  console.log("Fetching book covers...");
+  console.log("Fetching book covers (URL mode - no local download)...");
 
   const allBooks = await db.select({
     id: books.id,
@@ -185,54 +179,36 @@ export async function fetchBookCovers() {
 
   const needsCover = allBooks.filter(b => {
     if (!b.coverImage) return true;
-    if (b.coverImage.startsWith("/uploads/")) return false;
     if (b.coverImage.includes("placehold")) return true;
     if (b.coverImage.includes("via.placeholder")) return true;
+    if (b.coverImage.startsWith("/uploads/")) return true;
     return false;
   });
 
   if (needsCover.length === 0) {
-    console.log("All books have covers.");
+    console.log("All books have external cover URLs.");
     return;
   }
 
-  console.log(`Found ${needsCover.length} books needing covers.`);
+  console.log(`Found ${needsCover.length} books needing cover URLs.`);
   let found = 0;
 
   for (const book of needsCover) {
-    let imageUrl: string | null = null;
-    let source = "";
-
-    imageUrl = await searchKnjigaBa(book.title, book.author);
-    if (imageUrl) source = "knjiga.ba";
-
-    if (!imageUrl) {
-      imageUrl = await searchBuybook(book.title);
-      if (imageUrl) source = "buybook.ba";
-    }
-
+    const imageUrl = await searchCoverForBook(book.title, book.author);
     if (imageUrl) {
-      const localPath = await downloadImage(imageUrl);
-      if (localPath) {
-        await db.update(books).set({ coverImage: localPath }).where(eq(books.id, book.id));
-        console.log(`  [OK] ${book.title} <- ${source}`);
-        found++;
-      } else {
-        console.log(`  [MISS] ${book.title} - download failed`);
-      }
+      await db.update(books).set({ coverImage: imageUrl }).where(eq(books.id, book.id));
+      console.log(`  [OK] ${book.title}`);
+      found++;
     } else {
-      console.log(`  [MISS] ${book.title} - no cover found`);
+      console.log(`  [MISS] ${book.title}`);
     }
-
     await new Promise(r => setTimeout(r, 300));
   }
 
-  console.log(`Covers: ${found} downloaded, ${needsCover.length - found} missing.`);
+  console.log(`Covers: ${found} URLs set, ${needsCover.length - found} still missing.`);
 }
 
-async function fullScrape() {
-  console.log("=== Full cover scrape from knjiga.ba, buybook.ba, laguna.rs ===\n");
-
+export async function fetchAllBookCovers(onProgress?: (msg: string) => void): Promise<{ found: number; failed: number; total: number }> {
   const allBooks = await db.select({
     id: books.id,
     title: books.title,
@@ -240,62 +216,26 @@ async function fullScrape() {
     coverImage: books.coverImage,
   }).from(books);
 
-  const needsCover = allBooks.filter(b => {
-    if (!b.coverImage) return true;
-    if (b.coverImage.startsWith("/uploads/")) return false;
-    return true;
-  });
+  const needsCover = allBooks.filter(b => !isValidCover(b.coverImage));
 
-  console.log(`Total books: ${allBooks.length}`);
-  console.log(`Books needing covers (non-local): ${needsCover.length}\n`);
-
+  const total = needsCover.length;
   let found = 0;
   let failed = 0;
 
+  if (onProgress) onProgress(`Pronađeno ${total} knjiga bez korica od ${allBooks.length} ukupno.`);
+
   for (const book of needsCover) {
-    process.stdout.write(`[${found + failed + 1}/${needsCover.length}] ${book.title}... `);
-
-    let imageUrl: string | null = null;
-    let source = "";
-
-    imageUrl = await searchKnjigaBa(book.title, book.author);
-    if (imageUrl) source = "knjiga.ba";
-
-    if (!imageUrl) {
-      imageUrl = await searchBuybook(book.title);
-      if (imageUrl) source = "buybook.ba";
-    }
-
-    if (!imageUrl) {
-      imageUrl = await searchLaguna(book.title);
-      if (imageUrl) source = "laguna.rs";
-    }
-
+    const imageUrl = await searchCoverForBook(book.title, book.author);
     if (imageUrl) {
-      const localPath = await downloadImage(imageUrl);
-      if (localPath) {
-        await db.update(books).set({ coverImage: localPath }).where(eq(books.id, book.id));
-        console.log(`OK [${source}]`);
-        found++;
-      } else {
-        console.log(`DOWNLOAD FAILED from ${source}`);
-        failed++;
-      }
+      await db.update(books).set({ coverImage: imageUrl }).where(eq(books.id, book.id));
+      found++;
+      if (onProgress) onProgress(`[${found + failed}/${total}] ✓ ${book.title}`);
     } else {
-      console.log(`NOT FOUND`);
       failed++;
+      if (onProgress) onProgress(`[${found + failed}/${total}] ✗ ${book.title}`);
     }
-
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 300));
   }
 
-  console.log(`\n=== Results: ${found} found, ${failed} missing ===`);
-  process.exit(0);
-}
-
-if (process.argv[1]?.includes("fetch-covers")) {
-  fullScrape().catch(e => {
-    console.error("Fatal error:", e);
-    process.exit(1);
-  });
+  return { found, failed, total };
 }
