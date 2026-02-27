@@ -86,6 +86,7 @@ export default function AdminBooks() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<"title" | "author" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [filterNoCover, setFilterNoCover] = useState(false);
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -105,9 +106,21 @@ export default function AdminBooks() {
     setCurrentPage(1);
   }
 
+  function isMissingCover(b: BookWithGenres) {
+    return !b.coverImage || b.coverImage.trim() === "" || b.coverImage.includes("placeholder");
+  }
+
+  const noCoverCount = useMemo(() => {
+    if (!books) return 0;
+    return books.filter(isMissingCover).length;
+  }, [books]);
+
   const filteredBooks = useMemo(() => {
     if (!books) return [];
     let result = books;
+    if (filterNoCover) {
+      result = result.filter(isMissingCover);
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -127,7 +140,7 @@ export default function AdminBooks() {
       });
     }
     return result;
-  }, [books, searchQuery, sortField, sortDir]);
+  }, [books, searchQuery, sortField, sortDir, filterNoCover]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBooks.length / BOOKS_PER_PAGE));
   const safePage = Math.max(1, Math.min(currentPage, totalPages));
@@ -299,6 +312,21 @@ export default function AdminBooks() {
     }
   }
 
+  function downloadNoCoverCsv() {
+    const noCoverBooks = (books || []).filter(isMissingCover);
+    const headers = "title,author,coverImage";
+    const rows = noCoverBooks.map(b => `"${b.title.replace(/"/g, '""')}","${b.author.replace(/"/g, '""')}",""`);
+    const csv = "\uFEFF" + headers + "\n" + rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "knjige_bez_korica.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Preuzimanje", description: `CSV sa ${noCoverBooks.length} knjiga bez korica se preuzima...` });
+  }
+
   async function handleCoverCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -441,15 +469,32 @@ export default function AdminBooks() {
           </div>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Pretraži po naslovu, autoru, žanru ili ISBN-u..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            className="pl-9"
-            data-testid="input-search-books"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Pretraži po naslovu, autoru, žanru ili ISBN-u..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="pl-9"
+              data-testid="input-search-books"
+            />
+          </div>
+          <Button
+            variant={filterNoCover ? "default" : "outline"}
+            onClick={() => { setFilterNoCover(!filterNoCover); setCurrentPage(1); }}
+            className="whitespace-nowrap"
+            data-testid="button-filter-no-cover"
+          >
+            <Image className="mr-2 h-4 w-4" />
+            Bez korica {noCoverCount > 0 && `(${noCoverCount})`}
+          </Button>
+          {filterNoCover && noCoverCount > 0 && (
+            <Button variant="outline" onClick={downloadNoCoverCsv} className="whitespace-nowrap" data-testid="button-download-no-cover-csv">
+              <Download className="mr-2 h-4 w-4" />
+              Preuzmi CSV
+            </Button>
+          )}
         </div>
 
         <Card>
