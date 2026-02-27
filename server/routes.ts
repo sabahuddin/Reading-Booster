@@ -393,14 +393,8 @@ export async function registerRoutes(
         }
 
         let desc = book.description || "";
-        const badPhrases = [
-          /Hrvatsko izdanje klasic?ia\.?\s*/gi,
-          /Srpsko izdanje klasic?ia\.?\s*/gi,
-          /Hrvatsko izdanje klasika\.?\s*/gi,
-          /Srpsko izdanje klasika\.?\s*/gi,
-        ];
-        for (const pattern of badPhrases) {
-          desc = desc.replace(pattern, "");
+        if (/\b(Hrvatsko|Hrvatski|Srpsko|Srpski)\b/i.test(desc)) {
+          desc = "";
         }
         desc = desc.trim();
 
