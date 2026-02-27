@@ -317,20 +317,63 @@ export async function registerRoutes(
     }
   });
 
+  const coverFetchStatus: { running: boolean; total: number; processed: number; found: number; failed: number; done: boolean; logs: string[] } = {
+    running: false, total: 0, processed: 0, found: 0, failed: 0, done: false, logs: [],
+  };
+
   app.post("/api/admin/fetch-covers", requireAdmin, async (_req, res) => {
+    if (coverFetchStatus.running) {
+      return res.status(409).json({ message: "Pretraga korica je već u toku." });
+    }
     try {
       const { fetchAllBookCovers } = await import("./fetch-covers");
-      const logs: string[] = [];
-      const result = await fetchAllBookCovers((msg) => logs.push(msg));
-      return res.json({
-        total: result.total,
-        found: result.found,
-        failed: result.failed,
-        logs,
+      coverFetchStatus.running = true;
+      coverFetchStatus.processed = 0;
+      coverFetchStatus.found = 0;
+      coverFetchStatus.failed = 0;
+      coverFetchStatus.done = false;
+      coverFetchStatus.logs = [];
+
+      const { db: database } = await import("./db");
+      const { books: booksTable } = await import("../shared/schema");
+      const allBooks = await database.select({ id: booksTable.id, coverImage: booksTable.coverImage }).from(booksTable);
+      const needsCover = allBooks.filter(b => {
+        if (!b.coverImage) return true;
+        if (b.coverImage.includes("placehold") || b.coverImage.includes("placeholder")) return true;
+        if (b.coverImage.startsWith("/uploads/")) return true;
+        if (b.coverImage.includes("buybook.ba")) return true;
+        if (b.coverImage.includes("knjiga.ba/media/catalog/product")) return false;
+        return !b.coverImage.startsWith("http");
+      });
+      coverFetchStatus.total = needsCover.length;
+
+      res.json({ message: "Pretraga pokrenuta", total: needsCover.length });
+
+      fetchAllBookCovers((msg) => {
+        coverFetchStatus.logs.push(msg);
+        const match = msg.match(/\[(\d+)\/(\d+)\]\s*(✓|✗)/);
+        if (match) {
+          coverFetchStatus.processed = parseInt(match[1]);
+          if (match[3] === "✓") coverFetchStatus.found++;
+          else coverFetchStatus.failed++;
+        }
+      }).then((result) => {
+        coverFetchStatus.found = result.found;
+        coverFetchStatus.failed = result.failed;
+        coverFetchStatus.done = true;
+        coverFetchStatus.running = false;
+      }).catch(() => {
+        coverFetchStatus.done = true;
+        coverFetchStatus.running = false;
       });
     } catch (error: any) {
+      coverFetchStatus.running = false;
       return res.status(500).json({ message: error.message });
     }
+  });
+
+  app.get("/api/admin/fetch-covers/status", requireAdmin, (_req, res) => {
+    return res.json(coverFetchStatus);
   });
 
   app.post("/api/admin/generate-quiz", requireAdmin, async (req, res) => {

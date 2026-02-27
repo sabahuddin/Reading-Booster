@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -368,8 +368,23 @@ export default function AdminBooks() {
     }
   }
 
+  const [coverProgress, setCoverProgress] = useState("");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
+
   async function handleMigrateCovers() {
     setMigrating(true);
+    setCoverProgress("Pokrećem pretragu...");
     try {
       const res = await fetch("/api/admin/fetch-covers", { method: "POST" });
       if (!res.ok) {
@@ -377,14 +392,31 @@ export default function AdminBooks() {
         throw new Error(err.message || "Pretraga korica nije uspjela");
       }
       const data = await res.json();
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      setCoverProgress(`Pretraga pokrenuta: ${data.total} knjiga bez korica`);
+      toast({ title: "Pretraga pokrenuta", description: `${data.total} knjiga za obradu. Pratite progres ispod dugmeta.` });
 
-      const description = `Pronađeno ${data.found} korica od ${data.total} knjiga bez korica. Neuspješno: ${data.failed}.`;
-      toast({ title: "Pretraga korica završena", description });
+      pollRef.current = setInterval(async () => {
+        try {
+          const statusRes = await fetch("/api/admin/fetch-covers/status");
+          if (!statusRes.ok) return;
+          const status = await statusRes.json();
+          setCoverProgress(`${status.processed}/${status.total} obrađeno — ${status.found} pronađeno, ${status.failed} bez korice`);
+          if (status.done) {
+            stopPolling();
+            setMigrating(false);
+            queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+            toast({
+              title: "Pretraga korica završena",
+              description: `Pronađeno ${status.found} korica od ${status.total} knjiga. Neuspješno: ${status.failed}.`,
+            });
+            setTimeout(() => setCoverProgress(""), 10000);
+          }
+        } catch {}
+      }, 2000);
     } catch (err: any) {
       toast({ title: "Greška", description: err.message, variant: "destructive" });
-    } finally {
       setMigrating(false);
+      setCoverProgress("");
     }
   }
 
@@ -612,6 +644,13 @@ export default function AdminBooks() {
             </Button>
           </div>
         </div>
+
+        {coverProgress && (
+          <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 flex items-center gap-3" data-testid="cover-progress">
+            <RefreshCw className={`h-4 w-4 text-primary ${migrating ? "animate-spin" : ""}`} />
+            <span className="text-sm font-medium">{coverProgress}</span>
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
