@@ -170,13 +170,7 @@ export async function fetchBookCovers() {
     coverImage: books.coverImage,
   }).from(books);
 
-  const needsCover = allBooks.filter(b => {
-    if (!b.coverImage) return true;
-    if (b.coverImage.includes("placehold")) return true;
-    if (b.coverImage.includes("via.placeholder")) return true;
-    if (b.coverImage.startsWith("/uploads/")) return true;
-    return false;
-  });
+  const needsCover = allBooks.filter(b => !isValidCover(b.coverImage));
 
   if (needsCover.length === 0) {
     console.log("All books have external cover URLs.");
