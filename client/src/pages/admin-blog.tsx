@@ -26,7 +26,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, PenTool, Upload, Loader2, ImageIcon } from "lucide-react";
-import { useUpload } from "@/hooks/use-upload";
 
 const blogFormSchema = z.object({
   title: z.string().min(1, "Naslov je obavezan"),
@@ -44,15 +43,27 @@ export default function AdminBlog() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [deletePost, setDeletePost] = useState<BlogPost | null>(null);
-  const { uploadFile, isUploading } = useUpload({
-    onSuccess: (response) => {
-      form.setValue("coverImage", response.objectPath);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const uploadFile = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await fetch("/api/upload/blog-image", { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Upload nije uspio" }));
+        throw new Error(err.message || "Upload nije uspio");
+      }
+      const data = await res.json();
+      form.setValue("coverImage", data.url);
       toast({ title: "Slika uploadovana", description: "Slika je uspješno postavljena." });
-    },
-    onError: (error) => {
+    } catch (error: any) {
       toast({ title: "Greška pri uploadu", description: error.message, variant: "destructive" });
-    },
-  });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog"],

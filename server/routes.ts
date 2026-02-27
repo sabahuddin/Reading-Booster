@@ -28,6 +28,7 @@ const uploadsDir = path.join(process.cwd(), "uploads");
 fs.mkdirSync(path.join(uploadsDir, "covers"), { recursive: true });
 fs.mkdirSync(path.join(uploadsDir, "books"), { recursive: true });
 fs.mkdirSync(path.join(uploadsDir, "logos"), { recursive: true });
+fs.mkdirSync(path.join(uploadsDir, "blog"), { recursive: true });
 
 const coverStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, path.join(uploadsDir, "covers")),
@@ -61,6 +62,18 @@ const uploadCover = multer({ storage: coverStorage, limits: { fileSize: 10 * 102
 const uploadBookFile = multer({ storage: bookFileStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 const uploadLogo = multer({ storage: logoStorage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) cb(null, true);
+  else cb(new Error("Samo slike su dozvoljene"));
+}});
+
+const blogImageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, path.join(uploadsDir, "blog")),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`);
+  },
+});
+const uploadBlogImage = multer({ storage: blogImageStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
   if (file.mimetype.startsWith("image/")) cb(null, true);
   else cb(new Error("Samo slike su dozvoljene"));
 }});
@@ -232,6 +245,14 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Datoteka nije poslana" });
     }
     const url = `/uploads/covers/${req.file.filename}`;
+    return res.json({ url });
+  });
+
+  app.post("/api/upload/blog-image", requireAdmin, uploadBlogImage.single("image"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "Datoteka nije poslana" });
+    }
+    const url = `/uploads/blog/${req.file.filename}`;
     return res.json({ url });
   });
 
