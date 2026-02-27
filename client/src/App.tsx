@@ -52,6 +52,7 @@ import CookiesPage from "@/pages/cookies";
 import { CookieBanner } from "@/components/cookie-banner";
 import SchoolDashboard from "@/pages/school-dashboard";
 import SchoolAdminDashboard from "@/pages/school-admin-dashboard";
+import BookListingsPage from "@/pages/book-listings";
 
 function Router() {
   return (
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/privatnost" component={PrivacyPage} />
       <Route path="/kolacici" component={CookiesPage} />
       <Route path="/biblioteka" component={PublicLibrary} />
+      <Route path="/razmjena" component={BookListingsPage} />
       <Route path="/knjiga/:id" component={PublicBookDetail} />
       <Route path="/prijava" component={AuthPage} />
       <Route path="/registracija" component={AuthPage} />

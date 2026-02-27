@@ -357,3 +357,25 @@ export const insertBookGenreSchema = createInsertSchema(bookGenres).omit({
 });
 export type InsertBookGenre = z.infer<typeof insertBookGenreSchema>;
 export type BookGenre = typeof bookGenres.$inferSelect;
+
+export const bookListings = pgTable("book_listings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  bookTitle: text("book_title").notNull(),
+  bookAuthor: text("book_author").notNull(),
+  city: text("city").notNull(),
+  listingType: text("listing_type", { enum: ["prodajem", "poklanjam", "razmjenjujem"] }).notNull(),
+  price: text("price"),
+  phone: text("phone").notNull(),
+  description: text("description"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBookListingSchema = createInsertSchema(bookListings).omit({
+  id: true,
+  createdAt: true,
+  active: true,
+});
+export type InsertBookListing = z.infer<typeof insertBookListingSchema>;
+export type BookListing = typeof bookListings.$inferSelect;

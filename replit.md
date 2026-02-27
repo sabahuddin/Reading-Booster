@@ -61,7 +61,7 @@ shared/
 ```
 
 ## Key Routes
-### Javne: /, /biblioteka, /knjiga/:id, /blog, /cijene, /kontakt, /prijava
+### Javne: /, /biblioteka, /razmjena, /knjiga/:id, /blog, /cijene, /kontakt, /prijava
 ### Čitalac: /citanje, /citanje/biblioteka, /citanje/knjiga/:id, /citanje/kviz/:id, /citanje/rezultati, /citanje/pro
 ### Učenik: /ucenik, /ucenik/biblioteka, /ucenik/knjiga/:id, /ucenik/kviz/:id, /ucenik/rezultati
 ### Učitelj: /ucitelj, /ucitelj/ucenici, /ucitelj/biblioteka
@@ -128,6 +128,22 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 ### Dijeljenje na društvenim mrežama (Social Share)
 - Facebook, WhatsApp, Viber, Instagram, TikTok, X (Twitter)
 - Kopiraj link dugme
+
+### Razmjena knjiga (Book Marketplace)
+- Javna stranica /razmjena za prodaju, poklanjanje i razmjenu knjiga
+- Prijavljeni korisnici mogu objaviti oglas (naslov, autor, grad, tip, cijena, kontakt telefon, opis)
+- Filtriranje po tipu (prodajem/poklanjam/razmjenjujem) i gradu
+- Vlasnik oglasa može obrisati svoj oglas
+- API: GET /api/book-listings, POST /api/book-listings, DELETE /api/book-listings/:id
+- Tabela: book_listings (userId, bookTitle, bookAuthor, city, listingType, price, phone, description, active, createdAt)
+
+### Značke (Badges)
+- Automatski sistem znački baziran na bodovima korisnika
+- Nivoi: Početnik (0), Čitač (100), Knjigoljubac (500), Znalac (1000), Stručnjak (2000), Maestro (5000)
+- Prikazuje se na student/reader dashboardu sa progress barom do sljedeće značke
+- Kompaktni prikaz u sidebar-u dashboarda
+- Značka emoji uz ime na leaderboardu
+- Definicije u client/src/lib/badges.ts, komponente u client/src/components/user-badge.tsx
 
 ### Leaderboard
 - Javni top čitači na naslovnoj stranici

@@ -50,6 +50,7 @@ import {
   Tags,
   KeyRound,
 } from "lucide-react";
+import { UserBadgeDisplay } from "@/components/user-badge";
 
 type Role = "student" | "teacher" | "parent" | "admin" | "school" | "school_admin" | "reader";
 
@@ -199,10 +200,13 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
                   {roleLabels[role]}
                 </Badge>
                 {(role === "student" || role === "reader") && (
-                  <Badge variant="default" data-testid="badge-points">
-                    <Star className="mr-1" />
-                    {user?.points ?? 0} bodova
-                  </Badge>
+                  <>
+                    <Badge variant="default" data-testid="badge-points">
+                      <Star className="mr-1" />
+                      {user?.points ?? 0} bodova
+                    </Badge>
+                    <UserBadgeDisplay points={user?.points ?? 0} compact />
+                  </>
                 )}
               </div>
             </div>

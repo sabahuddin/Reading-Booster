@@ -23,6 +23,7 @@ import {
   insertPartnerSchema,
   insertChallengeSchema,
   insertGenreSchema,
+  insertBookListingSchema,
 } from "@shared/schema";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -2778,6 +2779,61 @@ Odgovori ISKLJUČIVO u JSON formatu:
     } catch (error) {
       console.error("Error fetching adult leaderboard:", error);
       res.status(500).json({ message: "Greška pri preuzimanju rang liste" });
+    }
+  });
+
+  app.get("/api/book-listings", async (_req, res) => {
+    try {
+      const listings = await storage.getAllBookListings();
+      const userIds = [...new Set(listings.map(l => l.userId))];
+      const allUsers = await storage.getAllUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+      const enriched = listings.map(l => ({
+        ...l,
+        userName: userMap.get(l.userId)?.fullName ?? "Nepoznat",
+      }));
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/book-listings/my", requireAuth, async (req, res) => {
+    try {
+      const listings = await storage.getBookListingsByUserId(req.session.userId!);
+      res.json(listings);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/book-listings", requireAuth, async (req, res) => {
+    try {
+      const parsed = insertBookListingSchema.safeParse({
+        ...req.body,
+        userId: req.session.userId,
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Neispravni podaci", errors: parsed.error.flatten() });
+      }
+      const listing = await storage.createBookListing(parsed.data);
+      res.status(201).json(listing);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/book-listings/:id", requireAuth, async (req, res) => {
+    try {
+      const listings = await storage.getBookListingsByUserId(req.session.userId!);
+      const listing = listings.find(l => l.id === req.params.id);
+      if (!listing && req.session.userRole !== "admin") {
+        return res.status(403).json({ message: "Nemate dozvolu" });
+      }
+      await storage.deleteBookListing(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

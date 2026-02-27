@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles } from "lucide-react";
+import { UserBadgeDisplay, AllBadges } from "@/components/user-badge";
 import type { QuizResult, Challenge } from "@shared/schema";
 
 interface SubscriptionStatus {
@@ -141,6 +142,19 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Award className="text-muted-foreground" />
+              Moja značka
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <UserBadgeDisplay points={totalPoints} />
+            <AllBadges points={totalPoints} />
+          </CardContent>
+        </Card>
 
         {activeChallenges.length > 0 && (
           <Card>

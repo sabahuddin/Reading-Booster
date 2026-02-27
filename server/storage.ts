@@ -51,6 +51,9 @@ import {
   type BookRating,
   type InsertBookRating,
   bookRatings,
+  bookListings,
+  type BookListing,
+  type InsertBookListing,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -166,6 +169,12 @@ export interface IStorage {
 
   getTeachersBySchoolAdminId(schoolAdminId: string): Promise<User[]>;
   getPendingSchoolAdmins(): Promise<User[]>;
+
+  getAllBookListings(): Promise<BookListing[]>;
+  getBookListingsByUserId(userId: string): Promise<BookListing[]>;
+  createBookListing(listing: InsertBookListing): Promise<BookListing>;
+  deleteBookListing(id: string): Promise<void>;
+  updateBookListing(id: string, data: Partial<InsertBookListing>): Promise<BookListing | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -769,6 +778,28 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users).where(
       and(eq(users.role, "school_admin"), eq(users.approved, false))
     );
+  }
+
+  async getAllBookListings(): Promise<BookListing[]> {
+    return db.select().from(bookListings).where(eq(bookListings.active, true)).orderBy(desc(bookListings.createdAt));
+  }
+
+  async getBookListingsByUserId(userId: string): Promise<BookListing[]> {
+    return db.select().from(bookListings).where(eq(bookListings.userId, userId)).orderBy(desc(bookListings.createdAt));
+  }
+
+  async createBookListing(listing: InsertBookListing): Promise<BookListing> {
+    const [created] = await db.insert(bookListings).values(listing).returning();
+    return created;
+  }
+
+  async deleteBookListing(id: string): Promise<void> {
+    await db.delete(bookListings).where(eq(bookListings.id, id));
+  }
+
+  async updateBookListing(id: string, data: Partial<InsertBookListing>): Promise<BookListing | undefined> {
+    const [updated] = await db.update(bookListings).set(data).where(eq(bookListings.id, id)).returning();
+    return updated;
   }
 }
 

@@ -18,6 +18,13 @@ import {
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import type { Partner, Challenge } from "@shared/schema";
+import { getCurrentBadge } from "@/lib/badges";
+import { Sprout, BookOpen as BookOpenBadge, Library as LibraryBadge, GraduationCap as GradCapBadge, Star as StarBadge, Crown } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+const badgeIconMap: Record<string, LucideIcon> = {
+  Sprout, BookOpen: BookOpenBadge, Library: LibraryBadge, GraduationCap: GradCapBadge, Star: StarBadge, Crown,
+};
 import heroBg from "@assets/background_1771243573729.png";
 import kidsReadingImg from "@assets/ChatGPT_Image_17._feb_2026._u_20_56_38_1771358489681.png";
 import bookIconImg from "@assets/book_icon_1771363420815.png";
@@ -125,7 +132,16 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
                     #{index + 1}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-medium text-base">{user.username}</TableCell>
+                <TableCell className="font-medium text-base">
+                  <span className="inline-flex items-center gap-1.5">
+                    {user.username}
+                    {(() => {
+                      const badge = getCurrentBadge(user.totalScore || user.points || 0);
+                      const Icon = badgeIconMap[badge.iconName];
+                      return Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null;
+                    })()}
+                  </span>
+                </TableCell>
                 {ageGroup !== "A" && <TableCell className="text-base">{user.className}</TableCell>}
                 <TableCell className="text-right text-base">{user.totalScore || user.points}</TableCell>
               </TableRow>
