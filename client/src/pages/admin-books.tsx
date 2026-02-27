@@ -274,6 +274,9 @@ export default function AdminBooks() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       
       let description = `Uspješno uvezeno ${data.imported || 0} knjiga.`;
+      if (data.updatedCovers > 0) {
+        description += ` Ažurirano ${data.updatedCovers} korica.`;
+      }
       if (data.skipped > 0) {
         description += ` Preskočeno ${data.skipped} duplikata.`;
       }

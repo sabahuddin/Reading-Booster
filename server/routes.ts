@@ -1544,10 +1544,11 @@ export async function registerRoutes(
 
       const created: string[] = [];
       const skipped: string[] = [];
+      const updatedCovers: string[] = [];
       const errors: string[] = [];
 
       const existingBooks = await storage.getAllBooks();
-      const existingSet = new Set(existingBooks.map(b => `${b.title.toLowerCase()}::${b.author.toLowerCase()}`));
+      const existingMap = new Map(existingBooks.map(b => [`${b.title.toLowerCase()}::${b.author.toLowerCase()}`, b]));
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -1557,11 +1558,17 @@ export async function registerRoutes(
             continue;
           }
           const key = `${row.title.toLowerCase()}::${row.author.toLowerCase()}`;
-          if (existingSet.has(key)) {
-            skipped.push(row.title);
+          const existingBook = existingMap.get(key);
+          if (existingBook) {
+            if (row.coverImage && row.coverImage.trim() && row.coverImage !== existingBook.coverImage) {
+              await storage.updateBook(existingBook.id, { coverImage: row.coverImage.trim() });
+              updatedCovers.push(row.title);
+            } else {
+              skipped.push(row.title);
+            }
             continue;
           }
-          existingSet.add(key);
+          existingMap.set(key, {} as any);
           const ageGroupMap: Record<string, string> = {
             "od 1. razreda": "R1", "r1": "R1",
             "od 4. razreda": "R4", "r4": "R4",
@@ -1608,7 +1615,7 @@ export async function registerRoutes(
       }
 
       fs.unlinkSync(req.file.path);
-      return res.json({ imported: created.length, skipped: skipped.length, skippedTitles: skipped, errors, titles: created });
+      return res.json({ imported: created.length, skipped: skipped.length, skippedTitles: skipped, updatedCovers: updatedCovers.length, updatedCoverTitles: updatedCovers, errors, titles: created });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
