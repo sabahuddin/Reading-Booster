@@ -34,7 +34,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, FolderArchive } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, FolderArchive, RefreshCw } from "lucide-react";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -88,6 +88,7 @@ export default function AdminBooks() {
   const [coverCsvImporting, setCoverCsvImporting] = useState(false);
   const zipInputRef = useRef<HTMLInputElement>(null);
   const [zipUploading, setZipUploading] = useState(false);
+  const [migrating, setMigrating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<"title" | "author" | null>(null);
@@ -336,6 +337,33 @@ export default function AdminBooks() {
     }
   }
 
+  async function handleMigrateCovers() {
+    setMigrating(true);
+    try {
+      const res = await fetch("/api/admin/migrate-covers", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Migracija nije uspjela");
+      }
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+
+      let description = `Preuzeto ${data.downloaded} korica na server.`;
+      if (data.alreadyLocal > 0) {
+        description += ` Već lokalno: ${data.alreadyLocal}.`;
+      }
+      if (data.broken > 0) {
+        description += ` Neispravno: ${data.broken} (link obrisan).`;
+      }
+
+      toast({ title: "Migracija završena", description });
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    } finally {
+      setMigrating(false);
+    }
+  }
+
   async function handleZipUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -538,6 +566,11 @@ export default function AdminBooks() {
                 <DropdownMenuItem onClick={() => zipInputRef.current?.click()} disabled={zipUploading} data-testid="button-upload-covers-zip">
                   <FolderArchive className="mr-2 h-4 w-4" />
                   {zipUploading ? "Učitavanje..." : "Uvezi korice (ZIP)"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleMigrateCovers} disabled={migrating} data-testid="button-migrate-covers">
+                  <RefreshCw className={`mr-2 h-4 w-4 ${migrating ? "animate-spin" : ""}`} />
+                  {migrating ? "Migracija u toku..." : "Preseli korice na server"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
