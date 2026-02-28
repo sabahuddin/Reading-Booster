@@ -10,6 +10,32 @@ async function runManualMigrations() {
       name: "add_quiz_author_to_quizzes",
       sql: `ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS quiz_author text DEFAULT ''`
     },
+    {
+      name: "create_book_listings",
+      sql: `CREATE TABLE IF NOT EXISTS book_listings (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        user_id VARCHAR(36) NOT NULL,
+        book_title TEXT NOT NULL,
+        book_author TEXT NOT NULL DEFAULT '',
+        city TEXT NOT NULL DEFAULT '',
+        listing_type TEXT NOT NULL DEFAULT 'prodajem',
+        price TEXT NOT NULL DEFAULT '',
+        phone TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      )`
+    },
+    {
+      name: "create_book_ratings",
+      sql: `CREATE TABLE IF NOT EXISTS book_ratings (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        book_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        rating INTEGER NOT NULL DEFAULT 5,
+        created_at TIMESTAMP DEFAULT NOW()
+      )`
+    },
   ];
 
   for (const m of migrations) {
