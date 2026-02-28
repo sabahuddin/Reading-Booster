@@ -130,35 +130,50 @@ async function searchKnjigaBaCandidates(title: string, author: string): Promise<
   return candidates;
 }
 
-export async function downloadImageToLocal(imageUrl: string): Promise<string | null> {
-  try {
-    const res = await fetchWithTimeout(imageUrl, 15000);
-    if (!res.ok) return null;
-
-    const contentType = res.headers.get("content-type") || "";
-    let ext = ".jpg";
-    if (contentType.includes("png")) ext = ".png";
-    else if (contentType.includes("webp")) ext = ".webp";
-    else if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = ".jpg";
-    else {
-      const urlLower = imageUrl.toLowerCase();
-      if (urlLower.endsWith(".png")) ext = ".png";
-      else if (urlLower.endsWith(".webp")) ext = ".webp";
-    }
-
-    const filename = `${randomUUID()}${ext}`;
-    const filePath = path.join(coversDir, filename);
-
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    if (buffer.length < 1000) return null;
-
-    fs.writeFileSync(filePath, buffer);
-    return `/uploads/covers/${filename}`;
-  } catch {
+export async function downloadImageToLocal(imageUrl: string, retries = 2): Promise<string | null> {
+  if (!imageUrl || imageUrl.includes('buybook.ba') || imageUrl.includes('Buybook_Footer') || imageUrl.includes('placeholder')) {
     return null;
   }
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+      const res = await fetchWithTimeout(imageUrl, 20000);
+      if (res.status === 429 || res.status === 503) {
+        console.log(`  [RETRY ${attempt + 1}] Rate limited for ${imageUrl}`);
+        continue;
+      }
+      if (!res.ok) return null;
+
+      const contentType = res.headers.get("content-type") || "";
+      let ext = ".jpg";
+      if (contentType.includes("png")) ext = ".png";
+      else if (contentType.includes("webp")) ext = ".webp";
+      else if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = ".jpg";
+      else {
+        const urlLower = imageUrl.toLowerCase();
+        if (urlLower.endsWith(".png")) ext = ".png";
+        else if (urlLower.endsWith(".webp")) ext = ".webp";
+      }
+
+      const filename = `${randomUUID()}${ext}`;
+      const filePath = path.join(coversDir, filename);
+
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      if (buffer.length < 1000) return null;
+
+      fs.writeFileSync(filePath, buffer);
+      return `/uploads/covers/${filename}`;
+    } catch {
+      if (attempt < retries) continue;
+      return null;
+    }
+  }
+  return null;
 }
 
 export function isValidCover(url: string | null | undefined): boolean {
@@ -328,9 +343,9 @@ export async function migrateExternalCoversToLocal(
       if (onProgress) onProgress(`[${migrated + failed}/${externalBooks.length}] ✓ ${book.title}`);
     } else {
       failed++;
-      if (onProgress) onProgress(`[${migrated + failed}/${externalBooks.length}] ✗ ${book.title}`);
+      if (onProgress) onProgress(`[${migrated + failed}/${externalBooks.length}] ✗ ${book.title} (download neuspješan, vanjski link zadržan)`);
     }
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 500));
   }
 
   return { migrated, failed, total: externalBooks.length };

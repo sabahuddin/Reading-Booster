@@ -2055,8 +2055,13 @@ Odgovori ISKLJUČIVO u JSON formatu:
           const existingBook = existingMap.get(key);
           if (existingBook) {
             if (row.coverImage && row.coverImage.trim() && row.coverImage !== existingBook.coverImage) {
-              await storage.updateBook(existingBook.id, { coverImage: row.coverImage.trim() });
-              updatedCovers.push(row.title);
+              const newCover = row.coverImage.trim();
+              const hasLocalCover = existingBook.coverImage?.startsWith('/uploads/covers/');
+              const isFakeCover = newCover.includes('buybook.ba') || newCover.includes('Buybook_Footer') || newCover.includes('placeholder');
+              if (!isFakeCover && !hasLocalCover) {
+                await storage.updateBook(existingBook.id, { coverImage: newCover });
+                updatedCovers.push(row.title);
+              }
             }
             if (row.genre && row.genre.trim()) {
               const genreMapExisting: Record<string, string> = {
