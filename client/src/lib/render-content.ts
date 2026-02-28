@@ -25,7 +25,9 @@ export function renderBlogContent(content: string): string {
     return markPlaceholders[parseInt(idx)] || "";
   });
 
-  processed = processed.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  processed = processed.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+  processed = processed.replace(/\*(.+?)\*/g, "<em>$1</em>");
 
   processed = processed.replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>');
   processed = processed.replace(/^### (.*$)/gm, '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>');
