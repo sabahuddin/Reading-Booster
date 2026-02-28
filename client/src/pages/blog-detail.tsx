@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { motion } from "framer-motion";
+import { renderBlogContent } from "@/lib/render-content";
 import { Calendar, ArrowLeft, User, MessageSquare, Send, Trash2, BookOpen, Share2 } from "lucide-react";
 import { SocialShare } from "@/components/social-share";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -214,11 +215,10 @@ export default function BlogDetail() {
                 </header>
 
                 <div
-                  className="whitespace-pre-wrap text-lg leading-relaxed"
+                  className="text-lg leading-relaxed prose prose-lg max-w-none"
                   data-testid="text-blog-content"
-                >
-                  {post.content}
-                </div>
+                  dangerouslySetInnerHTML={{ __html: renderBlogContent(post.content) }}
+                />
               </motion.article>
 
               <div className="mt-8 not-prose">

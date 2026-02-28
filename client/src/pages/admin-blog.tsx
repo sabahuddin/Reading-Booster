@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -255,7 +256,9 @@ export default function AdminBlog() {
                 <FormField control={form.control} name="content" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sadržaj</FormLabel>
-                    <FormControl><Textarea {...field} className="min-h-[150px]" data-testid="input-blog-content" /></FormControl>
+                    <FormControl>
+                      <RichTextEditor value={field.value} onChange={field.onChange} className="min-h-[200px]" data-testid="input-blog-content" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

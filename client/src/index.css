@@ -286,3 +286,19 @@
     inset: -1px;
   }
 }
+
+mark.highlight-yellow {
+  background-color: #fef08a;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+mark.highlight-green {
+  background-color: #bbf7d0;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+mark.highlight-orange {
+  background-color: #fed7aa;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
