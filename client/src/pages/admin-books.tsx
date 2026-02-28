@@ -116,6 +116,16 @@ export default function AdminBooks() {
     return new Set(quizzes.map(q => q.bookId));
   }, [quizzes]);
 
+  const bookQuizInfo = useMemo(() => {
+    if (!quizzes) return new Map<string, number>();
+    const map = new Map<string, number>();
+    for (const q of quizzes as any[]) {
+      const current = map.get(q.bookId) || 0;
+      map.set(q.bookId, current + (q.questionCount || 0));
+    }
+    return map;
+  }, [quizzes]);
+
   function toggleSort(field: "title" | "author") {
     if (sortField === field) {
       setSortDir(prev => prev === "asc" ? "desc" : "asc");
@@ -947,6 +957,7 @@ export default function AdminBooks() {
                     <TableHead>Žanr</TableHead>
                     <TableHead>Težina</TableHead>
                     <TableHead className="text-center">Korica</TableHead>
+                    <TableHead className="text-center">Kviz</TableHead>
                     <TableHead>Akcije</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -985,6 +996,13 @@ export default function AdminBooks() {
                             <CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
                           ) : (
                             <ImageOff className="h-4 w-4 text-muted-foreground/50 mx-auto" />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {bookQuizInfo.has(book.id) ? (
+                            <span className="text-xs font-medium text-green-600">{bookQuizInfo.get(book.id)}p</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/50">—</span>
                           )}
                         </TableCell>
                         <TableCell>
