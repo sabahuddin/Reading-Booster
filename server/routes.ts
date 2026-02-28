@@ -2061,7 +2061,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
               if (!isFakeCover && !hasLocalCover) {
                 let finalCover = newCover;
                 if (newCover.startsWith('http')) {
-                  const localPath = await downloadImageToLocal(newCover);
+                  const localPath = await downloadImageToLocal(newCover, row.title);
                   if (localPath) {
                     finalCover = localPath;
                   }
@@ -2126,7 +2126,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
           let csvCoverImage = row.coverImage || "";
           if (csvCoverImage && csvCoverImage.startsWith('http') && !csvCoverImage.includes('buybook.ba') && !csvCoverImage.includes('placeholder')) {
-            const localCover = await downloadImageToLocal(csvCoverImage);
+            const localCover = await downloadImageToLocal(csvCoverImage, row.title);
             if (localCover) csvCoverImage = localCover;
           }
           if (!csvCoverImage || csvCoverImage.includes('placeholder') || csvCoverImage.includes('buybook.ba')) {

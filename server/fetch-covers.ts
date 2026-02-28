@@ -130,49 +130,69 @@ async function searchKnjigaBaCandidates(title: string, author: string): Promise<
   return candidates;
 }
 
-export async function downloadImageToLocal(imageUrl: string, retries = 2): Promise<string | null> {
+function stripCacheFromUrl(url: string): string {
+  return url.replace(/\/cache\/1\/[^/]+\/[^/]+\/[^/]+\//g, "/");
+}
+
+async function tryDownloadUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(url, 20000);
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("text/html")) return null;
+
+    let ext = ".jpg";
+    if (contentType.includes("png")) ext = ".png";
+    else if (contentType.includes("webp")) ext = ".webp";
+    else if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = ".jpg";
+    else {
+      const urlLower = url.toLowerCase();
+      if (urlLower.endsWith(".png")) ext = ".png";
+      else if (urlLower.endsWith(".webp")) ext = ".webp";
+    }
+
+    const filename = `${randomUUID()}${ext}`;
+    const filePath = path.join(coversDir, filename);
+
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    if (buffer.length < 1000) return null;
+
+    fs.writeFileSync(filePath, buffer);
+    return `/uploads/covers/${filename}`;
+  } catch {
+    return null;
+  }
+}
+
+export async function downloadImageToLocal(imageUrl: string, bookTitle?: string): Promise<string | null> {
   if (!imageUrl || imageUrl.includes('buybook.ba') || imageUrl.includes('Buybook_Footer') || imageUrl.includes('placeholder')) {
     return null;
   }
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      if (attempt > 0) {
-        await new Promise(r => setTimeout(r, 1000 * attempt));
-      }
-      const res = await fetchWithTimeout(imageUrl, 20000);
-      if (res.status === 429 || res.status === 503) {
-        console.log(`  [RETRY ${attempt + 1}] Rate limited for ${imageUrl}`);
-        continue;
-      }
-      if (!res.ok) return null;
+  const urlsToTry: string[] = [];
 
-      const contentType = res.headers.get("content-type") || "";
-      let ext = ".jpg";
-      if (contentType.includes("png")) ext = ".png";
-      else if (contentType.includes("webp")) ext = ".webp";
-      else if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = ".jpg";
-      else {
-        const urlLower = imageUrl.toLowerCase();
-        if (urlLower.endsWith(".png")) ext = ".png";
-        else if (urlLower.endsWith(".webp")) ext = ".webp";
-      }
+  const stripped = stripCacheFromUrl(imageUrl);
+  if (stripped !== imageUrl) {
+    urlsToTry.push(stripped);
+  }
+  urlsToTry.push(imageUrl);
 
-      const filename = `${randomUUID()}${ext}`;
-      const filePath = path.join(coversDir, filename);
+  for (const url of urlsToTry) {
+    const result = await tryDownloadUrl(url);
+    if (result) return result;
+  }
 
-      const arrayBuffer = await res.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      if (buffer.length < 1000) return null;
-
-      fs.writeFileSync(filePath, buffer);
-      return `/uploads/covers/${filename}`;
-    } catch {
-      if (attempt < retries) continue;
-      return null;
+  if (bookTitle) {
+    const candidates = await searchKnjigaBaCandidates(bookTitle, "");
+    if (candidates.length > 0 && candidates[0].similarity >= 0.5) {
+      const result = await tryDownloadUrl(candidates[0].imageUrl);
+      if (result) return result;
     }
   }
+
   return null;
 }
 
