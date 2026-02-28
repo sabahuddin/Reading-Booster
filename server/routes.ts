@@ -2059,7 +2059,14 @@ Odgovori ISKLJUČIVO u JSON formatu:
               const hasLocalCover = existingBook.coverImage?.startsWith('/uploads/covers/');
               const isFakeCover = newCover.includes('buybook.ba') || newCover.includes('Buybook_Footer') || newCover.includes('placeholder');
               if (!isFakeCover && !hasLocalCover) {
-                await storage.updateBook(existingBook.id, { coverImage: newCover });
+                let finalCover = newCover;
+                if (newCover.startsWith('http')) {
+                  const localPath = await downloadImageToLocal(newCover);
+                  if (localPath) {
+                    finalCover = localPath;
+                  }
+                }
+                await storage.updateBook(existingBook.id, { coverImage: finalCover });
                 updatedCovers.push(row.title);
               }
             }
@@ -2117,11 +2124,20 @@ Odgovori ISKLJUČIVO u JSON formatu:
           }).filter(Boolean);
           const primaryGenre = genreSlugs[0] || "lektira";
 
+          let csvCoverImage = row.coverImage || "";
+          if (csvCoverImage && csvCoverImage.startsWith('http') && !csvCoverImage.includes('buybook.ba') && !csvCoverImage.includes('placeholder')) {
+            const localCover = await downloadImageToLocal(csvCoverImage);
+            if (localCover) csvCoverImage = localCover;
+          }
+          if (!csvCoverImage || csvCoverImage.includes('placeholder') || csvCoverImage.includes('buybook.ba')) {
+            csvCoverImage = "";
+          }
+
           const newBook = await storage.createBook({
             title: row.title,
             author: row.author,
             description: row.description || "",
-            coverImage: row.coverImage || "https://via.placeholder.com/200x300?text=Knjiga",
+            coverImage: csvCoverImage,
             content: row.content || row.description || "",
             ageGroup: mappedAge,
             genre: primaryGenre,
