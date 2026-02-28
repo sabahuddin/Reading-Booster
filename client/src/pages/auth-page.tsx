@@ -440,9 +440,9 @@ export default function AuthPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="family_1_1">1 roditelj + 1 dijete — 17 KM</SelectItem>
-                                    <SelectItem value="family_1_3">1 roditelj + 3 djece — 22 KM</SelectItem>
-                                    <SelectItem value="family_2_3">2 roditelja + 3 djece — 27 KM</SelectItem>
+                                    <SelectItem value="family_1_1">1 roditelj + 1 dijete — 🤔</SelectItem>
+                                    <SelectItem value="family_1_3">1 roditelj + 3 djece — 🤔</SelectItem>
+                                    <SelectItem value="family_2_3">2 roditelja + 3 djece — 🤔</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
