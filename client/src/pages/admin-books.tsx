@@ -96,6 +96,8 @@ export default function AdminBooks() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filterNoCover, setFilterNoCover] = useState(false);
   const [filterNoQuiz, setFilterNoQuiz] = useState(false);
+  const [selectedBookIds, setSelectedBookIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -707,6 +709,42 @@ export default function AdminBooks() {
   const isPending = createMutation.isPending || updateMutation.isPending;
   const ageLabel = (v: string) => AGE_GROUPS.find((a) => a.value === v)?.label ?? v;
 
+  function toggleBookSelection(bookId: string) {
+    setSelectedBookIds(prev => {
+      const next = new Set(prev);
+      if (next.has(bookId)) next.delete(bookId); else next.add(bookId);
+      return next;
+    });
+  }
+
+  function toggleSelectAllOnPage() {
+    const pageIds = paginatedBooks.map(b => b.id);
+    const allSelected = pageIds.every(id => selectedBookIds.has(id));
+    setSelectedBookIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        pageIds.forEach(id => next.delete(id));
+      } else {
+        pageIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selectedBookIds);
+    if (ids.length === 0) return;
+    try {
+      await apiRequest("POST", "/api/admin/books/bulk-delete", { bookIds: ids });
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      toast({ title: `Obrisano ${ids.length} knjiga` });
+      setSelectedBookIds(new Set());
+      setBulkDeleteConfirm(false);
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+    }
+  }
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
@@ -852,6 +890,18 @@ export default function AdminBooks() {
           )}
         </div>
 
+        {selectedBookIds.size > 0 && (
+          <div className="flex items-center gap-3 bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3" data-testid="bulk-action-bar">
+            <span className="text-sm font-medium">{selectedBookIds.size} knjiga označeno</span>
+            <Button size="sm" variant="destructive" onClick={() => setBulkDeleteConfirm(true)} data-testid="button-bulk-delete">
+              <Trash2 className="h-4 w-4 mr-1" /> Obriši označene
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedBookIds(new Set())} data-testid="button-clear-selection">
+              Poništi izbor
+            </Button>
+          </div>
+        )}
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -864,6 +914,13 @@ export default function AdminBooks() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={paginatedBooks.length > 0 && paginatedBooks.every(b => selectedBookIds.has(b.id))}
+                        onCheckedChange={toggleSelectAllOnPage}
+                        data-testid="checkbox-select-all"
+                      />
+                    </TableHead>
                     <TableHead>
                       <button
                         type="button"
@@ -896,7 +953,14 @@ export default function AdminBooks() {
                 <TableBody>
                   {paginatedBooks.length > 0 ? (
                     paginatedBooks.map((book) => (
-                      <TableRow key={book.id} data-testid={`row-book-${book.id}`}>
+                      <TableRow key={book.id} data-testid={`row-book-${book.id}`} className={selectedBookIds.has(book.id) ? "bg-destructive/5" : ""}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedBookIds.has(book.id)}
+                            onCheckedChange={() => toggleBookSelection(book.id)}
+                            data-testid={`checkbox-book-${book.id}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             {book.weeklyPick && <Star className="h-4 w-4 text-yellow-500" />}
@@ -1261,6 +1325,23 @@ export default function AdminBooks() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => !open && setBulkDeleteConfirm(false)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Obriši {selectedBookIds.size} knjiga?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ova radnja je nepovratna. Označene knjige ({selectedBookIds.size}) će biti trajno obrisane zajedno sa njihovim kvizovima i rezultatima.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-bulk-delete">Odustani</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBulkDelete} data-testid="button-confirm-bulk-delete">
+                Obriši {selectedBookIds.size} knjiga
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog open={!!deleteBook} onOpenChange={(open) => !open && setDeleteBook(null)}>
           <AlertDialogContent>

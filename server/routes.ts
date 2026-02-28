@@ -883,6 +883,26 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  app.post("/api/admin/books/bulk-delete", requireAdmin, async (req, res) => {
+    try {
+      const { bookIds } = req.body;
+      if (!Array.isArray(bookIds) || bookIds.length === 0) {
+        return res.status(400).json({ message: "bookIds niz je obavezan" });
+      }
+      let deleted = 0;
+      for (const bookId of bookIds) {
+        try {
+          await storage.setBookGenres(bookId, []);
+          await storage.deleteBook(bookId);
+          deleted++;
+        } catch {}
+      }
+      return res.json({ message: `Obrisano ${deleted} knjiga`, deleted });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // ==================== QUIZ ROUTES ====================
 
   app.get("/api/books/:bookId/quizzes", async (req, res) => {
