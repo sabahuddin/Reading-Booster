@@ -10,6 +10,7 @@ function escapeHtml(text: string): string {
 
 export function renderBlogContent(content: string): string {
   const markPlaceholders: string[] = [];
+
   let processed = content.replace(/<mark\s+class="(highlight-(?:yellow|green|orange))">(.*?)<\/mark>/g, (_match, cls, text) => {
     if (ALLOWED_MARK_CLASSES.includes(cls)) {
       const idx = markPlaceholders.length;
@@ -17,6 +18,12 @@ export function renderBlogContent(content: string): string {
       return `%%MARK_${idx}%%`;
     }
     return text;
+  });
+
+  processed = processed.replace(/<mark>(.*?)<\/mark>/g, (_match, text) => {
+    const idx = markPlaceholders.length;
+    markPlaceholders.push(`<mark class="highlight-yellow">${escapeHtml(text)}</mark>`);
+    return `%%MARK_${idx}%%`;
   });
 
   processed = escapeHtml(processed);
@@ -27,7 +34,7 @@ export function renderBlogContent(content: string): string {
 
   processed = processed.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 
-  processed = processed.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  processed = processed.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, "<em>$1</em>");
 
   processed = processed.replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>');
   processed = processed.replace(/^### (.*$)/gm, '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>');

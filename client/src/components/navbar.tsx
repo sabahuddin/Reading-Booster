@@ -64,6 +64,7 @@ export function Navbar() {
           <span className="flex items-center gap-2 text-2xl font-bold">
             <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
             Čitanje
+            <span className="text-xs font-normal text-muted-foreground ml-1 self-end mb-1">(test faza)</span>
           </span>
         </Link>
 
@@ -187,6 +188,7 @@ export function Navbar() {
                 <SheetTitle className="flex items-center gap-2 text-lg">
                   <img src={logoImg} alt="Čitanje logo" className="h-10 w-10" />
                   Čitanje
+                  <span className="text-xs font-normal text-muted-foreground ml-1">(test faza)</span>
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-6 flex flex-col gap-2">
