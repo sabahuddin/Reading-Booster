@@ -2074,7 +2074,27 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const errors: string[] = [];
 
       const existingBooks = await storage.getAllBooks();
+      function normalizeForMatch(text: string): string {
+        return text.toLowerCase()
+          .replace(/č/g, "c").replace(/ć/g, "c").replace(/š/g, "s")
+          .replace(/ž/g, "z").replace(/đ/g, "dj")
+          .replace(/[^a-z0-9]/g, "")
+          .trim();
+      }
+      function findExistingBook(title: string, author: string): (typeof existingBooks)[0] | undefined {
+        const normTitle = normalizeForMatch(title);
+        const normAuthor = normalizeForMatch(author);
+        return existingBooks.find(b => {
+          const bt = normalizeForMatch(b.title);
+          const ba = normalizeForMatch(b.author);
+          if (bt === normTitle && ba === normAuthor) return true;
+          if (bt === normTitle && (ba.includes(normAuthor) || normAuthor.includes(ba))) return true;
+          if (normTitle.length > 5 && bt.includes(normTitle) && ba === normAuthor) return true;
+          return false;
+        });
+      }
       const existingMap = new Map(existingBooks.map(b => [`${b.title.toLowerCase()}::${b.author.toLowerCase()}`, b]));
+      const csvSeenKeys = new Set<string>();
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -2083,8 +2103,14 @@ Odgovori ISKLJUČIVO u JSON formatu:
             errors.push(`Red ${i + 2}: Naslov i autor su obavezni`);
             continue;
           }
+          const csvKey = normalizeForMatch(row.title) + "::" + normalizeForMatch(row.author);
+          if (csvSeenKeys.has(csvKey)) {
+            skipped.push(`${row.title} (duplikat u CSV-u)`);
+            continue;
+          }
+          csvSeenKeys.add(csvKey);
           const key = `${row.title.toLowerCase()}::${row.author.toLowerCase()}`;
-          const existingBook = existingMap.get(key);
+          const existingBook = existingMap.get(key) || findExistingBook(row.title, row.author);
           if (existingBook) {
             if (row.coverImage && row.coverImage.trim() && row.coverImage !== existingBook.coverImage) {
               const newCover = row.coverImage.trim();
@@ -2101,6 +2127,21 @@ Odgovori ISKLJUČIVO u JSON formatu:
                 await storage.updateBook(existingBook.id, { coverImage: finalCover });
                 updatedCovers.push(row.title);
               }
+            }
+            const fillUpdates: Record<string, any> = {};
+            if (row.description && row.description.trim() && (!existingBook.description || existingBook.description === "Opis nedostaje" || existingBook.description.trim() === "")) {
+              fillUpdates.description = row.description.trim();
+              fillUpdates.content = row.description.trim();
+            }
+            if (row.isbn && row.isbn.trim() && !existingBook.isbn) fillUpdates.isbn = row.isbn.trim();
+            if (row.publisher && row.publisher.trim() && !existingBook.publisher) fillUpdates.publisher = row.publisher.trim();
+            if (row.publicationYear && !existingBook.publicationYear) fillUpdates.publicationYear = parseInt(row.publicationYear);
+            if (row.pageCount && parseInt(row.pageCount) > 0 && (!existingBook.pageCount || existingBook.pageCount <= 1)) fillUpdates.pageCount = parseInt(row.pageCount);
+            if (row.language && row.language.trim() && (!existingBook.language || existingBook.language === "bosanski")) fillUpdates.language = row.language.trim();
+            if (row.pdfUrl && row.pdfUrl.trim() && !existingBook.pdfUrl) fillUpdates.pdfUrl = row.pdfUrl.trim();
+            if (row.purchaseUrl && row.purchaseUrl.trim() && !existingBook.purchaseUrl) fillUpdates.purchaseUrl = row.purchaseUrl.trim();
+            if (Object.keys(fillUpdates).length > 0) {
+              await storage.updateBook(existingBook.id, fillUpdates);
             }
             if (row.genre && row.genre.trim()) {
               const genreMapExisting: Record<string, string> = {
@@ -2126,8 +2167,11 @@ Odgovori ISKLJUČIVO u JSON formatu:
                 await storage.setBookGenres(existingBook.id, merged);
               }
             }
-            if (!updatedCovers.includes(row.title)) {
+            const updated = updatedCovers.includes(row.title) || Object.keys(fillUpdates).length > 0;
+            if (!updated) {
               skipped.push(row.title);
+            } else if (!updatedCovers.includes(row.title)) {
+              skipped.push(`${row.title} (ažurirano)`);
             }
             continue;
           }
