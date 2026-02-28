@@ -34,7 +34,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, FolderArchive, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, ImageOff, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, FolderArchive, RefreshCw, CheckCircle2 } from "lucide-react";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -889,7 +889,7 @@ export default function AdminBooks() {
                     <TableHead>Dob</TableHead>
                     <TableHead>Žanr</TableHead>
                     <TableHead>Težina</TableHead>
-                    <TableHead>Str.</TableHead>
+                    <TableHead className="text-center">Korica</TableHead>
                     <TableHead>Akcije</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -916,7 +916,13 @@ export default function AdminBooks() {
                           </div>
                         </TableCell>
                         <TableCell><DifficultyIcon difficulty={book.readingDifficulty} size="sm" /></TableCell>
-                        <TableCell>{book.pageCount}</TableCell>
+                        <TableCell className="text-center">
+                          {book.coverImage && book.coverImage.trim() && !book.coverImage.includes("placeholder") ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
+                          ) : (
+                            <ImageOff className="h-4 w-4 text-muted-foreground/50 mx-auto" />
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Button size="icon" variant="ghost" onClick={() => openEdit(book)} data-testid={`button-edit-book-${book.id}`}>
