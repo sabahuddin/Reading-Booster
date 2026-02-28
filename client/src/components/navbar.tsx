@@ -62,9 +62,9 @@ export function Navbar() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-1">
         <Link href="/" data-testid="link-logo">
-          <span className="flex items-center gap-1">
-            <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
-            <img src={brandTextImg} alt="Čitanje" className="h-10 object-contain" />
+          <span className="flex items-center gap-0">
+            <img src={logoImg} alt="Čitanje logo" className="h-14 w-14 -mr-1" />
+            <img src={brandTextImg} alt="Čitanje" className="h-14 object-contain" />
             <span className="text-xs font-normal text-muted-foreground ml-1 self-end mb-1">(test faza)</span>
           </span>
         </Link>
@@ -186,9 +186,9 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-1 text-lg">
-                  <img src={logoImg} alt="Čitanje logo" className="h-10 w-10" />
-                  <img src={brandTextImg} alt="Čitanje" className="h-8 object-contain" />
+                <SheetTitle className="flex items-center gap-0 text-lg">
+                  <img src={logoImg} alt="Čitanje logo" className="h-10 w-10 -mr-1" />
+                  <img src={brandTextImg} alt="Čitanje" className="h-10 object-contain" />
                   <span className="text-xs font-normal text-muted-foreground ml-1">(test faza)</span>
                 </SheetTitle>
               </SheetHeader>
