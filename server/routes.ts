@@ -160,11 +160,27 @@ function validatePassword(password: string): { valid: boolean; message?: string 
   return { valid: true };
 }
 
+const xssOptions: xss.IFilterXSSOptions = {
+  whiteList: {
+    ...xss.whiteList,
+    mark: ["class"],
+  },
+  onTagAttr(tag, name, value) {
+    if (tag === "mark" && name === "class") {
+      const allowed = ["highlight-yellow", "highlight-green", "highlight-orange"];
+      if (allowed.includes(value)) {
+        return `${name}="${value}"`;
+      }
+    }
+    return undefined as unknown as string;
+  },
+};
+
 function sanitizeInput(req: Request, _res: Response, next: NextFunction) {
   if (req.body && typeof req.body === "object") {
     for (const key in req.body) {
       if (typeof req.body[key] === "string") {
-        req.body[key] = xss(req.body[key]);
+        req.body[key] = xss(req.body[key], xssOptions);
       }
     }
   }
