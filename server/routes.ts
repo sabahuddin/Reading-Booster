@@ -401,6 +401,38 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/proxy-image", requireAdmin, async (req, res) => {
+    try {
+      const imageUrl = req.query.url as string;
+      if (!imageUrl || !imageUrl.startsWith("http")) {
+        return res.status(400).json({ message: "URL je obavezan" });
+      }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const imgRes = await fetch(imageUrl, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "image/*",
+          },
+        });
+        clearTimeout(timeout);
+        if (!imgRes.ok) return res.status(404).json({ message: "Slika nije pronađena" });
+        const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        return res.send(buffer);
+      } catch {
+        clearTimeout(timeout);
+        return res.status(502).json({ message: "Greška pri preuzimanju slike" });
+      }
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/admin/migrate-covers-local", requireAdmin, async (req, res) => {
     if (coverFetchStatus.running) {
       return res.status(409).json({ message: "Druga operacija sa koricama je u toku." });

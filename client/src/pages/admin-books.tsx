@@ -789,10 +789,10 @@ export default function AdminBooks() {
               {pendingReview.map((item) => (
                 <div key={item.bookId} className="flex items-center gap-4 p-3 hover:bg-muted/50">
                   <img
-                    src={item.imageUrl}
+                    src={`/api/admin/proxy-image?url=${encodeURIComponent(item.imageUrl)}`}
                     alt={item.foundTitle}
                     className="w-12 h-16 object-cover rounded border shrink-0"
-                    onError={(e) => { (e.target as HTMLImageElement).src = ""; }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">Vaša knjiga: <span className="text-primary">{item.bookTitle}</span></p>

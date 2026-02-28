@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { books } from "@shared/schema";
-import { notInArray } from "drizzle-orm";
+import { notInArray, sql } from "drizzle-orm";
 
 type ReadingDifficulty = "lako" | "srednje" | "tesko";
 
@@ -2775,10 +2775,32 @@ const allBooks: Array<{
 ];
 
 export async function ensureAllBooks() {
-  const existingBooks = await db.select({ title: books.title }).from(books);
-  const existingTitles = existingBooks.map((b) => b.title);
+  const existingBooks = await db.select({ title: books.title, author: books.author }).from(books);
+  const existingKeys = new Set(existingBooks.map((b) => `${b.title.toLowerCase()}::${b.author.toLowerCase()}`));
 
-  const missingBooks = allBooks.filter((book) => !existingTitles.includes(book.title));
+  let deletedTitles = new Set<string>();
+  try {
+    const deleted = await db.execute(sql`
+      SELECT b.title, b.author FROM deleted_items d
+      LEFT JOIN books b ON b.id = d.item_id
+      WHERE d.item_type = 'book'
+      UNION
+      SELECT '' as title, item_id as author FROM deleted_items WHERE item_type = 'book_title_author'
+    `);
+    for (const r of deleted.rows) {
+      if (r.title && r.author) {
+        deletedTitles.add(`${(r.title as string).toLowerCase()}::${(r.author as string).toLowerCase()}`);
+      }
+    }
+  } catch {}
+
+  const seen = new Set<string>();
+  const missingBooks = allBooks.filter((book) => {
+    const key = `${book.title.toLowerCase()}::${book.author.toLowerCase()}`;
+    if (existingKeys.has(key) || seen.has(key) || deletedTitles.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   if (missingBooks.length === 0) {
     console.log("All books already exist in the database.");

@@ -112,13 +112,22 @@ export async function loadSeedData(): Promise<boolean> {
     const existingBookIds = new Set(
       (await client.query("SELECT id FROM books")).rows.map((r: any) => r.id)
     );
+    const existingBookKeys = new Set(
+      (await client.query("SELECT lower(title) || '::' || lower(author) as key FROM books")).rows.map((r: any) => r.key)
+    );
     const existingQuizIds = new Set(
       (await client.query("SELECT id FROM quizzes")).rows.map((r: any) => r.id)
     );
     const existingQuestionIds = new Set(
       (await client.query("SELECT id FROM questions")).rows.map((r: any) => r.id)
     );
-    const newBooks = data.books.filter((b: any) => !existingBookIds.has(b.id) && !deletedBookIds.has(b.id));
+    const newBooks = data.books.filter((b: any) => {
+      if (existingBookIds.has(b.id) || deletedBookIds.has(b.id)) return false;
+      const key = `${(b.title || '').toLowerCase()}::${(b.author || '').toLowerCase()}`;
+      if (existingBookKeys.has(key)) return false;
+      existingBookKeys.add(key);
+      return true;
+    });
     const newQuizzes = data.quizzes.filter((q: any) => !existingQuizIds.has(q.id) && !deletedQuizIds.has(q.id));
     const deletedBookQuizIds = new Set(
       data.quizzes.filter((q: any) => deletedBookIds.has(q.bookId)).map((q: any) => q.id)
