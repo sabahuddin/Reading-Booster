@@ -2081,6 +2081,25 @@ Odgovori ISKLJUČIVO u JSON formatu:
           .replace(/[^a-z0-9]/g, "")
           .trim();
       }
+      function authorLastName(name: string): string {
+        const parts = normalizeForMatch(name).replace(/[^a-z ]/g, "").trim().split(/\s+/);
+        return parts[parts.length - 1] || "";
+      }
+      function areSimilarAuthors(a: string, b: string): boolean {
+        const na = normalizeForMatch(a);
+        const nb = normalizeForMatch(b);
+        if (na === nb) return true;
+        if (na.includes(nb) || nb.includes(na)) return true;
+        const lastA = authorLastName(a);
+        const lastB = authorLastName(b);
+        if (lastA.length >= 3 && lastB.length >= 3) {
+          if (lastA === lastB) return true;
+          let common = 0;
+          for (const ch of lastA) { if (lastB.includes(ch)) common++; }
+          if (common / Math.max(lastA.length, lastB.length) >= 0.75) return true;
+        }
+        return false;
+      }
       function findExistingBook(title: string, author: string): (typeof existingBooks)[0] | undefined {
         const normTitle = normalizeForMatch(title);
         const normAuthor = normalizeForMatch(author);
@@ -2088,7 +2107,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
           const bt = normalizeForMatch(b.title);
           const ba = normalizeForMatch(b.author);
           if (bt === normTitle && ba === normAuthor) return true;
-          if (bt === normTitle && (ba.includes(normAuthor) || normAuthor.includes(ba))) return true;
+          if (bt === normTitle && areSimilarAuthors(author, b.author)) return true;
           if (normTitle.length > 5 && bt.includes(normTitle) && ba === normAuthor) return true;
           return false;
         });
