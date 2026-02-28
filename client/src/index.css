@@ -287,18 +287,20 @@
   }
 }
 
+mark.highlight-yellow,
+mark.highlight-green,
+mark.highlight-orange {
+  padding: 0.15em 0.3em;
+  border-radius: 4px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 mark.highlight-yellow {
-  background-color: #fef08a;
-  padding: 0.1em 0.2em;
-  border-radius: 2px;
+  background-color: rgba(254, 240, 138, 0.7);
 }
 mark.highlight-green {
-  background-color: #bbf7d0;
-  padding: 0.1em 0.2em;
-  border-radius: 2px;
+  background-color: rgba(187, 247, 208, 0.7);
 }
 mark.highlight-orange {
-  background-color: #fed7aa;
-  padding: 0.1em 0.2em;
-  border-radius: 2px;
+  background-color: rgba(254, 215, 170, 0.7);
 }
