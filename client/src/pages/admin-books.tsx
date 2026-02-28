@@ -53,7 +53,6 @@ const bookFormSchema = z.object({
   author: z.string().min(1, "Autor je obavezan"),
   description: z.string().min(1, "Opis je obavezan"),
   coverImage: z.string().min(1, "Naslovna slika je obavezna"),
-  content: z.string().min(1, "Sadržaj je obavezan"),
   ageGroup: z.string().min(1, "Dobna skupina je obavezna"),
   genre: z.string().optional(),
   readingDifficulty: z.enum(["lako", "srednje", "tesko"]),
@@ -190,7 +189,7 @@ export default function AdminBooks() {
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
-      title: "", author: "", description: "", coverImage: "", content: "",
+      title: "", author: "", description: "", coverImage: "",
       ageGroup: "", genre: "", readingDifficulty: "srednje",
       pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
       publisher: "", publicationYear: new Date().getFullYear(),
@@ -246,7 +245,7 @@ export default function AdminBooks() {
   const createMutation = useMutation({
     mutationFn: async (data: BookFormValues) => {
       const firstGenreSlug = allGenres?.find(g => selectedGenreIds.includes(g.id))?.slug ?? "";
-      const payload = { ...data, genre: firstGenreSlug, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null, genreIds: selectedGenreIds };
+      const payload = { ...data, content: data.description, genre: firstGenreSlug, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null, genreIds: selectedGenreIds };
       await apiRequest("POST", "/api/books", payload);
     },
     onSuccess: () => {
@@ -263,7 +262,7 @@ export default function AdminBooks() {
   const updateMutation = useMutation({
     mutationFn: async (data: BookFormValues) => {
       const firstGenreSlug = allGenres?.find(g => selectedGenreIds.includes(g.id))?.slug ?? "";
-      const payload = { ...data, genre: firstGenreSlug, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null, genreIds: selectedGenreIds };
+      const payload = { ...data, content: data.description, genre: firstGenreSlug, pdfUrl: data.pdfUrl || null, purchaseUrl: data.purchaseUrl || null, genreIds: selectedGenreIds };
       await apiRequest("PUT", `/api/books/${editingBook!.id}`, payload);
     },
     onSuccess: () => {
@@ -670,7 +669,7 @@ export default function AdminBooks() {
     setEditingBook(null);
     setSelectedGenreIds([]);
     form.reset({
-      title: "", author: "", description: "", coverImage: "", content: "",
+      title: "", author: "", description: "", coverImage: "",
       ageGroup: "", genre: "", readingDifficulty: "srednje",
       pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
     });
@@ -685,7 +684,6 @@ export default function AdminBooks() {
       author: book.author,
       description: book.description,
       coverImage: book.coverImage,
-      content: book.content,
       ageGroup: book.ageGroup,
       genre: book.genre,
       readingDifficulty: book.readingDifficulty as "lako" | "srednje" | "tesko",
@@ -1146,14 +1144,6 @@ export default function AdminBooks() {
                         </FormControl>
                       </div>
                     </div>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="content" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sadržaj / Opis knjige</FormLabel>
-                    <FormControl><Textarea {...field} className="min-h-[120px]" data-testid="input-book-content" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
