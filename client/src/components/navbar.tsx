@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, LogOut, LayoutDashboard, Star, AArrowUp, AArrowDown } from "lucide-react";
 import { useFontSize } from "@/hooks/use-font-size";
 import logoImg from "@assets/logo_citanje_tr_1771366023473.png";
+import brandTextImg from "@assets/ChatGPT_Image_28._feb_2026._u_22_29_12_1772314185635.png";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -61,17 +62,9 @@ export function Navbar() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-1">
         <Link href="/" data-testid="link-logo">
-          <span className="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
+          <span className="flex items-center gap-1">
             <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
-            <span className="rainbow-brand" aria-label="Čitanje">
-              <span style={{color: "#e53e3e"}}>Č</span>
-              <span style={{color: "#ed8936"}}>I</span>
-              <span style={{color: "#ecc94b"}}>T</span>
-              <span style={{color: "#38a169"}}>A</span>
-              <span style={{color: "#3182ce"}}>N</span>
-              <span style={{color: "#5a67d8"}}>J</span>
-              <span style={{color: "#805ad5"}}>E</span>
-            </span>
+            <img src={brandTextImg} alt="Čitanje" className="h-10 object-contain" />
             <span className="text-xs font-normal text-muted-foreground ml-1 self-end mb-1">(test faza)</span>
           </span>
         </Link>
@@ -193,17 +186,9 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-lg font-extrabold">
+                <SheetTitle className="flex items-center gap-1 text-lg">
                   <img src={logoImg} alt="Čitanje logo" className="h-10 w-10" />
-                  <span className="rainbow-brand" aria-label="Čitanje">
-                    <span style={{color: "#e53e3e"}}>Č</span>
-                    <span style={{color: "#ed8936"}}>I</span>
-                    <span style={{color: "#ecc94b"}}>T</span>
-                    <span style={{color: "#38a169"}}>A</span>
-                    <span style={{color: "#3182ce"}}>N</span>
-                    <span style={{color: "#5a67d8"}}>J</span>
-                    <span style={{color: "#805ad5"}}>E</span>
-                  </span>
+                  <img src={brandTextImg} alt="Čitanje" className="h-8 object-contain" />
                   <span className="text-xs font-normal text-muted-foreground ml-1">(test faza)</span>
                 </SheetTitle>
               </SheetHeader>
