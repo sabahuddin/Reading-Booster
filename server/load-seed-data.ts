@@ -8,6 +8,7 @@ interface SeedData {
   bookGenres: any[];
   quizzes: any[];
   questions: any[];
+  blogPosts?: any[];
 }
 
 function findFile(filename: string): string | null {
@@ -204,6 +205,29 @@ export async function loadSeedData(): Promise<boolean> {
       }
     }
     inserted.questions = qInserted;
+
+    if (data.blogPosts && data.blogPosts.length > 0) {
+      const existingBlogIds = new Set(
+        (await client.query("SELECT id FROM blog_posts")).rows.map((r: any) => r.id)
+      );
+      const existingBlogTitles = new Set(
+        (await client.query("SELECT title FROM blog_posts")).rows.map((r: any) => r.title)
+      );
+      const blogCols = await getTableColumns(client, "blog_posts");
+      let blogInserted = 0;
+      for (const bp of data.blogPosts) {
+        if (existingBlogIds.has(bp.id) || existingBlogTitles.has(bp.title)) continue;
+        try {
+          await upsertRow(client, "blog_posts", bp, blogCols);
+          blogInserted++;
+        } catch (e: any) {
+          if (sampleErrors.length < 3) sampleErrors.push(`blog: ${e.message?.substring(0, 100)}`);
+        }
+      }
+      if (blogInserted > 0) {
+        console.log(`[seed-data] Blog posts added: ${blogInserted}`);
+      }
+    }
 
     let finalBooks = 0, finalQuizzes = 0, finalQuestions = 0;
     try {
