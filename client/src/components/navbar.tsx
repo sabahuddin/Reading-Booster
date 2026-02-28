@@ -61,9 +61,17 @@ export function Navbar() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-1">
         <Link href="/" data-testid="link-logo">
-          <span className="flex items-center gap-2 text-2xl font-bold">
+          <span className="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
             <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
-            Čitanje
+            <span className="rainbow-brand" aria-label="Čitanje">
+              <span style={{color: "#e53e3e"}}>Č</span>
+              <span style={{color: "#ed8936"}}>I</span>
+              <span style={{color: "#ecc94b"}}>T</span>
+              <span style={{color: "#38a169"}}>A</span>
+              <span style={{color: "#3182ce"}}>N</span>
+              <span style={{color: "#5a67d8"}}>J</span>
+              <span style={{color: "#805ad5"}}>E</span>
+            </span>
             <span className="text-xs font-normal text-muted-foreground ml-1 self-end mb-1">(test faza)</span>
           </span>
         </Link>
@@ -185,9 +193,17 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-lg">
+                <SheetTitle className="flex items-center gap-2 text-lg font-extrabold">
                   <img src={logoImg} alt="Čitanje logo" className="h-10 w-10" />
-                  Čitanje
+                  <span className="rainbow-brand" aria-label="Čitanje">
+                    <span style={{color: "#e53e3e"}}>Č</span>
+                    <span style={{color: "#ed8936"}}>I</span>
+                    <span style={{color: "#ecc94b"}}>T</span>
+                    <span style={{color: "#38a169"}}>A</span>
+                    <span style={{color: "#3182ce"}}>N</span>
+                    <span style={{color: "#5a67d8"}}>J</span>
+                    <span style={{color: "#805ad5"}}>E</span>
+                  </span>
                   <span className="text-xs font-normal text-muted-foreground ml-1">(test faza)</span>
                 </SheetTitle>
               </SheetHeader>
