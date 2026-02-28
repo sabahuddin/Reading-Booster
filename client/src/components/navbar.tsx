@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, LogOut, LayoutDashboard, Star } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Star, AArrowUp, AArrowDown } from "lucide-react";
+import { useFontSize } from "@/hooks/use-font-size";
 import logoImg from "@assets/logo_citanje_tr_1771366023473.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,7 @@ export function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { increase, decrease, canIncrease, canDecrease } = useFontSize();
 
   return (
     <nav
@@ -84,6 +86,32 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
+          <div className="flex items-center border rounded-md" data-testid="font-size-controls">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-xs"
+              onClick={decrease}
+              disabled={!canDecrease}
+              title="Smanji font"
+              data-testid="button-font-decrease"
+            >
+              <AArrowDown className="h-3.5 w-3.5" />
+            </Button>
+            <div className="w-px h-4 bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-xs"
+              onClick={increase}
+              disabled={!canIncrease}
+              title="Povećaj font"
+              data-testid="button-font-increase"
+            >
+              <AArrowUp className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -178,6 +206,18 @@ export function Navbar() {
                     </Button>
                   </Link>
                 ))}
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-sm text-muted-foreground">Veličina fonta</span>
+                  <div className="flex items-center border rounded-md" data-testid="font-size-controls-mobile">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={decrease} disabled={!canDecrease} data-testid="button-font-decrease-mobile">
+                      <AArrowDown className="h-4 w-4" />
+                    </Button>
+                    <div className="w-px h-4 bg-border" />
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={increase} disabled={!canIncrease} data-testid="button-font-increase-mobile">
+                      <AArrowUp className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
                 <div className="my-4 border-t" />
                 {isAuthenticated && user ? (
                   <>
