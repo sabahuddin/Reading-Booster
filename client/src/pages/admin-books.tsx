@@ -1151,24 +1151,44 @@ export default function AdminBooks() {
                 )} />
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <FormField control={form.control} name="ageGroup" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dobna skupina</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-book-ageGroup">
-                            <SelectValue placeholder="Odaberite dob" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {AGE_GROUPS.map((ag) => (
-                            <SelectItem key={ag.value} value={ag.value}>{ag.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  <div className="space-y-4">
+                    <FormField control={form.control} name="ageGroup" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Dobna skupina</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-book-ageGroup">
+                              <SelectValue placeholder="Odaberite dob" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {AGE_GROUPS.map((ag) => (
+                              <SelectItem key={ag.value} value={ag.value}>{ag.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="language" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Jezik</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "bosanski"}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-book-language">
+                              <SelectValue placeholder="Odaberite jezik" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="bosanski">Bosanski</SelectItem>
+                            <SelectItem value="hrvatski">Hrvatski</SelectItem>
+                            <SelectItem value="srpski">Srpski</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
 
                   <div>
                     <FormLabel>Žanrovi</FormLabel>
@@ -1209,24 +1229,6 @@ export default function AdminBooks() {
                           <SelectItem value="lako">Lako</SelectItem>
                           <SelectItem value="srednje">Srednje</SelectItem>
                           <SelectItem value="tesko">Teško</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="language" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Jezik</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "bosanski"}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-book-language">
-                            <SelectValue placeholder="Odaberite jezik" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="bosanski">Bosanski</SelectItem>
-                          <SelectItem value="hrvatski">Hrvatski</SelectItem>
-                          <SelectItem value="srpski">Srpski</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
