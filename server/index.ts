@@ -9,7 +9,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { runMigrations } from "./migrate";
-import { seedDatabase, ensureUsersSeeded } from "./seed";
+import { seedDatabase, ensureUsersSeeded, seedBlogPosts } from "./seed";
 import { ensureAllBooks } from "./seed-all-books";
 import { seedMissingQuizzes } from "./seed-quizzes";
 import { fetchBookCovers } from "./fetch-covers";
@@ -283,6 +283,7 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
             .then(() => ensureAllBooks())
             .then(() => seedMissingQuizzes());
         })
+        .then(() => seedBlogPosts())
         .then(() => fetchBookCovers())
         .then(() => console.log("[startup] All startup tasks completed."))
         .catch((err) => console.error("[startup] STARTUP ERROR:", err));

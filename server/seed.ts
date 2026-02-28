@@ -493,32 +493,75 @@ export async function seedDatabase() {
     console.log(`Quiz with ${questionsData.length} questions seeded for "${book.title}".`);
   }
 
-  await db.insert(blogPosts).values([
+  console.log("Database seeded successfully!");
+}
+
+export async function seedBlogPosts() {
+  const existing = await db.select().from(blogPosts).limit(1);
+  if (existing.length > 0) {
+    console.log("Blog posts already exist, checking for missing...");
+  }
+
+  const allBlogPosts = [
     {
       title: "Kako motivirati dijete da čita",
       excerpt: "Otkrijte provjerene metode kojima možete potaknuti ljubav prema čitanju kod vašeg djeteta. Mali koraci mogu napraviti veliku razliku.",
       content: "Motivirati dijete da čita može biti izazov u doba ekrana i digitalnih medija, ali postoje provjerene strategije koje mogu pomoći. Ključ je u tome da čitanje učinite ugodnim iskustvom, a ne obavezom. Počnite tako što ćete sami čitati pred djecom - djeca uče po modelu i ako vide da vi uživate u knjigama, prirodno će razviti znatiželju.\n\nVažno je dati djeci slobodu izbora. Neka sami biraju knjige koje ih zanimaju, čak i ako to nisu klasici koje biste vi odabrali. Strip, enciklopedija o dinosaurusima ili knjiga o omiljenom sportu - sve je to čitanje koje gradi naviku. Postepeno ćete moći uvoditi raznovrsniji sadržaj.\n\nStvorite rutinu čitanja u vašem domu. To može biti čitanje prije spavanja, tihi sat čitanja nedjeljom popodne ili zajedničko čitanje naglas. Redovnost je ključna za izgradnju navike. Također, razgovarajte o pročitanom - pitajte dijete šta misli o likovima, šta bi ono uradilo na njihovom mjestu.\n\nNe zaboravite pohvaliti trud, ne samo rezultat. Svaka pročitana stranica je uspjeh. Naša platforma Čitaj! pomaže u praćenju napretka i motiviranju kroz kvizove i bodovni sistem koji čitanje pretvara u zabavno iskustvo.",
       author: "Redakcija Čitaj!",
-      coverImage: "/images/blog-placeholder.svg",
+      coverImage: "",
     },
     {
       title: "5 koristi čitanja za razvoj djeteta",
       excerpt: "Čitanje nije samo zabava - ono aktivno doprinosi kognitivnom, emocionalnom i socijalnom razvoju vašeg djeteta. Saznajte pet ključnih koristi.",
       content: "Čitanje je jedna od najvažnijih aktivnosti za cjelokupni razvoj djeteta. Istraživanja pokazuju da djeca koja redovno čitaju imaju bolji vokabular, jače analitičke sposobnosti i veću empatiju. Evo pet ključnih koristi koje čitanje donosi vašem djetetu.\n\nPrva korist je razvoj jezičkih sposobnosti. Djeca koja čitaju imaju znatno bogatiji rječnik od svojih vršnjaka koji ne čitaju. Druga korist je poboljšanje koncentracije i pažnje - u svijetu kratkih video sadržaja, čitanje uči mozak da se fokusira na jednu aktivnost duži period. Treća korist je razvoj kritičkog mišljenja - čitajući priče, djeca uče analizirati situacije, predviđati ishode i donositi zaključke.\n\nČetvrta korist je emocionalni razvoj. Kroz priče, djeca uče prepoznavati i razumijevati različite emocije. Identifikacija s likovima pomaže im da razviju empatiju i razumijevanje za druge. Peta korist je akademski uspjeh - istraživanja dosljedno pokazuju da djeca koja čitaju za zabavu postižu bolje rezultate u svim školskim predmetima, ne samo u jeziku.\n\nOhrabrite vaše dijete da čita svaki dan, makar i samo 15 minuta. Platforma Čitaj! nudi širok izbor kvalitetnih knjiga prilagođenih različitim uzrastima, uz kvizove koji provjeravaju razumijevanje i motiviraju nastavak čitanja.",
       author: "Redakcija Čitaj!",
-      coverImage: "/images/blog-placeholder.svg",
+      coverImage: "",
     },
     {
       title: "Digitalno čitanje vs. tradicionalne knjige",
       excerpt: "U eri tehnologije, mnogi se pitaju da li je digitalno čitanje jednako vrijedno kao čitanje tradicionalnih knjiga. Istražujemo prednosti i nedostatke oba pristupa.",
       content: "Debate između digitalnog i tradicionalnog čitanja postaje sve aktualnija kako tehnologija napreduje. Obje forme imaju svoje prednosti i nedostatke, a idealan pristup često kombinira obje. Tradicionalne knjige nude taktilno iskustvo - osjećaj papira, miris knjige, fizičko listanje stranica koje mnogi čitaoci smatraju nezamjenjivim.\n\nS druge strane, digitalno čitanje donosi pristupačnost i praktičnost. Na jednom uređaju možete nositi stotine knjiga, prilagoditi veličinu teksta i čitati u mraku. Za djecu, digitalne platforme poput Čitaj! nude interaktivne elemente - kvizove, praćenje napretka i gamifikaciju koja može dodatno motivirati mlade čitaoce.\n\nIstraživanja pokazuju da za duboko čitanje i pamćenje, tradicionalne knjige imaju blagu prednost. Međutim, za kratke tekstove, vijesti i informativno čitanje, digitalni format je jednako efikasan. Ključno je da dijete čita - format je manje važan od same navike čitanja.\n\nNaš savjet je da kombinirate oba pristupa. Neka dijete uživa u fizičkim knjigama kod kuće, a digitalnu platformu koristi za praćenje napretka, rješavanje kvizova i otkrivanje novih naslova. Najvažnije je da čitanje ostane ugodno iskustvo, bez obzira na format.",
       author: "Redakcija Čitaj!",
-      coverImage: "/images/blog-placeholder.svg",
+      coverImage: "",
     },
-  ]);
+    {
+      title: "Čitanje.ba u mojoj porodici",
+      excerpt: "Kako jedna porodica iz Sarajeva koristi Čitanje.ba da čita zajedno, skuplja bodove i pretvara večeri u zajedničke čitalačke avanture.",
+      content: "## Subota uveče, 20:00\n\nU dnevnom boravku porodice Hadžić vlada neobična tišina. Otac Emir (42), majka Amra (39), sin Tarik (12) i kćerka Hana (8) — svi čitaju. Na stolu leže četiri različite knjige. Jedini zvuk je okretanje stranica i povremeni Hanin kikot kad naiđe na smiješan dio u \"Ježeva kućica\".\n\nOvo nije slučajnost. Ovo je \"Porodična čitalačka večer\" — tradicija koju su Hadžići započeli prije dva mjeseca, otkad koriste Čitanje.ba.\n\n## Kako je počelo\n\n\"Tarik je jednog dana došao iz škole i rekao: 'Tata, učiteljica nam je napravila račune na Čitanje.ba i sad se takmičimo ko će više čitati'\" — priča Emir. — \"Pokazao mi je leaderboard i rekao da je treći u razredu. Vidio sam taj sjaj u očima i pomislio: zašto ovo ne bismo radili kao porodica?\"\n\nEmir je te večeri napravio račun na Čitanje.ba — kategorija Odrasli (A). Supruga Amra je napravila svoj. Mala Hana je već imala učenički račun.\n\n## Porodični leaderboard\n\nČitanje.ba ima odvojene leaderboarde za djecu i odrasle. Ali kod Hadžića, pravi leaderboard je na frižideru — papir na kojem svake sedmice zapisuju ko je koliko bodova osvojio.\n\n\"Prošle sedmice me Hana prestigla za 5 bodova\" — smije se Amra. \"Osam joj je godina i čita bajke, ali je toliko uporna da rješava kviz čim završi priču.\"\n\nTarik, kao dvanaestogodišnjak, čita knjige iz kategorije R4 i R7. \"Ja biram teže knjige jer nose više bodova\" — objašnjava strateški. \"Ali Hana čita više knjiga, pa me sustigne.\"\n\n## Čitanje.ba kategorija A — za roditelje\n\nEmir i Amra koriste kategoriju za odrasle. Na raspolaganju su im romani poput \"Tvrđava\", \"Derviš i smrt\", ali i knjige iz kategorije Islam poput \"Sira: Životopis Poslanika\".\n\n\"Nisam čitao otkad sam završio fakultet\" — priznaje Emir. — \"Sada sam za dva mjeseca pročitao tri knjige. I to ne jer moram, nego jer se takmičim s djecom. Zvuči smiješno, ali funkcioniše.\"\n\n## Kako izgleda tipična sedmica\n\n**Ponedjeljak-petak:** Svako čita u svoje vrijeme — Tarik poslije škole, Hana prije spavanja, roditelji uveče.\n\n**Subota uveče:** Porodična čitalačka večer. Sat vremena čitanja, pa razgovor o knjigama uz čaj.\n\n**Nedjelja ujutro:** Rješavanje kvizova na Čitanje.ba. \"To je najuzbudljiviji dio\" — kaže Hana. \"Kad dobijem sve odgovore tačno, skačem po kući!\"\n\n## Šta se promijenilo\n\n\"Prije dva mjeseca, Tarik je svaku slobodnu minutu provodio na YouTubeu\" — kaže Amra. — \"Sada ima knjige na noćnom stolu. Juče me pitao mogu li mu kupiti 'Hobita' jer je čuo da je na platformi i nosi puno bodova.\"\n\nHana, koja je prije imala problema s čitanjem, sada čita fluentno. \"Učiteljica mi je rekla da je primijetila ogroman napredak\" — kaže Amra.\n\nA Emir? \"Ponovo sam otkrio koliko volim čitati. I naučio sam nešto o sebi — da sam izuzetno kompetitivan kad se takmičim s osmogodišnjakinjom.\"\n\n## Savjeti za porodice\n\n1. **Počnite zajedno** — Neka svi naprave račun istog dana\n2. **Postavite porodični cilj** — \"Ove sedmice ćemo kao porodica skupiti 100 bodova\"\n3. **Čitajte u isto vrijeme** — Porodična čitalačka večer čini čuda\n4. **Razgovarajte o knjigama** — Pitajte djecu šta čitaju, šta im se sviđa\n5. **Slavite uspjehe** — Svaka završena knjiga zaslužuje pohvalu\n\n---\n\n*Želite da vaša porodica postane čitalačka porodica? Registrujte se na **citanje.ba** — besplatno je. Roditelji biraju kategoriju \"Odrasli (A)\", a djeca čitaju knjige prilagođene svom uzrastu. Porodično takmičenje može početi već večeras!*",
+      author: "Čitanje.ba tim",
+      coverImage: "",
+      keywords: ["porodica", "roditelji", "djeca", "motivacija", "takmičenje", "leaderboard"],
+    },
+    {
+      title: "Čitanje.ba u mojoj učionici",
+      excerpt: "Praktičan vodič za učitelje: kako uvesti Čitanje.ba u razred, motivisati učenike i pretvoriti čitanje u najuzbudljiviji dio školskog dana.",
+      content: "## Ponedjeljak ujutro, 8:15\n\nUčiteljica Amela ulazi u razred i kaže: \"Djeco, pogledajte leaderboard — Hana je preko vikenda prestiglia Omera za 15 bodova!\" Razred bruji od uzbuđenja. Omer odmah pita: \"Učiteljice, koja je sljedeća knjiga za izazov?\"\n\nOvo nije fantazija. Ovo je učionica koja koristi Čitanje.ba.\n\n## Šta je Čitanje.ba za učitelje?\n\nČitanje.ba je besplatna platforma koja vam pomaže da:\n- Pratite koliko vaši učenici čitaju\n- Provjerite razumijevanje kroz kvizove\n- Motivisete čitanje kroz bodove i takmičenja\n- Kreirate sedmične čitalačke izazove\n\n## Kako početi? Korak po korak\n\n### 1. Registracija škole\n\nVaš školski administrator se registruje preko taba \"Institucija\" na citanje.ba. Nakon odobrenja od naše strane, on kreira vaš učiteljski račun.\n\n### 2. Kreiranje učeničkih računa\n\nU svom učiteljskom dashboardu imate opciju \"Kreiraj učenički račun\". Unesete ime i prezime učenika, a sistem automatski generiše korisničko ime i lozinku. Možete exportovati listu u CSV i podijeliti roditeljima.\n\n### 3. Predstavite platformu učenicima\n\nPokažite im biblioteku sa preko 600 knjiga. Neka svako odabere jednu knjigu koja im se sviđa. Objasnite im kako funkcionišu kvizovi i bodovi.\n\n## Sedmični izazovi — Vaše tajno oružje\n\nNajmoćnija funkcija za učitelje su **sedmični izazovi**. Evo kako ih koristiti:\n\n### Primjer izazova\n- **\"Pročitaj bajku\"** — Ove sedmice svi čitamo jednu bajku iz biblioteke\n- **\"Istraživač\"** — Pročitaj knjigu iz žanra koji nikad nisi probao/la\n- **\"Kviz majstor\"** — Osvoji najmanje 80% bodova na kvizu\n- **\"Timski izazov\"** — Cijeli razred zajedno treba skupiti 500 bodova\n\n### Kako kreirati izazov?\n1. Idite na svoj dashboard\n2. Kliknite \"Kreiraj izazov\"\n3. Odaberite knjigu, postavite cilj i rok\n4. Učenici vide izazov na svom dashboardu\n\n## Praćenje napretka\n\nVaš učiteljski dashboard vam pokazuje:\n- **Ukupan broj učenika** i koliko ih je aktivno\n- **Top 5 čitača** sa mogućnošću dodjele bonus bodova\n- **Prosječan broj bodova** po učeniku\n- **Upozorenja** za učenike koji nisu bili aktivni 7+ dana\n\n## Ideje za nagrade u učionici\n\n### Sedmične nagrade\n- **Čitalac sedmice** — ime na posebnom posteru u učionici\n- **Kviz šampion** — sjedi na \"tronu\" (posebna stolica) jedan dan\n- **Najaktivniji čitalac** — bira priču za čitanje naglas\n\n### Mjesečne nagrade\n- **Razredni prvak** — diploma \"Čitalac mjeseca\"\n- **Najboljši napredak** — za učenika koji je najviše napredovao\n- **Istraživač mjeseca** — za onog ko je čitao najrazličitije žanrove\n\n### Besplatne nagrade koje djeca obožavaju\n- 10 minuta slobodnog vremena na kraju časa\n- Pravo da bira igru za tjelesni\n- \"Domaći zadatak free\" kartica za jedan dan\n- Sjedi gdje hoćeš dan\n- Asistent učiteljice za jedan dan\n\n## Povezivanje sa roditeljima\n\nRoditelji mogu kreirati svoj račun i povezati se sa djetetovim profilom. Učiteljica odobrava zahtjev, i roditelj može pratiti napredak svog djeteta od kuće. Ovo je sjajan način da uključite roditelje u čitalačku kulturu.\n\n## Primjer iz prakse\n\n*\"Koristim Čitanje.ba od početka školske godine. Razlika je nevjerovatna. Prije sam morala prisiljavati djecu da čitaju lektiru. Sada se trkaju ko će prvi završiti knjigu i riješiti kviz. Imam učenike koji čitaju knjige VAN lektire — samo da bi skupili više bodova. Posebno mi se sviđa što mogu pratiti ko čita a ko ne, i na vrijeme reagovati.\"*\n\n— Amela, učiteljica 4. razreda, OŠ Mula Mustafa Bašeskija, Sarajevo\n\n## Česta pitanja učitelja\n\n**Koliko to košta?**\nZa sada je Čitanje.ba potpuno besplatno za škole.\n\n**Koliko vremena treba za postavljanje?**\nKreiranje računa za cijeli razred traje oko 10 minuta.\n\n**Moraju li učenici imati kompjuter?**\nNe, platforma radi na bilo kojem uređaju — telefonu, tabletu ili kompjuteru.\n\n**Šta ako učenik nema internet kod kuće?**\nKvizove mogu rješavati i u školi, na primjer tokom časa lektire ili u biblioteci.\n\n---\n\nSpremni ste da transformišete čitanje u vašoj učionici? Kontaktirajte nas na **citanje.ba/kontakt** ili se registrujte kao škola na **citanje.ba/registracija**. Pomoći ćemo vam sa svim koracima!",
+      author: "Čitanje.ba tim",
+      coverImage: "",
+      keywords: ["učionica", "učitelji", "škola", "motivacija", "izazovi", "nagrade", "razred"],
+    },
+  ];
 
-  console.log("Blog posts seeded.");
-  console.log("Database seeded successfully!");
+  const existingTitles = new Set(
+    (await db.select({ title: blogPosts.title }).from(blogPosts)).map(r => r.title)
+  );
+
+  let added = 0;
+  for (const post of allBlogPosts) {
+    if (existingTitles.has(post.title)) continue;
+    try {
+      await db.insert(blogPosts).values(post);
+      added++;
+      console.log(`Blog post added: "${post.title}"`);
+    } catch (e: any) {
+      console.log(`Blog post skip "${post.title}": ${e.message?.substring(0, 80)}`);
+    }
+  }
+  if (added === 0) {
+    console.log(`All ${allBlogPosts.length} blog posts already exist.`);
+  } else {
+    console.log(`${added} blog posts added.`);
+  }
 }
 
 seedDatabase().catch(console.error);
