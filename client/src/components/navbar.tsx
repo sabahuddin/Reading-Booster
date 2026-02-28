@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, LogOut, LayoutDashboard, Star, AArrowUp, AArrowDown } from "lucide-react";
 import { useFontSize } from "@/hooks/use-font-size";
 import logoImg from "@assets/logo_citanje_tr_1771366023473.png";
-import brandTextImg from "@assets/ChatGPT_Image_28._feb_2026._u_22_29_12_1772314185635.png";
+import brandTextImg from "@assets/citanje_1772314876394.png";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -64,7 +64,7 @@ export function Navbar() {
         <Link href="/" data-testid="link-logo">
           <span className="flex items-center">
             <img src={logoImg} alt="Čitanje logo" className="h-14 w-14" />
-            <img src={brandTextImg} alt="Čitanje" className="h-14 object-contain mix-blend-multiply" />
+            <img src={brandTextImg} alt="Čitanje" className="h-12 object-contain" />
             <span className="text-[10px] font-normal text-muted-foreground self-end mb-0.5">(test faza)</span>
           </span>
         </Link>
@@ -188,7 +188,7 @@ export function Navbar() {
               <SheetHeader>
                 <SheetTitle className="flex items-center text-lg">
                   <img src={logoImg} alt="Čitanje logo" className="h-10 w-10" />
-                  <img src={brandTextImg} alt="Čitanje" className="h-10 object-contain mix-blend-multiply" />
+                  <img src={brandTextImg} alt="Čitanje" className="h-9 object-contain" />
                   <span className="text-[10px] font-normal text-muted-foreground">(test faza)</span>
                 </SheetTitle>
               </SheetHeader>
