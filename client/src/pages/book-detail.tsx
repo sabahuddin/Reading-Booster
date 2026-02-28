@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   FileText,
   Users,
+  Globe,
 } from "lucide-react";
 import { SocialShare } from "@/components/social-share";
 import { BookRating } from "@/components/book-rating";
@@ -101,6 +102,12 @@ export default function BookDetail() {
                     <Badge variant="outline">
                       <FileText className="mr-1 h-3 w-3" />
                       {book.pageCount} stranica
+                    </Badge>
+                  )}
+                  {book.language && (
+                    <Badge variant="outline" data-testid="badge-language">
+                      <Globe className="mr-1 h-3 w-3" />
+                      {book.language}
                     </Badge>
                   )}
                 </div>

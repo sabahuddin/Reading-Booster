@@ -64,6 +64,7 @@ export default function PublicLibrary() {
   const [selectedGenre, setSelectedGenre] = useState("all");
   const [selectedAge, setSelectedAge] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
@@ -108,9 +109,10 @@ export default function PublicLibrary() {
       const matchGenre = selectedGenre === "all" || (b.genres?.some(g => g.slug === selectedGenre)) || b.genre === selectedGenre;
       const matchAge = selectedAge === "all" || b.ageGroup === selectedAge;
       const matchDifficulty = selectedDifficulty === "all" || b.readingDifficulty === selectedDifficulty;
-      return matchSearch && matchGenre && matchAge && matchDifficulty;
+      const matchLanguage = selectedLanguage === "all" || (b.language || "bosanski") === selectedLanguage;
+      return matchSearch && matchGenre && matchAge && matchDifficulty && matchLanguage;
     });
-  }, [books, search, selectedGenre, selectedAge, selectedDifficulty]);
+  }, [books, search, selectedGenre, selectedAge, selectedDifficulty, selectedLanguage]);
 
   const totalPages = filtered ? Math.ceil(filtered.length / BOOKS_PER_PAGE) : 0;
   const paginatedBooks = filtered?.slice((currentPage - 1) * BOOKS_PER_PAGE, currentPage * BOOKS_PER_PAGE);
@@ -119,7 +121,7 @@ export default function PublicLibrary() {
     setCurrentPage(1);
   }
 
-  const hasActiveFilters = search || selectedGenre !== "all" || selectedAge !== "all" || selectedDifficulty !== "all";
+  const hasActiveFilters = search || selectedGenre !== "all" || selectedAge !== "all" || selectedDifficulty !== "all" || selectedLanguage !== "all";
 
   const tabs: { key: TabType; label: string; icon: typeof Library }[] = [
     { key: "biblioteka", label: "Biblioteka", icon: Library },
@@ -252,6 +254,37 @@ export default function PublicLibrary() {
                     </nav>
                   </div>
 
+                  <div className="border-t pt-4 space-y-2">
+                    <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Jezik</h3>
+                    <nav className="space-y-0.5">
+                      <button
+                        onClick={() => { setSelectedLanguage("all"); handleFilterChange(); }}
+                        className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                          selectedLanguage === "all"
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "hover:bg-muted text-foreground"
+                        }`}
+                        data-testid="sidebar-language-all"
+                      >
+                        Svi jezici
+                      </button>
+                      {[{ v: "bosanski", l: "Bosanski" }, { v: "hrvatski", l: "Hrvatski" }, { v: "srpski", l: "Srpski" }].map((lang) => (
+                        <button
+                          key={lang.v}
+                          onClick={() => { setSelectedLanguage(lang.v); handleFilterChange(); }}
+                          className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                            selectedLanguage === lang.v
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : "hover:bg-muted text-foreground"
+                          }`}
+                          data-testid={`sidebar-language-${lang.v}`}
+                        >
+                          {lang.l}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+
                   {hasActiveFilters && (
                     <Button
                       variant="outline"
@@ -262,6 +295,7 @@ export default function PublicLibrary() {
                         setSelectedGenre("all");
                         setSelectedAge("all");
                         setSelectedDifficulty("all");
+                        setSelectedLanguage("all");
                       }}
                       data-testid="button-clear-filters-sidebar"
                     >
@@ -317,6 +351,17 @@ export default function PublicLibrary() {
                         <SelectItem value="tesko">Teško</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Select value={selectedLanguage} onValueChange={(v) => { setSelectedLanguage(v); handleFilterChange(); }}>
+                      <SelectTrigger className="w-[140px]" data-testid="select-filter-language">
+                        <SelectValue placeholder="Jezik" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Svi jezici</SelectItem>
+                        <SelectItem value="bosanski">Bosanski</SelectItem>
+                        <SelectItem value="hrvatski">Hrvatski</SelectItem>
+                        <SelectItem value="srpski">Srpski</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   {hasActiveFilters && (
                     <span className="text-sm text-muted-foreground self-center">
@@ -353,6 +398,7 @@ export default function PublicLibrary() {
                           setSelectedGenre("all");
                           setSelectedAge("all");
                           setSelectedDifficulty("all");
+                          setSelectedLanguage("all");
                         }}
                         data-testid="button-clear-filters"
                       >

@@ -56,6 +56,7 @@ const bookFormSchema = z.object({
   ageGroup: z.string().min(1, "Dobna skupina je obavezna"),
   genre: z.string().optional(),
   readingDifficulty: z.enum(["lako", "srednje", "tesko"]),
+  language: z.string().optional(),
   pageCount: z.coerce.number().min(1, "Broj stranica mora biti barem 1"),
   pdfUrl: z.string().optional(),
   purchaseUrl: z.string().optional(),
@@ -191,7 +192,7 @@ export default function AdminBooks() {
     defaultValues: {
       title: "", author: "", description: "", coverImage: "",
       ageGroup: "", genre: "", readingDifficulty: "srednje",
-      pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
+      language: "bosanski", pageCount: 1, pdfUrl: "", purchaseUrl: "", weeklyPick: false,
       publisher: "", publicationYear: new Date().getFullYear(),
       publicationCity: "", isbn: "", cobissId: "",
     },
@@ -687,6 +688,7 @@ export default function AdminBooks() {
       ageGroup: book.ageGroup,
       genre: book.genre,
       readingDifficulty: book.readingDifficulty as "lako" | "srednje" | "tesko",
+      language: book.language ?? "bosanski",
       pageCount: book.pageCount,
       pdfUrl: book.pdfUrl ?? "",
       purchaseUrl: book.purchaseUrl ?? "",
@@ -1207,6 +1209,24 @@ export default function AdminBooks() {
                           <SelectItem value="lako">Lako</SelectItem>
                           <SelectItem value="srednje">Srednje</SelectItem>
                           <SelectItem value="tesko">Teško</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="language" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jezik</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || "bosanski"}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-book-language">
+                            <SelectValue placeholder="Odaberite jezik" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="bosanski">Bosanski</SelectItem>
+                          <SelectItem value="hrvatski">Hrvatski</SelectItem>
+                          <SelectItem value="srpski">Srpski</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

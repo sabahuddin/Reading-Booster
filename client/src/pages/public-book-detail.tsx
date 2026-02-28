@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   FileText,
   Users,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { SocialShare } from "@/components/social-share";
@@ -101,6 +102,12 @@ export default function PublicBookDetail() {
                       <Badge variant="outline">
                         <FileText className="mr-1 h-3 w-3" />
                         {book.pageCount} stranica
+                      </Badge>
+                    )}
+                    {book.language && (
+                      <Badge variant="outline" data-testid="badge-language">
+                        <Globe className="mr-1 h-3 w-3" />
+                        {book.language}
                       </Badge>
                     )}
                   </div>
