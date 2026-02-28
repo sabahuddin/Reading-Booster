@@ -31,9 +31,9 @@ const plans = [
   },
   {
     name: "Čitalac Pro",
-    price: "?",
-    period: "KM",
-    description: "Za strastvene čitaoce",
+    price: "🤔",
+    period: "",
+    description: "Za strastvene čitaoce — uskoro!",
     icon: Sparkles,
     features: [
       "Sve iz besplatnog paketa",
@@ -48,9 +48,9 @@ const plans = [
   },
   {
     name: "Porodični",
-    price: "Od ?",
-    period: "KM",
-    description: "Zajedničko čitanje i takmičenje",
+    price: "🤔",
+    period: "",
+    description: "Zajedničko čitanje i takmičenje — uskoro!",
     icon: Users,
     features: [
       "Sve iz Čitalac Pro paketa",
