@@ -108,7 +108,7 @@ export default function PricingPage() {
               Odaberite paket koji najbolje odgovara vašim potrebama. Započnite besplatno ili nadogradite za više mogućnosti.
             </p>
             <p className="mt-3 text-base font-semibold text-primary">
-              Svi paketi su na godišnjem nivou
+              Svi paketi su na godišnjem nivou. Test faza (60 dana) je besplatna. A poslije će biti simbolična cijena, jer cilj je - Čitanje.
             </p>
           </motion.div>
         </div>

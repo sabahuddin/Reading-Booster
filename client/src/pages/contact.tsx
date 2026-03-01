@@ -47,10 +47,10 @@ const contactInfo = [
     label: "Telefon",
     value: "+387 60 320 20 10",
   },
-  {
+ {
     icon: MapPin,
     label: "Adresa",
-    value: "Asima Bajraktarevića 3, 77245 Bužim, BiH",
+    value: "Sarači 93, 71000 Sarajevo, BiH",
   },
 ];
 
