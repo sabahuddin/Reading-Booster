@@ -127,7 +127,7 @@ export default function StudentResults() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Kviz</TableHead>
+                    <TableHead>Knjiga</TableHead>
                     <TableHead>Bodovi</TableHead>
                     <TableHead>Točno</TableHead>
                     <TableHead>Status</TableHead>
@@ -140,7 +140,7 @@ export default function StudentResults() {
                     const passed = pct >= 50;
                     return (
                       <TableRow key={r.id} data-testid={`row-result-${r.id}`}>
-                        <TableCell className="font-medium">{r.quizId.substring(0, 8)}...</TableCell>
+                        <TableCell className="font-medium">{(r as any).bookTitle || r.quizId.substring(0, 8)}</TableCell>
                         <TableCell>
                           <Badge variant={passed ? "default" : "destructive"}>{r.score}</Badge>
                         </TableCell>

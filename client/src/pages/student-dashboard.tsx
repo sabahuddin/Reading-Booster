@@ -297,7 +297,7 @@ export default function StudentDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Kviz</TableHead>
+                    <TableHead>Knjiga</TableHead>
                     <TableHead>Tačno</TableHead>
                     <TableHead>Netačno</TableHead>
                     <TableHead>Bodovi</TableHead>
@@ -306,7 +306,7 @@ export default function StudentDashboard() {
                 <TableBody>
                   {results.slice(0, 5).map((r) => (
                     <TableRow key={r.id} data-testid={`row-result-${r.id}`}>
-                      <TableCell className="font-medium">{r.quizId}</TableCell>
+                      <TableCell className="font-medium">{(r as any).bookTitle || "Nepoznato"}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{r.correctAnswers}/{r.totalQuestions}</Badge>
                       </TableCell>

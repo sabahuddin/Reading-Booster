@@ -1191,7 +1191,14 @@ Odgovori ISKLJUČIVO u JSON formatu:
   app.get("/api/quiz-results/my", requireAuth, async (req, res) => {
     try {
       const results = await storage.getQuizResultsByUserId(req.session.userId!);
-      return res.json(results);
+      const allQuizzes = await storage.getAllQuizzes();
+      const allBooks = await storage.getAllBooks();
+      const enriched = results.map(r => {
+        const quiz = allQuizzes.find(q => q.id === r.quizId);
+        const book = quiz ? allBooks.find(b => b.id === quiz.bookId) : null;
+        return { ...r, bookTitle: book?.title ?? "Nepoznato", bookAuthor: book?.author ?? "" };
+      });
+      return res.json(enriched);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -1251,7 +1258,14 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.status(403).json({ message: "Access denied" });
       }
       const results = await storage.getQuizResultsByUserId(targetUserId);
-      return res.json(results);
+      const allQuizzes = await storage.getAllQuizzes();
+      const allBooks = await storage.getAllBooks();
+      const enriched = results.map(r => {
+        const quiz = allQuizzes.find(q => q.id === r.quizId);
+        const book = quiz ? allBooks.find(b => b.id === quiz.bookId) : null;
+        return { ...r, bookTitle: book?.title ?? "Nepoznato", bookAuthor: book?.author ?? "" };
+      });
+      return res.json(enriched);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -2641,6 +2655,67 @@ Odgovori ISKLJUČIVO u JSON formatu:
     } catch (error) {
       console.error("Error fetching inactive students:", error);
       res.status(500).json({ message: "Greška pri preuzimanju neaktivnih učenika" });
+    }
+  });
+
+  app.get("/api/teacher/class-stats", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const teacher = await storage.getUser(teacherId);
+      if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+
+      const createdStudents = await storage.getStudentsByTeacherId(teacherId);
+      let classStudents: any[] = [];
+      if (teacher.schoolName && teacher.className) {
+        classStudents = await storage.getStudentsBySchoolAndClass(teacher.schoolName, teacher.className);
+      }
+      const allStudentIds = new Set<string>();
+      const students: any[] = [];
+      for (const s of [...createdStudents, ...classStudents]) {
+        if (!allStudentIds.has(s.id)) {
+          allStudentIds.add(s.id);
+          students.push(s);
+        }
+      }
+
+      const allQuizzes = await storage.getAllQuizzes();
+      const allBooks = await storage.getAllBooks();
+
+      const studentStats = [];
+      for (const s of students) {
+        const results = await storage.getQuizResultsByUserId(s.id);
+        studentStats.push({
+          id: s.id,
+          fullName: `${s.firstName || ""} ${s.lastName || ""}`.trim() || s.username,
+          points: s.points || 0,
+          booksRead: s.booksRead || 0,
+          quizzesTaken: results.length,
+          avgScore: results.length > 0
+            ? Math.round(results.reduce((sum, r) => sum + (r.totalQuestions > 0 ? (r.correctAnswers / r.totalQuestions) * 100 : 0), 0) / results.length)
+            : 0,
+        });
+      }
+
+      const genreCount: Record<string, number> = {};
+      for (const s of students) {
+        const results = await storage.getQuizResultsByUserId(s.id);
+        for (const r of results) {
+          const quiz = allQuizzes.find(q => q.id === r.quizId);
+          if (quiz) {
+            const book = allBooks.find(b => b.id === quiz.bookId);
+            if (book) {
+              const genre = book.genre || "Ostalo";
+              genreCount[genre] = (genreCount[genre] || 0) + 1;
+            }
+          }
+        }
+      }
+      const genreDistribution = Object.entries(genreCount).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+
+      res.json({ studentStats, genreDistribution });
+    } catch (error: any) {
+      console.error("Error fetching class stats:", error);
+      res.status(500).json({ message: error.message });
     }
   });
 

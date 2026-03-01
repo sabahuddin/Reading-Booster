@@ -40,9 +40,41 @@ import {
   UserPlus,
   CheckCircle2,
   XCircle,
+  BarChart3,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
+const GENRE_LABELS: Record<string, string> = {
+  lektira: "Lektira",
+  avantura_fantasy: "Avantura i Fantasy",
+  roman: "Roman",
+  beletristika: "Beletristika",
+  bajke_basne: "Bajke i Basne",
+  zanimljiva_nauka: "Zanimljiva nauka",
+  poezija: "Poezija",
+  islam: "Islam",
+};
+
+const CHART_COLORS = [
+  "#FF861C", "#4A90D9", "#50C878", "#9B59B6",
+  "#E74C3C", "#F39C12", "#1ABC9C", "#E67E22",
+  "#3498DB", "#2ECC71",
+];
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
@@ -64,6 +96,20 @@ export default function TeacherDashboard() {
 
   const { data: parentRequests = [] } = useQuery<any[]>({
     queryKey: ["/api/teacher/parent-requests"],
+  });
+
+  const { data: classStats } = useQuery<{
+    studentStats: Array<{
+      id: string;
+      fullName: string;
+      points: number;
+      booksRead: number;
+      quizzesTaken: number;
+      avgScore: number;
+    }>;
+    genreDistribution: Array<{ name: string; count: number }>;
+  }>({
+    queryKey: ["/api/teacher/class-stats"],
   });
 
   const handleParentRequest = useMutation({
@@ -90,8 +136,22 @@ export default function TeacherDashboard() {
     students.length > 0 ? (totalBooks / students.length).toFixed(1) : 0;
 
   const topStudents = [...students]
-    .sort((a: any, b: any) => (b.booksRead || 0) - (a.booksRead || 0))
+    .sort((a: any, b: any) => (b.points || 0) - (a.points || 0))
     .slice(0, 5);
+
+  const barData = (classStats?.studentStats || [])
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 10)
+    .map(s => ({
+      name: s.fullName.split(" ")[0],
+      bodovi: s.points,
+      kvizovi: s.quizzesTaken,
+    }));
+
+  const pieData = (classStats?.genreDistribution || []).map(g => ({
+    name: GENRE_LABELS[g.name] || g.name,
+    value: g.count,
+  }));
 
   const handleAddBonus = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -113,6 +173,8 @@ export default function TeacherDashboard() {
         toast({ title: "Bonus bodovi dodati!" });
         setBonusDialogOpen(false);
         setSelectedStudent(null);
+        queryClient.invalidateQueries({ queryKey: ["/api/teacher/students"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/teacher/class-stats"] });
       } else {
         throw new Error();
       }
@@ -211,10 +273,130 @@ export default function TeacherDashboard() {
           </CardContent>
         </Card>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {barData.length > 0 && (
+            <Card data-testid="card-bar-chart">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Bodovi po učeniku
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={barData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                      formatter={(value: number, name: string) => [
+                        value,
+                        name === "bodovi" ? "Bodovi" : "Kvizovi",
+                      ]}
+                    />
+                    <Bar dataKey="bodovi" fill="#FF861C" radius={[4, 4, 0, 0]} name="bodovi" />
+                    <Bar dataKey="kvizovi" fill="#4A90D9" radius={[4, 4, 0, 0]} name="kvizovi" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {pieData.length > 0 && (
+            <Card data-testid="card-pie-chart">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChartIcon className="h-5 w-5 text-primary" />
+                  Čitanje po žanrovima
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={3}
+                      dataKey="value"
+                      label={({ name, percent }) =>
+                        `${name} (${(percent * 100).toFixed(0)}%)`
+                      }
+                      labelLine={false}
+                    >
+                      {pieData.map((_entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                      formatter={(value: number) => [`${value} kvizova`, "Broj"]}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {classStats?.studentStats && classStats.studentStats.length > 0 && (
+          <Card data-testid="card-student-progress">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Napredak učenika
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {classStats.studentStats
+                  .sort((a, b) => b.points - a.points)
+                  .map((s, i) => {
+                    const maxPoints = classStats.studentStats[0]?.points || 1;
+                    const pct = maxPoints > 0 ? Math.round((s.points / maxPoints) * 100) : 0;
+                    return (
+                      <div key={s.id} className="flex items-center gap-3" data-testid={`progress-student-${i}`}>
+                        <div className="w-8 text-center">
+                          <Badge variant={i < 3 ? "default" : "secondary"} className="text-xs">
+                            {i + 1}
+                          </Badge>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium truncate">{s.fullName}</span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {s.points} bod. | {s.quizzesTaken} kviz. | {s.avgScore}% tačno
+                            </span>
+                          </div>
+                          <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${pct}%`,
+                                backgroundColor: i === 0 ? "#FF861C" : i === 1 ? "#F59E0B" : i === 2 ? "#84CC16" : "#94A3B8",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {topStudents.length > 0 && (
           <Card data-testid="card-top-readers">
             <CardHeader>
-              <CardTitle>Top 5 čitalaca ovog mjeseca</CardTitle>
+              <CardTitle>Top 5 čitalaca</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -235,7 +417,11 @@ export default function TeacherDashboard() {
                           #{index + 1}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{student.fullName}</TableCell>
+                      <TableCell className="font-medium">
+                        {student.firstName && student.lastName
+                          ? `${student.firstName} ${student.lastName}`
+                          : student.fullName || student.username}
+                      </TableCell>
                       <TableCell>{student.booksRead || 0}</TableCell>
                       <TableCell>{student.points || 0}</TableCell>
                       <TableCell>
@@ -325,7 +511,7 @@ export default function TeacherDashboard() {
       </div>
 
       {pendingParentRequests.length > 0 && (
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5" />

@@ -95,7 +95,7 @@ function ChildDetailTab({ child }: { child: ChildUser }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kviz</TableHead>
+                  <TableHead>Knjiga</TableHead>
                   <TableHead>Točno</TableHead>
                   <TableHead>Netočno</TableHead>
                   <TableHead>Bodovi</TableHead>
@@ -104,7 +104,7 @@ function ChildDetailTab({ child }: { child: ChildUser }) {
               <TableBody>
                 {results.map((r) => (
                   <TableRow key={r.id} data-testid={`row-result-${r.id}`}>
-                    <TableCell className="font-medium">{r.quizId}</TableCell>
+                    <TableCell className="font-medium">{(r as any).bookTitle || "Nepoznato"}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{r.correctAnswers}/{r.totalQuestions}</Badge>
                     </TableCell>

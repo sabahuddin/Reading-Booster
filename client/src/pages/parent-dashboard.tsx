@@ -115,7 +115,7 @@ function ChildSummaryCard({ child }: { child: ChildUser }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kviz</TableHead>
+                  <TableHead>Knjiga</TableHead>
                   <TableHead>Tačno</TableHead>
                   <TableHead>Bodovi</TableHead>
                 </TableRow>
@@ -123,7 +123,7 @@ function ChildSummaryCard({ child }: { child: ChildUser }) {
               <TableBody>
                 {recentResults.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.quizId}</TableCell>
+                    <TableCell className="font-medium">{(r as any).bookTitle || "Nepoznato"}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{r.correctAnswers}/{r.totalQuestions}</Badge>
                     </TableCell>
