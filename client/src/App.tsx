@@ -12,6 +12,7 @@ function ScrollToTop() {
   }, [location]);
   return null;
 }
+import WelcomePopup from "@/components/welcome-popup";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import BlogPage from "@/pages/blog";
@@ -113,6 +114,7 @@ function App() {
         <ScrollToTop />
         <Toaster />
         <Router />
+        <WelcomePopup />
         <CookieBanner />
       </TooltipProvider>
     </QueryClientProvider>
