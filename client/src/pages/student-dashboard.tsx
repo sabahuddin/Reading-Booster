@@ -27,14 +27,6 @@ interface RankData {
   schoolTotal: number | null;
 }
 
-interface SubscriptionStatus {
-  subscriptionType: string;
-  isFree: boolean;
-  quizLimit: number | null;
-  quizzesUsed: number;
-  quizzesRemaining: number | null;
-}
-
 export default function StudentDashboard() {
   const { user } = useAuth();
 
@@ -44,10 +36,6 @@ export default function StudentDashboard() {
 
   const { data: challenges } = useQuery<Challenge[]>({
     queryKey: ["/api/challenges"],
-  });
-
-  const { data: subscription } = useQuery<SubscriptionStatus>({
-    queryKey: ["/api/subscription/status"],
   });
 
   const { data: rankData } = useQuery<RankData>({
@@ -64,7 +52,6 @@ export default function StudentDashboard() {
     : 0;
 
   const activeChallenges = challenges?.filter((c) => c.active) ?? [];
-  const isFree = subscription?.isFree ?? true;
 
   return (
     <DashboardLayout role="student">
@@ -78,33 +65,6 @@ export default function StudentDashboard() {
           </p>
         </div>
 
-        {isFree && subscription && (
-          <Card className="border-dashed border-primary/40 bg-primary/5">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Sparkles className="w-5 h-5 text-primary shrink-0" />
-                  <div>
-                    <p className="font-medium text-sm" data-testid="text-quiz-usage">
-                      Besplatni paket: {subscription.quizzesUsed} od {subscription.quizLimit} kviza iskorišteno
-                    </p>
-                    {subscription.quizzesRemaining === 0 ? (
-                      <p className="text-xs text-muted-foreground">Nadogradi na Pro za neograničen pristup kvizovima.</p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Još {subscription.quizzesRemaining} besplatna kviza preostalo.</p>
-                    )}
-                  </div>
-                </div>
-                <Button size="sm" asChild data-testid="button-dashboard-upgrade">
-                  <Link href="/ucenik/pro">
-                    <Sparkles className="mr-1" />
-                    Nadogradi
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
