@@ -47,11 +47,11 @@ const contactInfo = [
     label: "Telefon",
     value: "+387 60 320 20 10",
   },
- {
-    icon: MapPin,
-    label: "Adresa",
-    value: "Sarači 93, 71000 Sarajevo, BiH",
-  },
+// {
+//    icon: MapPin,
+//    label: "Adresa",
+//    value: "Sarači 93, 71000 Sarajevo, BiH",
+// },
 ];
 
 export default function ContactPage() {
