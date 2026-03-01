@@ -98,7 +98,7 @@ export default function StudentDashboard() {
                 <Button size="sm" asChild data-testid="button-dashboard-upgrade">
                   <Link href="/ucenik/pro">
                     <Sparkles className="mr-1" />
-                    Čitalac Pro
+                    Nadogradi
                   </Link>
                 </Button>
               </div>

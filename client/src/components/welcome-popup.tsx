@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default function WelcomePopup() {
           <DialogTitle className="text-center text-xl">
             Dobrodošli na Čitanje.ba!
           </DialogTitle>
+          <DialogDescription className="sr-only">Informacija o testnoj fazi platforme</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 text-center">
           <p className="text-muted-foreground leading-relaxed">

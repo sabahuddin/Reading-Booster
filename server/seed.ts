@@ -1,8 +1,8 @@
 import { db } from "./db";
-import { users, books, quizzes, questions, blogPosts } from "@shared/schema";
+import { users, books, quizzes, questions, quizResults, blogPosts, parentChildRequests } from "@shared/schema";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
 
@@ -562,6 +562,227 @@ export async function seedBlogPosts() {
   } else {
     console.log(`${added} blog posts added.`);
   }
+}
+
+export async function seedDemoData() {
+  const pointsMap: Record<string, number> = { R1: 1, R4: 3, R7: 5, O: 7, A: 10 };
+
+  const existingResults = await db.select().from(quizResults).limit(1);
+  if (existingResults.length > 0) {
+    console.log("Demo data already seeded, skipping...");
+    return;
+  }
+
+  console.log("Seeding demo data...");
+
+  const teacherPassword = await hashPassword("ucitelj123");
+  const studentPassword = await hashPassword("ucenik123");
+  const parentPassword = await hashPassword("roditelj123");
+  const readerPassword = await hashPassword("citalac123");
+
+  const [teacher] = await db.select().from(users).where(eq(users.username, "ucitelj1"));
+  if (!teacher) { console.log("Teacher not found, skipping demo data."); return; }
+
+  const teacherId = teacher.id;
+  await db.update(users).set({
+    schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+    className: "5a",
+    maxStudentAccounts: 30,
+    ageGroup: "R4",
+  }).where(eq(users.id, teacherId));
+
+  const [parent] = await db.select().from(users).where(eq(users.username, "roditelj1"));
+  if (!parent) { console.log("Parent not found, skipping demo data."); return; }
+  await db.update(users).set({ ageGroup: "A" }).where(eq(users.id, parent.id));
+
+  const existingStudents = await db.select().from(users).where(eq(users.username, "ucenik1"));
+  const ucenik1 = existingStudents[0];
+  const existingStudents2 = await db.select().from(users).where(eq(users.username, "ucenik2"));
+  const ucenik2 = existingStudents2[0];
+
+  if (ucenik1) {
+    await db.update(users).set({
+      createdByTeacherId: teacherId,
+      schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+      className: "5a",
+      parentId: parent.id,
+      ageGroup: "R1",
+    }).where(eq(users.id, ucenik1.id));
+  }
+  if (ucenik2) {
+    await db.update(users).set({
+      createdByTeacherId: teacherId,
+      schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+      className: "5a",
+      parentId: parent.id,
+      ageGroup: "R1",
+    }).where(eq(users.id, ucenik2.id));
+  }
+
+  const newStudents = [
+    { username: "ucenik3", fullName: "Amina Hadžić", email: "ucenik3@citaj.ba", ageGroup: "R1" },
+    { username: "ucenik4", fullName: "Emir Kovačević", email: "ucenik4@citaj.ba", ageGroup: "R1" },
+    { username: "ucenik5", fullName: "Lejla Osmić", email: "ucenik5@citaj.ba", ageGroup: "R4" },
+  ];
+
+  const newStudentIds: string[] = [];
+  for (const s of newStudents) {
+    const existing = await db.select().from(users).where(eq(users.username, s.username));
+    if (existing.length > 0) {
+      await db.update(users).set({
+        createdByTeacherId: teacherId,
+        schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+        className: "5a",
+        ageGroup: s.ageGroup,
+      }).where(eq(users.id, existing[0].id));
+      newStudentIds.push(existing[0].id);
+    } else {
+      const [inserted] = await db.insert(users).values({
+        username: s.username,
+        password: studentPassword,
+        email: s.email,
+        role: "student",
+        fullName: s.fullName,
+        schoolName: "OŠ Mehmed-beg Kapetanović Ljubušak",
+        className: "5a",
+        ageGroup: s.ageGroup,
+        createdByTeacherId: teacherId,
+        approved: true,
+      }).returning();
+      newStudentIds.push(inserted.id);
+    }
+  }
+
+  const existingReader = await db.select().from(users).where(eq(users.username, "citalac1"));
+  let readerId: string;
+  if (existingReader.length > 0) {
+    readerId = existingReader[0].id;
+    await db.update(users).set({ ageGroup: "A", fullName: "Mirza Halilović" }).where(eq(users.id, readerId));
+  } else {
+    const [reader] = await db.insert(users).values({
+      username: "citalac1",
+      password: readerPassword,
+      email: "citalac1@citaj.ba",
+      role: "reader",
+      fullName: "Mirza Halilović",
+      ageGroup: "A",
+    }).returning();
+    readerId = reader.id;
+  }
+
+  try {
+    if (ucenik1) {
+      await db.insert(parentChildRequests).values({
+        parentId: parent.id,
+        studentId: ucenik1.id,
+        teacherId: teacherId,
+        status: "approved",
+      }).onConflictDoNothing();
+    }
+    if (ucenik2) {
+      await db.insert(parentChildRequests).values({
+        parentId: parent.id,
+        studentId: ucenik2.id,
+        teacherId: teacherId,
+        status: "approved",
+      }).onConflictDoNothing();
+    }
+  } catch (e) {}
+
+  const allStudentIds = [
+    ...(ucenik1 ? [ucenik1.id] : []),
+    ...(ucenik2 ? [ucenik2.id] : []),
+    ...newStudentIds,
+  ];
+
+  const allQuizzes = await db.select({
+    quizId: quizzes.id,
+    bookId: quizzes.bookId,
+    ageGroup: books.ageGroup,
+    title: books.title,
+  }).from(quizzes)
+    .innerJoin(books, eq(quizzes.bookId, books.id));
+
+  const r1r4Quizzes = allQuizzes.filter(q => q.ageGroup === "R1" || q.ageGroup === "R4");
+  const adultQuizzes = allQuizzes.filter(q => q.ageGroup === "A" || q.ageGroup === "O");
+
+  const quizzesPerStudent = [18, 15, 20, 16, 17];
+  const shuffled = [...r1r4Quizzes].sort(() => Math.random() - 0.5);
+
+  let globalQuizIdx = 0;
+  for (let si = 0; si < allStudentIds.length; si++) {
+    const uid = allStudentIds[si];
+    const count = quizzesPerStudent[si] || 15;
+    let totalPoints = 0;
+    const now = Date.now();
+
+    for (let qi = 0; qi < count; qi++) {
+      const quiz = shuffled[globalQuizIdx % shuffled.length];
+      globalQuizIdx++;
+
+      const questionCount = await db.select({ count: sql<number>`count(*)` })
+        .from(questions).where(eq(questions.quizId, quiz.quizId));
+      const totalQ = Math.min(Number(questionCount[0]?.count) || 10, 20);
+      const accuracy = 0.5 + Math.random() * 0.45;
+      const correct = Math.floor(totalQ * accuracy);
+      const wrong = totalQ - correct;
+      const pts = correct * (pointsMap[quiz.ageGroup] || 1);
+      totalPoints += pts;
+
+      const daysAgo = Math.floor(Math.random() * 60);
+      const completedAt = new Date(now - daysAgo * 86400000);
+
+      await db.insert(quizResults).values({
+        userId: uid,
+        quizId: quiz.quizId,
+        score: pts,
+        totalQuestions: totalQ,
+        correctAnswers: correct,
+        wrongAnswers: wrong,
+        completedAt,
+      });
+    }
+
+    await db.update(users).set({ points: totalPoints }).where(eq(users.id, uid));
+    console.log(`  Student ${si + 1}: ${count} quizzes, ${totalPoints} points`);
+  }
+
+  const shuffledAdult = [...adultQuizzes].sort(() => Math.random() - 0.5);
+
+  for (const { uid, count } of [
+    { uid: readerId, count: 12 },
+    { uid: parent.id, count: 8 },
+  ]) {
+    let totalPoints = 0;
+    const now = Date.now();
+
+    for (let qi = 0; qi < count; qi++) {
+      const quiz = shuffledAdult[qi % shuffledAdult.length];
+      const questionCount = await db.select({ count: sql<number>`count(*)` })
+        .from(questions).where(eq(questions.quizId, quiz.quizId));
+      const totalQ = Math.min(Number(questionCount[0]?.count) || 10, 20);
+      const correct = Math.floor(totalQ * (0.55 + Math.random() * 0.4));
+      const wrong = totalQ - correct;
+      const pts = correct * (pointsMap[quiz.ageGroup] || 10);
+      totalPoints += pts;
+
+      const daysAgo = Math.floor(Math.random() * 45);
+      await db.insert(quizResults).values({
+        userId: uid,
+        quizId: quiz.quizId,
+        score: pts,
+        totalQuestions: totalQ,
+        correctAnswers: correct,
+        wrongAnswers: wrong,
+        completedAt: new Date(now - daysAgo * 86400000),
+      });
+    }
+
+    await db.update(users).set({ points: totalPoints }).where(eq(users.id, uid));
+    console.log(`  ${uid === readerId ? "Čitalac" : "Roditelj"}: ${count} quizzes, ${totalPoints} points`);
+  }
+
+  console.log("Demo data seeded successfully.");
 }
 
 seedDatabase().catch(console.error);
