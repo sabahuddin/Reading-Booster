@@ -234,11 +234,11 @@ export default function DashboardLayout({ role, children }: DashboardLayoutProps
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {(role === "student" || role === "reader") && (
+            {role === "reader" && (
               <SidebarGroup>
                 <SidebarGroupContent>
                   <div className="px-2">
-                    <Link href={role === "reader" ? "/citanje/pro" : "/ucenik/pro"} data-testid="link-nav-pro">
+                    <Link href="/citanje/pro" data-testid="link-nav-pro">
                       <div className={`p-3 rounded-md border ${isPro ? "border-primary/30 bg-primary/5" : "border-dashed border-primary/40 bg-primary/5"}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <Sparkles className="w-4 h-4 text-primary shrink-0" />
