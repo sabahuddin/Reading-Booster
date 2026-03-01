@@ -567,9 +567,9 @@ export async function seedBlogPosts() {
 export async function seedDemoData() {
   const pointsMap: Record<string, number> = { R1: 1, R4: 3, R7: 5, O: 7, A: 10 };
 
-  const existingResults = await db.select().from(quizResults).limit(1);
-  if (existingResults.length > 0) {
-    console.log("Demo data already seeded, skipping...");
+  const ucenik3Check = await db.select().from(users).where(eq(users.username, "ucenik3"));
+  if (ucenik3Check.length > 0 && (ucenik3Check[0].points ?? 0) > 0) {
+    console.log("Demo data already seeded (ucenik3 has points), skipping...");
     return;
   }
 
@@ -694,6 +694,12 @@ export async function seedDemoData() {
     ...(ucenik2 ? [ucenik2.id] : []),
     ...newStudentIds,
   ];
+
+  const allDemoUserIds = [...allStudentIds, readerId, parent.id];
+  for (const uid of allDemoUserIds) {
+    await db.delete(quizResults).where(eq(quizResults.userId, uid));
+  }
+  console.log(`Cleared old quiz results for ${allDemoUserIds.length} demo users.`);
 
   const allQuizzes = await db.select({
     quizId: quizzes.id,
