@@ -1257,6 +1257,59 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // ==================== RANK ROUTES ====================
+
+  app.get("/api/user/rank", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "Korisnik nije pronađen" });
+
+      const allUsers = await storage.getAllUsers();
+      const activeUsers = allUsers.filter(u => u.points > 0 && u.role !== "admin");
+
+      const sortedGlobal = activeUsers.sort((a, b) => b.points - a.points);
+      const globalRank = sortedGlobal.findIndex(u => u.id === userId) + 1;
+      const globalTotal = sortedGlobal.length;
+
+      let classRank = null;
+      let classTotal = null;
+      let schoolRank = null;
+      let schoolTotal = null;
+
+      if (user.role === "student") {
+        if (user.className && user.schoolName) {
+          const classmates = sortedGlobal.filter(u =>
+            u.className === user.className &&
+            u.schoolName === user.schoolName &&
+            u.role === "student"
+          );
+          classRank = classmates.findIndex(u => u.id === userId) + 1;
+          classTotal = classmates.length;
+        }
+        if (user.schoolName) {
+          const schoolmates = sortedGlobal.filter(u =>
+            u.schoolName === user.schoolName &&
+            u.role === "student"
+          );
+          schoolRank = schoolmates.findIndex(u => u.id === userId) + 1;
+          schoolTotal = schoolmates.length;
+        }
+      }
+
+      return res.json({
+        globalRank: globalRank || null,
+        globalTotal,
+        classRank,
+        classTotal,
+        schoolRank,
+        schoolTotal,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // ==================== LEADERBOARD ROUTES ====================
 
   app.get("/api/leaderboard", async (req, res) => {

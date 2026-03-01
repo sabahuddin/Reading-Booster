@@ -120,7 +120,6 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
             <TableRow>
               <TableHead className="w-16 text-base">Rang</TableHead>
               <TableHead className="text-base">Korisničko ime</TableHead>
-              {ageGroup !== "A" && <TableHead className="text-base">Razred</TableHead>}
               <TableHead className="text-right text-base">Bodovi</TableHead>
             </TableRow>
           </TableHeader>
@@ -142,7 +141,6 @@ function LeaderboardTable({ period, ageGroup }: { period: string; ageGroup: stri
                     })()}
                   </span>
                 </TableCell>
-                {ageGroup !== "A" && <TableCell className="text-base">{user.className}</TableCell>}
                 <TableCell className="text-right text-base">{user.totalScore || user.points}</TableCell>
               </TableRow>
             ))}

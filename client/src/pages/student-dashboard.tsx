@@ -14,9 +14,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles } from "lucide-react";
+import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Medal, Users, School } from "lucide-react";
 import { UserBadgeDisplay, AllBadges } from "@/components/user-badge";
 import type { QuizResult, Challenge } from "@shared/schema";
+
+interface RankData {
+  globalRank: number | null;
+  globalTotal: number;
+  classRank: number | null;
+  classTotal: number | null;
+  schoolRank: number | null;
+  schoolTotal: number | null;
+}
 
 interface SubscriptionStatus {
   subscriptionType: string;
@@ -39,6 +48,10 @@ export default function StudentDashboard() {
 
   const { data: subscription } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
+  });
+
+  const { data: rankData } = useQuery<RankData>({
+    queryKey: ["/api/user/rank"],
   });
 
   const totalQuizzes = results?.length ?? 0;
@@ -142,6 +155,48 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {rankData && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Medal className="text-muted-foreground" />
+                Moj rang
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {rankData.classRank && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted" data-testid="rank-class">
+                    <Users className="h-5 w-5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">U razredu</p>
+                      <p className="text-xl font-bold">#{rankData.classRank} <span className="text-sm font-normal text-muted-foreground">od {rankData.classTotal}</span></p>
+                    </div>
+                  </div>
+                )}
+                {rankData.schoolRank && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted" data-testid="rank-school">
+                    <School className="h-5 w-5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">U školi</p>
+                      <p className="text-xl font-bold">#{rankData.schoolRank} <span className="text-sm font-normal text-muted-foreground">od {rankData.schoolTotal}</span></p>
+                    </div>
+                  </div>
+                )}
+                {rankData.globalRank && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted" data-testid="rank-global">
+                    <Trophy className="h-5 w-5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Globalno</p>
+                      <p className="text-xl font-bold">#{rankData.globalRank} <span className="text-sm font-normal text-muted-foreground">od {rankData.globalTotal}</span></p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

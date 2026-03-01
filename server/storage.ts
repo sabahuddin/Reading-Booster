@@ -628,6 +628,7 @@ export class DatabaseStorage implements IStorage {
         }
         leaderboard.push({
           id: user.id,
+          username: user.username,
           fullName: user.fullName,
           className: user.className,
           points: totalScore,

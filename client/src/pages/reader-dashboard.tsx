@@ -14,9 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Baby } from "lucide-react";
+import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Baby, Medal } from "lucide-react";
 import { UserBadgeDisplay, AllBadges } from "@/components/user-badge";
 import type { User, QuizResult, Challenge } from "@shared/schema";
+
+interface RankData {
+  globalRank: number | null;
+  globalTotal: number;
+}
 
 type ChildUser = Omit<User, "password">;
 
@@ -73,6 +78,10 @@ export default function ReaderDashboard() {
 
   const { data: subscription } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
+  });
+
+  const { data: rankData } = useQuery<RankData>({
+    queryKey: ["/api/user/rank"],
   });
 
   const hasFamilyLink = !!user?.parentId;
@@ -182,6 +191,26 @@ export default function ReaderDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {rankData?.globalRank && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Medal className="text-muted-foreground" />
+                Moj rang
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted" data-testid="rank-global">
+                <Trophy className="h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Globalno</p>
+                  <p className="text-xl font-bold">#{rankData.globalRank} <span className="text-sm font-normal text-muted-foreground">od {rankData.globalTotal}</span></p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
