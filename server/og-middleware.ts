@@ -16,6 +16,7 @@ function buildOgHtml(opts: {
   description: string;
   url: string;
   image?: string;
+  jsonLd?: string;
 }): string {
   const t = escapeHtml(opts.title);
   const d = escapeHtml(opts.description);
@@ -41,6 +42,7 @@ function buildOgHtml(opts: {
 <meta name="twitter:description" content="${d}"/>
 <meta name="twitter:image" content="${img}"/>
 <link rel="canonical" href="${escapeHtml(opts.url)}"/>
+${opts.jsonLd ? `<script type="application/ld+json">${opts.jsonLd}</script>` : ""}
 <meta http-equiv="refresh" content="0;url=${escapeHtml(opts.url)}"/>
 </head>
 <body><p>Preusmjeravanje...</p></body>
@@ -64,13 +66,28 @@ export function ogMiddleware() {
       if (bookMatch) {
         const book = await storage.getBook(bookMatch[1]);
         if (book) {
+          const bookDesc = book.description
+            ? book.description.substring(0, 200)
+            : `Pročitaj "${book.title}" od ${book.author} i riješi kviz na platformi Čitanje.`;
+          const jsonLd = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Book",
+            "name": book.title,
+            "author": { "@type": "Person", "name": book.author },
+            "description": bookDesc,
+            "inLanguage": book.language || "bs",
+            "isbn": book.isbn || undefined,
+            "numberOfPages": book.pages || undefined,
+            "image": book.coverImage || undefined,
+            "publisher": book.publisher || undefined,
+            "url": `${BASE_URL}/knjiga/${book.id}`,
+          });
           const html = buildOgHtml({
             title: `${book.title} - ${book.author} | Čitanje`,
-            description: book.description
-              ? book.description.substring(0, 200)
-              : `Pročitaj "${book.title}" od ${book.author} i riješi kviz na platformi Čitanje.`,
+            description: bookDesc,
             url: `${BASE_URL}/knjiga/${book.id}`,
             image: book.coverImage || undefined,
+            jsonLd,
           });
           return res.status(200).set("Content-Type", "text/html").end(html);
         }

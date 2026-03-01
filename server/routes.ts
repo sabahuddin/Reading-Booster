@@ -231,6 +231,75 @@ export async function registerRoutes(
 
   app.use("/uploads", express.static(uploadsDir));
 
+  app.get("/robots.txt", (_req, res) => {
+    res.type("text/plain").send(`User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /ucenik
+Disallow: /ucitelj
+Disallow: /roditelj
+Disallow: /skola
+Disallow: /citanje
+Disallow: /api
+
+Sitemap: https://citanje.ba/sitemap.xml
+`);
+  });
+
+  app.get("/sitemap.xml", async (_req, res) => {
+    try {
+      const books = await storage.getAllBooks();
+      const blogPosts = await storage.getAllBlogPosts();
+      const baseUrl = "https://citanje.ba";
+
+      const staticPages = [
+        { loc: "/", priority: "1.0", changefreq: "daily" },
+        { loc: "/biblioteka", priority: "0.9", changefreq: "daily" },
+        { loc: "/razmjena", priority: "0.7", changefreq: "daily" },
+        { loc: "/blog", priority: "0.8", changefreq: "weekly" },
+        { loc: "/cijene", priority: "0.6", changefreq: "monthly" },
+        { loc: "/kontakt", priority: "0.5", changefreq: "monthly" },
+        { loc: "/prijava", priority: "0.5", changefreq: "monthly" },
+      ];
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+`;
+      for (const page of staticPages) {
+        xml += `  <url>
+    <loc>${baseUrl}${page.loc}</loc>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>
+`;
+      }
+
+      for (const book of books) {
+        xml += `  <url>
+    <loc>${baseUrl}/knjiga/${book.id}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+`;
+      }
+
+      for (const post of blogPosts) {
+        xml += `  <url>
+    <loc>${baseUrl}/blog/${post.id}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`;
+      }
+
+      xml += `</urlset>`;
+      res.type("application/xml").send(xml);
+    } catch (error) {
+      console.error("Sitemap error:", error);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
   app.get("/api/deploy-check", async (_req, res) => {
     const pg = await import("pg");
     const pool = new pg.default.Pool({ connectionString: process.env.DATABASE_URL });
