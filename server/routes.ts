@@ -2039,6 +2039,42 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  app.get("/api/admin/missing-covers-csv", requireAdmin, async (_req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+
+      const uploadsBooks = await db.execute(sql`SELECT id, title, author, cover_image, age_group FROM books WHERE cover_image LIKE '/uploads/%' ORDER BY title`);
+      const missing: any[] = [];
+      for (const b of uploadsBooks.rows as any[]) {
+        const filePath = path.join(process.cwd(), b.cover_image);
+        if (!fs.existsSync(filePath)) {
+          missing.push(b);
+        }
+      }
+
+      const noCover = await db.execute(sql`SELECT id, title, author, age_group FROM books WHERE cover_image IS NULL OR cover_image = '' ORDER BY title`);
+
+      const bom = "\uFEFF";
+      const headers = "title;author;ageGroup;coverImage;status";
+      const rows: string[] = [];
+      for (const b of missing) {
+        const filename = b.cover_image.replace('/uploads/covers/', '');
+        rows.push([b.title, b.author, b.age_group || '', filename, 'fajl_nedostaje'].map((v: string) => `"${String(v).replace(/"/g, '""')}"`).join(';'));
+      }
+      for (const b of noCover.rows as any[]) {
+        rows.push([b.title, b.author, b.age_group || '', '', 'nema_putanju'].map((v: string) => `"${String(v).replace(/"/g, '""')}"`).join(';'));
+      }
+
+      const csv = bom + headers + "\n" + rows.join("\n");
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="nedostajuce_naslovnice.csv"');
+      return res.send(csv);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/admin/fix-covers", requireAdmin, async (_req, res) => {
     try {
       const { db } = await import("./db");

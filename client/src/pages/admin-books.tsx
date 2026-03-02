@@ -844,6 +844,10 @@ export default function AdminBooks() {
                   <Trash2 className={`mr-2 h-4 w-4`} />
                   {cleaningUp ? "Čišćenje u toku..." : "Očisti naslove i opise"}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("/api/admin/missing-covers-csv", "_blank")} data-testid="button-download-missing-covers">
+                  <ImageOff className="mr-2 h-4 w-4" />
+                  Preuzmi listu nedostajućih naslovnica
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <input type="file" ref={csvInputRef} accept=".csv" className="hidden" onChange={handleCsvImport} data-testid="input-import-books-file" />
