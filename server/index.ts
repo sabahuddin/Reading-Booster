@@ -15,6 +15,29 @@ import { seedMissingQuizzes } from "./seed-quizzes";
 import { fetchBookCovers } from "./fetch-covers";
 import { loadSeedData } from "./load-seed-data";
 import { ogMiddleware } from "./og-middleware";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+
+async function fixCoverImagePaths() {
+  try {
+    const result = await db.execute(sql`
+      UPDATE books 
+      SET cover_image = '/uploads/covers/' || cover_image 
+      WHERE cover_image IS NOT NULL 
+      AND cover_image != '' 
+      AND cover_image NOT LIKE '/uploads/%'
+      AND cover_image NOT LIKE 'http%'
+    `);
+    const count = result.rowCount ?? 0;
+    if (count > 0) {
+      console.log(`[startup] Fixed ${count} book cover_image paths (added /uploads/covers/ prefix)`);
+    } else {
+      console.log("[startup] All cover_image paths already correct.");
+    }
+  } catch (err) {
+    console.error("[startup] Error fixing cover_image paths:", err);
+  }
+}
 
 declare module "express-session" {
   interface SessionData {
@@ -286,6 +309,7 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
         .then(() => seedBlogPosts())
         .then(() => seedDemoData())
         .then(() => fetchBookCovers())
+        .then(() => fixCoverImagePaths())
         .then(() => console.log("[startup] All startup tasks completed."))
         .catch((err) => console.error("[startup] STARTUP ERROR:", err));
     },
