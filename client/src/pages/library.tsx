@@ -78,8 +78,13 @@ export default function Library() {
               <Link key={book.id} href={`${basePath}/knjiga/${book.id}`} data-testid={`link-book-${book.id}`}>
                 <Card className="hover-elevate h-full">
                   <CardContent className="p-4 space-y-3">
-                    <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden" data-testid={`img-book-cover-${book.id}`}>
+                    <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden relative" data-testid={`img-book-cover-${book.id}`}>
                       <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
+                      {book.pdfUrl && (
+                        <span className="absolute top-1.5 left-1.5 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded" data-testid={`badge-pdf-${book.id}`}>
+                          PDF
+                        </span>
+                      )}
                     </div>
                     <div>
                       <h3 className="font-semibold line-clamp-2" data-testid={`text-book-title-${book.id}`}>
