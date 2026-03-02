@@ -1,0 +1,86 @@
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+Session table ensured.
+4:15:45 PM [express] serving on port 5000
+[startup] NODE_ENV=production, CWD=/app
+Running database migrations...
+Using migrations from: /app/migrations
+npm warn config production Use `--omit=dev` instead.
+(node:20) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Database migrations completed successfully.
+[migration] add_quiz_author_to_quizzes: OK
+[migration] create_book_listings: OK
+[migration] create_book_ratings: OK
+Admin password reset to default.
+Users already exist, skipping user seed...
+Books already seeded, skipping book seed...
+[migration] sync_book_genres_from_legacy: all synced
+Admin password reset to default.
+Users already exist, skipping user seed...
+[seed-data] === Starting seed data load (additive only, never deletes) ===
+[seed-data] Using: /app/server/seed-data.json (1870 KB)
+[seed-data] Current DB: 1996 books, 231 quizzes, 2842 questions
+[seed-data] Seed file has: 716 books, 231 quizzes, 2842 questions, 20 genres
+[seed-data] Respecting deletions: 235 books, 0 quizzes permanently excluded
+[seed-data] New items to add: 0 books, 0 quizzes, 0 questions
+[seed-data] Blog posts: all 2 already exist
+[seed-data] Nothing new to add. All seed data already exists.
+[startup] seed-data.sql loaded all books/quizzes. Skipping legacy seeders.
+Blog posts already exist, checking for missing...
+All 5 blog posts already exist.
+Demo data already seeded (ucenik3 has points), skipping...
+Fetching book covers (download to local)...
+53 books need covers — skipping auto-fetch on startup (use admin panel to fetch).
+[startup] All cover_image paths already correct.
+[startup] All startup tasks completed.
+4:18:19 PM [express] GET /api/admin/stats 200 in 116ms :: {"totalUsers":12,"totalBooks":1996,"totalQuizzes":231,"totalMessages":0}
+4:18:21 PM [express] GET /api/auth/me 200 in 58ms :: {"id":"e6ac3cee-2d75-44b9-b108-20144ade0154","username":"admin","email":"admin@citaj.ba","role":"admin","fullName":"Admin Korisnik","schoolName":null,"className":null,"points":26,"parentId":null,"institutionType":null,"institutionRole":null,"approved":false,"maxStudentAccounts":0,"maxTeacherAccounts":0,"createdByTeacherId":null,"createdBySchoolAdminId":null,"subscriptionType":"free","subscriptionExpiresAt":null,"ageGroup":"R1"}
+4:18:21 PM [express] GET /api/admin/stats 200 in 83ms :: {"totalUsers":12,"totalBooks":1996,"totalQuizzes":231,"totalMessages":0}
+4:18:38 PM [express] GET /api/auth/me 200 in 73ms :: {"id":"e6ac3cee-2d75-44b9-b108-20144ade0154","username":"admin","email":"admin@citaj.ba","role":"admin","fullName":"Admin Korisnik","schoolName":null,"className":null,"points":26,"parentId":null,"institutionType":null,"institutionRole":null,"approved":false,"maxStudentAccounts":0,"maxTeacherAccounts":0,"createdByTeacherId":null,"createdBySchoolAdminId":null,"subscriptionType":"free","subscriptionExpiresAt":null,"ageGroup":"R1"}
+4:18:38 PM [express] GET /api/admin/stats 200 in 78ms :: {"totalUsers":12,"totalBooks":1996,"totalQuizzes":231,"totalMessages":0}
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+Session table ensured.
+4:27:53 PM [express] serving on port 5000
+[startup] NODE_ENV=production, CWD=/app
+Running database migrations...
+Using migrations from: /app/migrations
+Database migrations completed successfully.
+[migration] add_quiz_author_to_quizzes: OK
+[migration] create_book_listings: OK
+[migration] create_book_ratings: OK
+Admin password reset to default.
+Users already exist, skipping user seed...
+Books already seeded, skipping book seed...
+[migration] sync_book_genres_from_legacy: all synced
+Admin password reset to default.
+Users already exist, skipping user seed...
+[seed-data] === Starting seed data load (additive only, never deletes) ===
+[seed-data] Using: /app/server/seed-data.json (1870 KB)
+[seed-data] Current DB: 1996 books, 231 quizzes, 2842 questions
+[seed-data] Seed file has: 716 books, 231 quizzes, 2842 questions, 20 genres
+[seed-data] Respecting deletions: 235 books, 0 quizzes permanently excluded
+[seed-data] New items to add: 0 books, 0 quizzes, 0 questions
+[seed-data] Blog posts: all 2 already exist
+[seed-data] Nothing new to add. All seed data already exists.
+[startup] seed-data.sql loaded all books/quizzes. Skipping legacy seeders.
+Blog posts already exist, checking for missing...
+All 5 blog posts already exist.
+Demo data already seeded (ucenik3 has points), skipping...
+Fetching book covers (download to local)...
+53 books need covers — skipping auto-fetch on startup (use admin panel to fetch).
+[startup] All cover_image paths already correct.
+[startup] All startup tasks completed.
+4:28:01 PM [express] GET /api/auth/me 304 in 13ms :: {"id":"e6ac3cee-2d75-44b9-b108-20144ade0154","username":"admin","email":"admin@citaj.ba","role":"admin","fullName":"Admin Korisnik","schoolName":null,"className":null,"points":26,"parentId":null,"institutionType":null,"institutionRole":null,"approved":false,"maxStudentAccounts":0,"maxTeacherAccounts":0,"createdByTeacherId":null,"createdBySchoolAdminId":null,"subscriptionType":"free","subscriptionExpiresAt":null,"ageGroup":"R1"}
+4:28:01 PM [express] GET /api/partners 304 in 17ms :: [{"id":"dfdce85d-916b-4e55-aaba-cec1d98d3166","name":"Edukativna platforma Mekteb.net","logoUrl":"/uploads/logos/1772376017952-3979b968bf6a.png","address":"","websiteUrl":"https://mekteb.net","description":"Islamska edukativna platforma sa interaktivnim lekcijama, kvizovima i sadržajem za sve uzraste","sortOrder":1,"active":true,"createdAt":"2026-03-01T14:41:27.631Z"},{"id":"82b188bb-194c-471d-bef5-e7db354c6afa","name":"Izdavačka kuća Ilum","logoUrl":"/uploads/logos/1772376234379-97f37672819a.png","address":"","websiteUrl":"https://ilum.ba","description":"Izdavačka kuća Ilum","sortOrder":2,"active":true,"createdAt":"2026-03-01T14:45:01.785Z"}]
+4:28:01 PM [express] GET /api/leaderboard 304 in 42ms :: [{"id":"3c5a9f52-dfa2-499c-9b6a-9ec60dacbbaf","username":"Bećir","fullName":"Bećir Herak","className":null,"points":160,"ageGroup":"R1"}]
+4:28:01 PM [express] GET /api/challenges 304 in 35ms :: []
+npm error path /app
+npm error command failed
+npm error signal SIGTERM
+npm error command sh -c NODE_ENV=production node dist/index.cjs
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-03-02T16_15_45_185Z-debug-0.log
+npm warn config production Use `--omit=dev` instead.
+(node:20) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
