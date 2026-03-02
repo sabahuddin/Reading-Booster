@@ -1959,6 +1959,110 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  app.get("/api/admin/book-audit", requireAdmin, async (_req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+
+      const totalResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books`);
+      const totalBooks = Number(totalResult.rows[0].cnt);
+
+      const noCoverResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE cover_image IS NULL OR cover_image = ''`);
+      const uploadsCoverResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE cover_image LIKE '/uploads/%'`);
+      const httpCoverResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE cover_image LIKE 'http%'`);
+      const otherCoverResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE cover_image IS NOT NULL AND cover_image != '' AND cover_image NOT LIKE '/uploads/%' AND cover_image NOT LIKE 'http%'`);
+
+      const uploadsBooks = await db.execute(sql`SELECT id, title, cover_image FROM books WHERE cover_image LIKE '/uploads/%'`);
+      let coverFileExists = 0;
+      let coverFileMissing = 0;
+      const missingCovers: any[] = [];
+      for (const b of uploadsBooks.rows as any[]) {
+        const filePath = path.join(process.cwd(), b.cover_image);
+        if (fs.existsSync(filePath)) {
+          coverFileExists++;
+        } else {
+          coverFileMissing++;
+          if (missingCovers.length < 50) {
+            missingCovers.push({ id: b.id, title: b.title, coverImage: b.cover_image });
+          }
+        }
+      }
+
+      const noGenreResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books b WHERE NOT EXISTS (SELECT 1 FROM book_genres bg WHERE bg.book_id = b.id)`);
+      const hasGenreResult = await db.execute(sql`SELECT COUNT(DISTINCT book_id) as cnt FROM book_genres`);
+
+      const noGenreExamples = await db.execute(sql`SELECT id, title FROM books b WHERE NOT EXISTS (SELECT 1 FROM book_genres bg WHERE bg.book_id = b.id) LIMIT 20`);
+
+      const quizResult = await db.execute(sql`SELECT COUNT(DISTINCT book_id) as cnt FROM quizzes`);
+      const pdfResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE pdf_url IS NOT NULL AND pdf_url != ''`);
+
+      const ageResult = await db.execute(sql`SELECT COALESCE(age_group, 'null') as ag, COUNT(*) as cnt FROM books GROUP BY age_group ORDER BY cnt DESC`);
+      const noAgeResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE age_group IS NULL OR age_group = ''`);
+      const noAgeExamples = await db.execute(sql`SELECT id, title FROM books WHERE age_group IS NULL OR age_group = '' LIMIT 20`);
+
+      const noAuthorResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE author IS NULL OR author = ''`);
+      const noDescResult = await db.execute(sql`SELECT COUNT(*) as cnt FROM books WHERE description IS NULL OR description = ''`);
+
+      return res.json({
+        totalBooks,
+        coverAnalysis: {
+          noCover: Number(noCoverResult.rows[0].cnt),
+          uploadsPath: Number(uploadsCoverResult.rows[0].cnt),
+          httpUrl: Number(httpCoverResult.rows[0].cnt),
+          otherNoPrefix: Number(otherCoverResult.rows[0].cnt),
+          fileExists: coverFileExists,
+          fileMissing: coverFileMissing,
+          missingCoverExamples: missingCovers,
+        },
+        genreAnalysis: {
+          booksWithGenres: Number(hasGenreResult.rows[0].cnt),
+          booksWithoutGenres: Number(noGenreResult.rows[0].cnt),
+          noGenreExamples: noGenreExamples.rows,
+        },
+        dataQuality: {
+          noAuthor: Number(noAuthorResult.rows[0].cnt),
+          noDescription: Number(noDescResult.rows[0].cnt),
+          noAgeGroup: Number(noAgeResult.rows[0].cnt),
+          noAgeGroupExamples: noAgeExamples.rows,
+        },
+        quizzes: {
+          booksWithQuiz: Number(quizResult.rows[0].cnt),
+          booksWithoutQuiz: totalBooks - Number(quizResult.rows[0].cnt),
+        },
+        pdfs: {
+          booksWithPdf: Number(pdfResult.rows[0].cnt),
+        },
+        ageGroups: Object.fromEntries((ageResult.rows as any[]).map(r => [r.ag, Number(r.cnt)])),
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/fix-covers", requireAdmin, async (_req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+
+      const prefixResult = await db.execute(sql`
+        UPDATE books 
+        SET cover_image = '/uploads/covers/' || cover_image 
+        WHERE cover_image IS NOT NULL 
+        AND cover_image != '' 
+        AND cover_image NOT LIKE '/uploads/%'
+        AND cover_image NOT LIKE 'http%'
+      `);
+      const prefixFixed = prefixResult.rowCount ?? 0;
+
+      return res.json({
+        message: "Cover paths fixed",
+        prefixFixed,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // ==================== TEACHER ROUTES ====================
 
   app.get("/api/teacher/students", requireTeacher, async (req, res) => {
