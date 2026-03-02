@@ -7,8 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Search, FileText } from "lucide-react";
-import type { Book } from "@shared/schema";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import type { Book, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
+
+type BookWithGenres = Book & { genres?: Genre[] };
 
 const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
@@ -18,16 +23,26 @@ export default function Library() {
   const basePath = isReader ? "/citanje" : "/ucenik";
   const dashboardRole = isReader ? "reader" : "student";
   const [search, setSearch] = useState("");
+  const [filterGenre, setFilterGenre] = useState("");
+  const [filterAge, setFilterAge] = useState("");
 
-  const { data: books, isLoading } = useQuery<Book[]>({
+  const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
   });
 
-  const filtered = books?.filter(
-    (b) =>
-      b.title.toLowerCase().includes(search.toLowerCase()) ||
-      b.author.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data: genres } = useQuery<Genre[]>({
+    queryKey: ["/api/genres"],
+  });
+
+  const filtered = books?.filter((b) => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (!b.title.toLowerCase().includes(q) && !b.author.toLowerCase().includes(q)) return false;
+    }
+    if (filterGenre && !(b.genres && b.genres.some(g => g.id === filterGenre))) return false;
+    if (filterAge && b.ageGroup !== filterAge) return false;
+    return true;
+  });
 
   return (
     <DashboardLayout role={dashboardRole}>
@@ -37,15 +52,41 @@ export default function Library() {
           <p className="text-muted-foreground">Odaberi knjigu i počni čitati.</p>
         </div>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Pretraži knjige..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-            data-testid="input-search-books"
-          />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Pretraži knjige..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+              data-testid="input-search-books"
+            />
+          </div>
+          <Select value={filterGenre || "all"} onValueChange={(v) => setFilterGenre(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[180px]" data-testid="select-filter-genre">
+              <SelectValue placeholder="Svi žanrovi" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Svi žanrovi</SelectItem>
+              {(genres || []).map(g => (
+                <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterAge || "all"} onValueChange={(v) => setFilterAge(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[160px]" data-testid="select-filter-age">
+              <SelectValue placeholder="Sve dobi" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Sve dobi</SelectItem>
+              <SelectItem value="R1">Od 1. razreda</SelectItem>
+              <SelectItem value="R4">Od 4. razreda</SelectItem>
+              <SelectItem value="R7">Od 7. razreda</SelectItem>
+              <SelectItem value="O">Omladina</SelectItem>
+              <SelectItem value="A">Odrasli</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (

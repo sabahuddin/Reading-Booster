@@ -70,7 +70,7 @@ const bookFormSchema = z.object({
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
 
-const BOOKS_PER_PAGE = 20;
+const PAGE_SIZE_OPTIONS = [20, 50, 100];
 
 export default function AdminBooks() {
   const { toast } = useToast();
@@ -92,10 +92,13 @@ export default function AdminBooks() {
   const [cleaningUp, setCleaningUp] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [booksPerPage, setBooksPerPage] = useState(20);
   const [sortField, setSortField] = useState<"title" | "author" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filterNoCover, setFilterNoCover] = useState(false);
   const [filterNoQuiz, setFilterNoQuiz] = useState(false);
+  const [filterGenreId, setFilterGenreId] = useState<string>("");
+  const [filterNoDescription, setFilterNoDescription] = useState(false);
   const [selectedBookIds, setSelectedBookIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
@@ -159,6 +162,12 @@ export default function AdminBooks() {
     if (filterNoQuiz) {
       result = result.filter(b => !booksWithQuizSet.has(b.id));
     }
+    if (filterGenreId) {
+      result = result.filter(b => b.genres && b.genres.some(g => g.id === filterGenreId));
+    }
+    if (filterNoDescription) {
+      result = result.filter(b => !b.description || b.description.trim() === "");
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -178,13 +187,18 @@ export default function AdminBooks() {
       });
     }
     return result;
-  }, [books, searchQuery, sortField, sortDir, filterNoCover, filterNoQuiz, booksWithQuizSet]);
+  }, [books, searchQuery, sortField, sortDir, filterNoCover, filterNoQuiz, filterGenreId, filterNoDescription, booksWithQuizSet]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / BOOKS_PER_PAGE));
+  const noDescCount = useMemo(() => {
+    if (!books) return 0;
+    return books.filter(b => !b.description || b.description.trim() === "").length;
+  }, [books]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / booksPerPage));
   const safePage = Math.max(1, Math.min(currentPage, totalPages));
   const paginatedBooks = filteredBooks.slice(
-    (safePage - 1) * BOOKS_PER_PAGE,
-    safePage * BOOKS_PER_PAGE
+    (safePage - 1) * booksPerPage,
+    safePage * booksPerPage
   );
 
   const form = useForm<BookFormValues>({
@@ -606,6 +620,31 @@ export default function AdminBooks() {
     toast({ title: "Preuzimanje", description: `CSV sa ${noQuizBooks.length} knjiga bez kviza se preuzima...` });
   }
 
+  function downloadFilteredBooksCsv() {
+    const booksToExport = filteredBooks;
+    const headers = "title;author;description;ageGroup;genre;readingDifficulty;pageCount;publisher;publicationYear;publicationCity;isbn;cobissId;language;bookFormat;coverImage;pdfUrl;purchaseUrl;weeklyPick";
+    const rows = booksToExport.map(b => {
+      const genreNames = b.genres ? b.genres.map(g => g.name).join(", ") : (b.genre || "");
+      return [
+        b.title, b.author, b.description || "", b.ageGroup || "", genreNames,
+        b.readingDifficulty || "", b.pageCount || "", b.publisher || "",
+        b.publicationYear || "", b.publicationCity || "", b.isbn || "",
+        b.cobissId || "", b.language || "", b.bookFormat || "",
+        b.coverImage || "", b.pdfUrl || "", b.purchaseUrl || "",
+        b.weeklyPick ? "da" : ""
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(";");
+    });
+    const csv = "\uFEFF" + headers + "\n" + rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `knjige_export_${booksToExport.length}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Preuzimanje", description: `CSV sa ${booksToExport.length} knjiga se preuzima...` });
+  }
+
   function downloadNoCoverCsv() {
     const noCoverBooks = (books || []).filter(isMissingCover);
     const headers = "title,author,coverImage";
@@ -868,36 +907,65 @@ export default function AdminBooks() {
               data-testid="input-search-books"
             />
           </div>
+          <Select value={filterGenreId || "all"} onValueChange={(v) => { setFilterGenreId(v === "all" ? "" : v); setCurrentPage(1); }}>
+            <SelectTrigger className="w-[180px]" data-testid="select-filter-genre">
+              <SelectValue placeholder="Svi žanrovi" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Svi žanrovi</SelectItem>
+              {(allGenres || []).map(g => (
+                <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant={filterNoCover ? "default" : "outline"}
+            size="sm"
             onClick={() => { setFilterNoCover(!filterNoCover); setCurrentPage(1); }}
-            className="whitespace-nowrap"
             data-testid="button-filter-no-cover"
           >
-            <Image className="mr-2 h-4 w-4" />
+            <ImageOff className="mr-1.5 h-3.5 w-3.5" />
             Bez korica {noCoverCount > 0 && `(${noCoverCount})`}
           </Button>
           {filterNoCover && noCoverCount > 0 && (
-            <Button variant="outline" onClick={downloadNoCoverCsv} className="whitespace-nowrap" data-testid="button-download-no-cover-csv">
-              <Download className="mr-2 h-4 w-4" />
-              Preuzmi CSV
+            <Button variant="outline" size="sm" onClick={downloadNoCoverCsv} data-testid="button-download-no-cover-csv">
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              CSV
             </Button>
           )}
           <Button
             variant={filterNoQuiz ? "default" : "outline"}
+            size="sm"
             onClick={() => { setFilterNoQuiz(!filterNoQuiz); setCurrentPage(1); }}
-            className="whitespace-nowrap"
             data-testid="button-filter-no-quiz"
           >
-            <HelpCircle className="mr-2 h-4 w-4" />
+            <HelpCircle className="mr-1.5 h-3.5 w-3.5" />
             Bez kviza {noQuizCount > 0 && `(${noQuizCount})`}
           </Button>
           {filterNoQuiz && noQuizCount > 0 && (
-            <Button variant="outline" onClick={downloadNoQuizCsv} className="whitespace-nowrap" data-testid="button-download-no-quiz-csv">
-              <Download className="mr-2 h-4 w-4" />
-              Preuzmi CSV
+            <Button variant="outline" size="sm" onClick={downloadNoQuizCsv} data-testid="button-download-no-quiz-csv">
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              CSV
             </Button>
           )}
+          <Button
+            variant={filterNoDescription ? "default" : "outline"}
+            size="sm"
+            onClick={() => { setFilterNoDescription(!filterNoDescription); setCurrentPage(1); }}
+            data-testid="button-filter-no-desc"
+          >
+            Bez opisa {noDescCount > 0 && `(${noDescCount})`}
+          </Button>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={downloadFilteredBooksCsv} data-testid="button-download-filtered-csv">
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              Preuzmi CSV ({filteredBooks.length})
+            </Button>
+          </div>
         </div>
 
         {selectedBookIds.size > 0 && (
@@ -1030,11 +1098,23 @@ export default function AdminBooks() {
           </CardContent>
         </Card>
 
-        {totalPages > 1 && (
+        {filteredBooks.length > 0 && (
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <p className="text-sm text-muted-foreground" data-testid="text-books-count">
-              Prikazano {(safePage - 1) * BOOKS_PER_PAGE + 1}-{Math.min(safePage * BOOKS_PER_PAGE, filteredBooks.length)} od {filteredBooks.length} knjiga
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-muted-foreground" data-testid="text-books-count">
+                Prikazano {(safePage - 1) * booksPerPage + 1}-{Math.min(safePage * booksPerPage, filteredBooks.length)} od {filteredBooks.length} knjiga
+              </p>
+              <Select value={String(booksPerPage)} onValueChange={(v) => { setBooksPerPage(Number(v)); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[90px] h-8 text-xs" data-testid="select-page-size">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map(n => (
+                    <SelectItem key={n} value={String(n)}>{n} po str.</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-1">
               <Button
                 size="icon"

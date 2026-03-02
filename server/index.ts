@@ -39,6 +39,34 @@ async function fixCoverImagePaths() {
   }
 }
 
+async function fixInvalidAgeGroups() {
+  try {
+    const mapping: Record<string, string> = {
+      'lako': 'R1',
+      'srednje': 'R4',
+      'teško': 'R7',
+      'tesko': 'R7',
+      'R2': 'R1',
+    };
+    let totalFixed = 0;
+    for (const [oldVal, newVal] of Object.entries(mapping)) {
+      const result = await db.execute(
+        sql`UPDATE books SET age_group = ${newVal} WHERE age_group = ${oldVal}`
+      );
+      const count = result.rowCount ?? 0;
+      if (count > 0) {
+        console.log(`[startup] Fixed age_group: "${oldVal}" -> "${newVal}" (${count} books)`);
+        totalFixed += count;
+      }
+    }
+    if (totalFixed === 0) {
+      console.log("[startup] All age_group values already correct.");
+    }
+  } catch (err) {
+    console.error("[startup] Error fixing age_group values:", err);
+  }
+}
+
 declare module "express-session" {
   interface SessionData {
     userId: string;
@@ -310,6 +338,7 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
         .then(() => seedDemoData())
         .then(() => fetchBookCovers())
         .then(() => fixCoverImagePaths())
+        .then(() => fixInvalidAgeGroups())
         .then(() => console.log("[startup] All startup tasks completed."))
         .catch((err) => console.error("[startup] STARTUP ERROR:", err));
     },
