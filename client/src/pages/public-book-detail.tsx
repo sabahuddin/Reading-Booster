@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { SocialShare } from "@/components/social-share";
 import { BookRating } from "@/components/book-rating";
+import { PdfViewer } from "@/components/pdf-viewer";
 import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 
@@ -123,6 +124,10 @@ export default function PublicBookDetail() {
                   <SocialShare title={`${book.title} - ${book.author}`} url={`https://citanje.ba/knjiga/${book.id}`} />
                 </div>
               </div>
+
+              {book.pdfUrl && (
+                <PdfViewer url={book.pdfUrl} title={book.title} />
+              )}
 
               {quiz && (
                 <Card data-testid="card-quiz-section">
