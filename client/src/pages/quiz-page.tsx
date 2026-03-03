@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -77,19 +77,17 @@ export default function QuizPage() {
 
   const isLastQuestion = useCallback(() => {
     if (!quiz) return false;
-    return currentQ >= (quiz.questions ?? []).length - 1;
-  }, [quiz, currentQ]);
+    return currentQ >= questionsToUse.length - 1;
+  }, [quiz, currentQ, questionsToUse]);
 
   const moveToNext = useCallback(() => {
     if (!quiz) return;
-    const questions = quiz.questions ?? [];
-    const totalQ = questions.length;
-    if (currentQ < totalQ - 1) {
+    if (currentQ < questionsToUse.length - 1) {
       setCurrentQ(p => p + 1);
     } else {
       setAutoSubmitTriggered(true);
     }
-  }, [quiz, currentQ]);
+  }, [quiz, currentQ, questionsToUse]);
 
   useEffect(() => {
     if (submitted || !quizStarted || !quiz || quiz.questions.length === 0) return;
@@ -126,7 +124,7 @@ export default function QuizPage() {
       if (!quiz) throw new Error("Quiz not loaded");
       const payload = {
         quizId: quiz.id,
-        answers: quiz.questions.map((q) => ({
+        answers: questionsToUse.map((q) => ({
           questionId: q.id,
           selectedAnswer: answers[q.id] || "",
         })),
@@ -161,11 +159,18 @@ export default function QuizPage() {
     }
   }, [autoSubmitTriggered]);
 
-  const questions = quiz?.questions ?? [];
-  const totalQ = questions.length;
-  const question = questions[currentQ];
+  const questionsToUse = useMemo(() => {
+    if (!quiz?.questions) return [];
+    if (quiz.questions.length <= 20) return quiz.questions;
+    // Šablonski shuffle i slice na 20
+    const shuffled = [...quiz.questions].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 20);
+  }, [quiz?.questions]);
+
+  const totalQ = questionsToUse.length;
+  const question = questionsToUse[currentQ];
   const progressValue = totalQ > 0 ? ((currentQ + 1) / totalQ) * 100 : 0;
-  const allAnswered = questions.every((q) => answers[q.id]);
+  const allAnswered = questionsToUse.every((q) => answers[q.id]);
   const isLast = currentQ === totalQ - 1;
 
   const selectAnswer = (answer: string) => {
@@ -410,14 +415,14 @@ export default function QuizPage() {
               </Button>
 
               <div className="flex gap-1 flex-wrap">
-                {questions.map((_, i) => (
+                {questionsToUse.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentQ(i)}
                     className={`w-8 h-8 rounded-md text-xs font-medium border transition-colors ${
                       i === currentQ
                         ? "border-primary bg-primary/10"
-                        : answers[questions[i].id]
+                        : answers[questionsToUse[i].id]
                           ? "bg-muted"
                           : ""
                     }`}

@@ -1180,6 +1180,12 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.status(404).json({ message: "No questions found for this quiz" });
       }
 
+      // Ako kviz ima više od 20 pitanja, očekujemo da je klijent poslao samo 20 nasumičnih.
+      // Validacija: dozvoljavamo maksimalno 20 pitanja po sesiji ako ih ima više u bazi.
+      if (allQuestions.length > 20 && answers.length > 20) {
+        return res.status(400).json({ message: "Maksimalno 20 pitanja je dozvoljeno po kvizu." });
+      }
+
       const quiz = await storage.getQuiz(quizId);
       const book = quiz ? await storage.getBook(quiz.bookId) : null;
       const pointsPerQuestion: Record<string, number> = { R1: 1, R4: 3, R7: 5, O: 7, A: 10 };
