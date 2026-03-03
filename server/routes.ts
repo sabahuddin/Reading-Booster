@@ -2416,13 +2416,20 @@ Odgovori ISKLJUČIVO u JSON formatu:
   });
 
   app.get("/api/admin/templates/quizzes", requireAdmin, (_req, res) => {
+    // Napomena: bodovi se automatski određuju prema starosnoj skupini knjige (R1=1, R4=3, R7=5, O=7, A=10)
+    // Format: bookTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer
+    // correctAnswer: a, b, c ili d
+    // Separator: ; (tačka-zarez)
+    // Ako kviz za knjigu već postoji, pitanja se dodaju na postojeći kviz
     const headers = "bookTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer";
     const lines = [
       headers,
       '"Mali princ";"Koji cvijet je rastao na planeti malog princa?";"Ruža";"Tulipan";"Ljiljan";"Narcis";"a"',
       '"Mali princ";"Koliko planeta je posjetio mali princ?";"5";"6";"7";"8";"c"',
+      '"Mali princ";"Od čega je bila načinjena kapa malog princa?";"Slona kojeg je progutala boa";"Slame";"Kože";"Papira";"a"',
       '"Ježeva kućica";"Ko je napisao Ježevu kućicu?";"Branko Ćopić";"Ivo Andrić";"Meša Selimović";"Petar Kočić";"a"',
       '"Ježeva kućica";"Gdje je jež živio?";"U šumi";"Na livadi";"U bašti";"Na planini";"a"',
+      '"Ježeva kućica";"Kako se zove ježeva prijateljica?";"Lisica";"Vjeverica";"Zečica";"Medvjedica";"b"',
     ];
     const csv = lines.join("\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -2706,7 +2713,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
       if (rows.length === 0) return res.status(400).json({ message: "CSV je prazan ili neispravan format" });
 
       const allBooks = await storage.getAllBooks();
-      const bookQuestionsMap = new Map<string, { bookId: string; bookTitle: string; questions: Array<{ questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string; points: number }> }>();
+      const bookQuestionsMap = new Map<string, { bookId: string; bookTitle: string; questions: Array<{ questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string }> }>();
       const errors: string[] = [];
 
       for (let i = 0; i < rows.length; i++) {
@@ -2733,7 +2740,6 @@ Odgovori ISKLJUČIVO u JSON formatu:
           optionC: row.optionC || "",
           optionD: row.optionD || "",
           correctAnswer,
-          points: parseInt(row.points) || 1,
         });
       }
 
@@ -2759,7 +2765,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
               optionC: q.optionC,
               optionD: q.optionD,
               correctAnswer: q.correctAnswer as "a" | "b" | "c" | "d",
-              points: q.points,
+              points: 1,
             });
             questionsAdded++;
           }
