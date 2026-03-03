@@ -522,6 +522,33 @@ export default function AdminQuizzes() {
     safePage * QUIZZES_PER_PAGE
   );
 
+  const bulkAiGenerateMutation = useMutation({
+    mutationFn: async (bookIds: string[]) => {
+      const res = await apiRequest("POST", "/api/admin/generate-quizzes-bulk", { bookIds });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ 
+        title: "Bulk AI generisanje završeno", 
+        description: `Uspješno: ${data.success}, Neuspješno: ${data.failed}` 
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Greška", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleBulkGenerate = () => {
+    const ids = booksWithoutQuiz.slice(0, 5).map(b => b.id); // Limit to 5 at a time to avoid timeout
+    if (ids.length === 0) {
+      toast({ title: "Nema knjiga", description: "Sve knjige već imaju kvizove." });
+      return;
+    }
+    bulkAiGenerateMutation.mutate(ids);
+  };
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
@@ -531,6 +558,15 @@ export default function AdminQuizzes() {
             <h1 className="text-2xl font-bold" data-testid="text-quizzes-title">Upravljanje kvizovima</h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={handleBulkGenerate}
+              variant="secondary"
+              disabled={bulkAiGenerateMutation.isPending || booksWithoutQuiz.length === 0}
+              data-testid="button-bulk-ai-generate"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              {bulkAiGenerateMutation.isPending ? "Generišem (batch 5)..." : `Bulk AI (${booksWithoutQuiz.length})`}
+            </Button>
             <Button
               onClick={downloadTemplate}
               variant="outline"

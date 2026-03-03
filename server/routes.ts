@@ -3630,5 +3630,112 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  app.post("/api/admin/generate-quizzes-bulk", requireAdmin, async (req, res) => {
+    try {
+      const { bookIds } = req.body;
+      if (!bookIds || !Array.isArray(bookIds) || bookIds.length === 0) {
+        return res.status(400).json({ message: "bookIds niz je obavezan" });
+      }
+
+      const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(503).json({ message: "AI generiranje nije dostupno." });
+      }
+
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI({
+        apiKey,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined,
+      });
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+
+      // Process in small batches or sequence to avoid timeouts/rate limits
+      for (const bookId of bookIds) {
+        try {
+          const book = await storage.getBook(bookId);
+          if (!book) {
+            results.failed++;
+            results.errors.push(`Knjiga ${bookId} nije pronađena`);
+            continue;
+          }
+
+          const existingQuizzes = await storage.getQuizzesByBookId(bookId);
+          if (existingQuizzes.length > 0) {
+            results.failed++;
+            results.errors.push(`Kviz za "${book.title}" već postoji`);
+            continue;
+          }
+
+          const ageLabels: Record<string, string> = {
+            R1: "djeca 6-9 godina",
+            R4: "djeca 10-12 godina",
+            R7: "tinejdžeri 13-15 godina",
+            O: "omladina 15-18 godina",
+            A: "odrasli 18+",
+          };
+          const ageDesc = ageLabels[book.ageGroup || "R4"] || "djeca";
+
+          const prompt = `Generiraj kviz sa 20 pitanja o knjizi "${book.title}" autora ${book.author}.
+Opis: ${book.description || "Nema opisa."}
+Publika: ${ageDesc}
+Odgovori ISKLJUČIVO u JSON formatu:
+{
+  "questions": [
+    {
+      "questionText": "Pitanje?",
+      "optionA": "A", "optionB": "B", "optionC": "C", "optionD": "D",
+      "correctAnswer": "a", "points": 1
+    }
+  ]
+}`;
+
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" },
+          });
+
+          const content = response.choices[0]?.message?.content;
+          if (!content) throw new Error("AI prazan odgovor");
+
+          const parsed = JSON.parse(content);
+          if (!parsed.questions || !Array.isArray(parsed.questions)) throw new Error("Nevalidan JSON");
+
+          const quiz = await storage.createQuiz({
+            title: `Kviz: ${book.title}`,
+            bookId: book.id,
+            quizAuthor: "Citanje.ba",
+          });
+
+          for (const q of parsed.questions) {
+            await storage.createQuestion({
+              quizId: quiz.id,
+              questionText: q.questionText,
+              optionA: q.optionA,
+              optionB: q.optionB,
+              optionC: q.optionC,
+              optionD: q.optionD,
+              correctAnswer: q.correctAnswer.toLowerCase() as any,
+              points: q.points || 1,
+            });
+          }
+          results.success++;
+        } catch (err: any) {
+          results.failed++;
+          results.errors.push(`Greška za ${bookId}: ${err.message}`);
+        }
+      }
+
+      res.json(results);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   return httpServer;
 }

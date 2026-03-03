@@ -115,6 +115,7 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - Quiz author field (quizAuthor) — prikazuje ko je kreirao kviz
 - Quiz completion count — prikazuje koliko puta je kviz urađen
 - AI generacija kviza (admin): POST /api/admin/generate-quiz, koristi OpenAI (Replit AI Integrations ili OPENAI_API_KEY fallback), 20 pitanja, autor: "Citanje.ba"
+- **Bulk AI generacija**: POST /api/admin/generate-quizzes-bulk, omogućava generisanje kvizova za više knjiga odjednom (batch od 5), dostupno u admin panelu.
 - Timer: 30 sekundi po pitanju, auto-advance na sljedeće pitanje, auto-submit na posljednjem
 - **Random pitanja**: Ako kviz ima >20 pitanja, učenicima se servira random 20 pitanja (admin vidi sva). Ovo sprečava prepisivanje jer svaki učenik dobije drugačiji set pitanja
 - **CSV import kvizova**: Format: bookTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer (separator ;). Naslov kviza = naziv knjige, autor = "Čitanje.ba". Ako kviz za knjigu već postoji, pitanja se dodaju na postojeći kviz
