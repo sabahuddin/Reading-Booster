@@ -36,6 +36,25 @@ async function runManualMigrations() {
         created_at TIMESTAMP DEFAULT NOW()
       )`
     },
+    {
+      name: "create_duels",
+      sql: `CREATE TABLE IF NOT EXISTS duels (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        challenger_id VARCHAR NOT NULL,
+        opponent_id VARCHAR NOT NULL,
+        target_points INTEGER NOT NULL,
+        deadline TIMESTAMP NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        winner_id VARCHAR,
+        challenger_start_points INTEGER NOT NULL,
+        opponent_start_points INTEGER NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`
+    },
+    {
+      name: "add_duel_wins_to_users",
+      sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS duel_wins INTEGER NOT NULL DEFAULT 0`
+    },
   ];
 
   for (const m of migrations) {
