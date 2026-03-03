@@ -12,7 +12,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   ArrowLeft,
   ArrowRight,
-  CheckCircle,
   XCircle,
   Trophy,
   Send,
@@ -29,12 +28,12 @@ type QuizWithQuestions = Quiz & { questions: Question[] };
 type SubscriptionStatus = {
   subscriptionType: string;
   completedQuizzes: number;
-  freeQuizLimit: number;
+  freeQuizLimit: number | null;
   canTakeQuiz: boolean;
 };
 
 export default function QuizPage() {
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const isReader = location.startsWith("/citanje");
   const basePath = isReader ? "/citanje" : "/ucenik";
   const dashboardRole = isReader ? "reader" : "student" as const;
@@ -75,22 +74,26 @@ export default function QuizPage() {
     enabled: !!quizId,
   });
 
-  const isLastQuestion = useCallback(() => {
-    if (!quiz) return false;
-    return currentQ >= questionsToUse.length - 1;
-  }, [quiz, currentQ, questionsToUse]);
+  // VAŽNO: questionsToUse mora biti definiran PRIJE svih callbacka koji ga koriste
+  const questionsToUse = useMemo(() => {
+    if (!quiz?.questions) return [];
+    if (quiz.questions.length <= 20) return quiz.questions;
+    const shuffled = [...quiz.questions].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 20);
+  }, [quiz?.questions]);
 
   const moveToNext = useCallback(() => {
-    if (!quiz) return;
-    if (currentQ < questionsToUse.length - 1) {
-      setCurrentQ(p => p + 1);
-    } else {
+    setCurrentQ(prev => {
+      if (prev < questionsToUse.length - 1) {
+        return prev + 1;
+      }
       setAutoSubmitTriggered(true);
-    }
-  }, [quiz, currentQ, questionsToUse]);
+      return prev;
+    });
+  }, [questionsToUse.length]);
 
   useEffect(() => {
-    if (submitted || !quizStarted || !quiz || quiz.questions.length === 0) return;
+    if (submitted || !quizStarted || !quiz || questionsToUse.length === 0) return;
     setTimeLeft(30);
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -105,13 +108,13 @@ export default function QuizPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [currentQ, submitted, quizStarted, quiz, moveToNext]);
+  }, [currentQ, submitted, quizStarted, questionsToUse.length, moveToNext]);
 
   useEffect(() => {
-    if (quiz && quiz.questions.length > 0 && !quizStarted && !submitted) {
+    if (quiz && questionsToUse.length > 0 && !quizStarted && !submitted) {
       setQuizStarted(true);
     }
-  }, [quiz, quizStarted, submitted]);
+  }, [quiz, questionsToUse.length, quizStarted, submitted]);
 
   useEffect(() => {
     if (submitted && timerRef.current) {
@@ -157,15 +160,7 @@ export default function QuizPage() {
       if (timerRef.current) clearInterval(timerRef.current);
       submitMutation.mutate();
     }
-  }, [autoSubmitTriggered]);
-
-  const questionsToUse = useMemo(() => {
-    if (!quiz?.questions) return [];
-    if (quiz.questions.length <= 20) return quiz.questions;
-    // Šablonski shuffle i slice na 20
-    const shuffled = [...quiz.questions].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 20);
-  }, [quiz?.questions]);
+  }, [autoSubmitTriggered, submitted, submitMutation.isPending]);
 
   const totalQuestionsCount = questionsToUse.length;
   const currentQuestion = questionsToUse[currentQ];
@@ -174,7 +169,7 @@ export default function QuizPage() {
   const isLast = currentQ === totalQuestionsCount - 1;
 
   const selectAnswer = (answer: string) => {
-    if (submitted) return;
+    if (submitted || !currentQuestion) return;
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
   };
 
@@ -193,11 +188,9 @@ export default function QuizPage() {
             <Lock className="mx-auto h-12 w-12 text-muted-foreground" />
             <h1 className="text-2xl font-bold" data-testid="text-subscription-required">Potrebna pretplata</h1>
             <p className="text-muted-foreground">
-              Iskoristili ste sva {subStatus?.freeQuizLimit || 3} besplatna kviza. 
               Nadogradite svoj paket za neograničen pristup svim kvizovima.
             </p>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className="border-primary">
               <CardContent className="p-6 text-center space-y-3">
@@ -224,7 +217,6 @@ export default function QuizPage() {
               </CardContent>
             </Card>
           </div>
-
           <div className="flex gap-3 flex-wrap justify-center">
             <Button asChild data-testid="button-go-pricing">
               <Link href="/cijene">Pogledaj pakete</Link>
@@ -269,15 +261,11 @@ export default function QuizPage() {
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <p className="text-sm text-muted-foreground">Točnih odgovora</p>
-                  <p className="text-3xl font-bold" data-testid="text-correct-count">
-                    {result.correctAnswers}
-                  </p>
+                  <p className="text-3xl font-bold" data-testid="text-correct-count">{result.correctAnswers}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Netočnih odgovora</p>
-                  <p className="text-3xl font-bold" data-testid="text-wrong-count">
-                    {result.wrongAnswers}
-                  </p>
+                  <p className="text-3xl font-bold" data-testid="text-wrong-count">{result.wrongAnswers}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Ukupno pitanja</p>
@@ -285,18 +273,11 @@ export default function QuizPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Osvojeni bodovi</p>
-                  <p className={`text-3xl font-bold ${passed ? "" : "text-red-500"}`} data-testid="text-earned-points">
-                    {result.score}
-                  </p>
+                  <p className={`text-3xl font-bold ${passed ? "" : "text-red-500"}`} data-testid="text-earned-points">{result.score}</p>
                 </div>
               </div>
-
-              <Progress
-                value={percentage}
-                className={`h-3 ${!passed ? "[&>div]:bg-red-500" : ""}`}
-              />
+              <Progress value={percentage} className={`h-3 ${!passed ? "[&>div]:bg-red-500" : ""}`} />
               <p className="text-center text-sm text-muted-foreground">{percentage}% tačno</p>
-
               <div className="flex gap-3 flex-wrap justify-center pt-2">
                 <Button asChild variant="outline" data-testid="link-back-library">
                   <Link href={`${basePath}/biblioteka`}>Natrag u biblioteku</Link>
@@ -335,7 +316,7 @@ export default function QuizPage() {
             <p className="text-lg font-medium">Kviz nije pronađen</p>
             <p className="text-muted-foreground">Ovaj kviz ne postoji ili nema pitanja.</p>
           </div>
-        ) : (
+        ) : !currentQuestion ? null : (
           <>
             <div>
               <h1 className="text-xl font-bold" data-testid="text-quiz-title">{quiz.title}</h1>
@@ -382,17 +363,12 @@ export default function QuizPage() {
                       key={opt.key}
                       onClick={() => selectAnswer(opt.key)}
                       className={`w-full text-left p-4 rounded-md border transition-colors ${
-                        selected
-                          ? "border-primary bg-primary/10"
-                          : "hover-elevate"
+                        selected ? "border-primary bg-primary/10" : "hover-elevate"
                       }`}
                       data-testid={`button-option-${opt.key}`}
                     >
                       <div className="flex items-start gap-3">
-                        <Badge
-                          variant={selected ? "default" : "outline"}
-                          className="shrink-0 mt-0.5"
-                        >
+                        <Badge variant={selected ? "default" : "outline"} className="shrink-0 mt-0.5">
                           {opt.label}
                         </Badge>
                         <span className="text-sm">{currentQuestion[opt.field] as string}</span>
@@ -415,14 +391,14 @@ export default function QuizPage() {
               </Button>
 
               <div className="flex gap-1 flex-wrap">
-                {questionsToUse.map((_, i) => (
+                {questionsToUse.map((q, i) => (
                   <button
-                    key={i}
+                    key={q.id}
                     onClick={() => setCurrentQ(i)}
                     className={`w-8 h-8 rounded-md text-xs font-medium border transition-colors ${
                       i === currentQ
                         ? "border-primary bg-primary/10"
-                        : answers[questionsToUse[i].id]
+                        : answers[q.id]
                           ? "bg-muted"
                           : ""
                     }`}
