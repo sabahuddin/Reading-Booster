@@ -10,7 +10,6 @@ import {
   Brain,
   ArrowLeft,
   FileText,
-  Users,
   Globe,
 } from "lucide-react";
 import { SocialShare } from "@/components/social-share";
@@ -19,10 +18,9 @@ import { PdfViewer } from "@/components/pdf-viewer";
 import { useAuth } from "@/hooks/use-auth";
 import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
+import { AgeGroupBadge } from "@/components/age-group-badge";
 
 type BookWithGenres = Book & { genres?: Genre[] };
-
-const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
 
 export default function BookDetail() {
@@ -90,10 +88,7 @@ export default function BookDetail() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {book.ageGroup && (
-                    <Badge data-testid="badge-age-group">
-                      <Users className="mr-1 h-3 w-3" />
-                      {AGE_LABELS[book.ageGroup] || book.ageGroup}
-                    </Badge>
+                    <AgeGroupBadge ageGroup={book.ageGroup} showIcon />
                   )}
                   {book.genres && book.genres.length > 0
                     ? book.genres.map(g => <Badge key={g.id} variant="outline" data-testid={`badge-genre-${g.slug}`}>{g.name}</Badge>)

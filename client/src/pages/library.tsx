@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/select";
 import type { Book, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
+import { AgeGroupBadge } from "@/components/age-group-badge";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
-const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
 export default function Library() {
   const [location] = useLocation();
@@ -134,7 +134,7 @@ export default function Library() {
                       <p className="text-sm text-muted-foreground">{book.author}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="secondary">{AGE_LABELS[book.ageGroup] || book.ageGroup}</Badge>
+                      <AgeGroupBadge ageGroup={book.ageGroup} />
                       <Badge variant="outline">
                         <FileText className="mr-1" />
                         {book.pageCount} str.

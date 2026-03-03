@@ -40,7 +40,7 @@ const features = [
     icon: BookOpen,
     title: "Mnogo knjiga",
     description:
-      "Istraži našu veliku biblioteku punu zanimljivih knjiga za tvoj uzrast!",
+      "Istraži našu veliku biblioteku punu zanimljivih knjiga za sve uzraste!",
   },
   {
     icon: Brain,
@@ -528,7 +528,7 @@ export default function LandingPage() {
               Čitaj, uči, osvajaj!
             </h1>
             <p className="mt-6 text-xl text-white/90 sm:text-2xl">
-              Zabavna platforma za mlade čitaoce! Čitaj knjige, rješavaj kvizove
+              Zabavna platforma za mlade čitatelje! Čitaj knjige, rješavaj kvizove
               i sakupljaj bodove. Tvoja čitalačka avantura počinje ovdje!
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">

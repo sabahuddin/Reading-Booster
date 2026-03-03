@@ -14,6 +14,7 @@ import {
 import { BookOpen, Search, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight, Library } from "lucide-react";
 import type { Book, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
+import { AgeGroupBadge } from "@/components/age-group-badge";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -24,8 +25,6 @@ const AGE_GROUPS = [
   { value: "O", label: "Omladina" },
   { value: "A", label: "Odrasli" },
 ];
-
-const AGE_LABELS: Record<string, string> = { R1: "Od 1. razreda", R4: "Od 4. razreda", R7: "Od 7. razreda", O: "Omladina", A: "Odrasli" };
 
 function BookCard({ book }: { book: BookWithGenres }) {
   return (
@@ -47,7 +46,7 @@ function BookCard({ book }: { book: BookWithGenres }) {
             <p className="text-sm text-muted-foreground">{book.author}</p>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant="secondary" className="text-xs">{AGE_LABELS[book.ageGroup] || book.ageGroup}</Badge>
+            <AgeGroupBadge ageGroup={book.ageGroup} size="sm" />
             {book.genres && book.genres.length > 0
               ? book.genres.slice(0, 2).map(g => <Badge key={g.id} variant="outline" className="text-xs">{g.name}</Badge>)
               : book.genre && <Badge variant="outline" className="text-xs">{book.genre}</Badge>
@@ -519,7 +518,7 @@ export default function PublicLibrary() {
                               <p className="text-base text-muted-foreground">{mostRead.author}</p>
                               <p className="text-base line-clamp-2">{mostRead.description}</p>
                               <div className="flex gap-2 pt-1">
-                                <Badge variant="secondary">{AGE_LABELS[mostRead.ageGroup] || mostRead.ageGroup}</Badge>
+                                <AgeGroupBadge ageGroup={mostRead.ageGroup} />
                                 <Badge variant="outline">{mostRead.timesRead}x pročitano</Badge>
                               </div>
                             </div>
@@ -586,7 +585,7 @@ export default function PublicLibrary() {
                               <p className="text-base text-muted-foreground">{pick.author}</p>
                               <p className="text-base line-clamp-3">{pick.description}</p>
                               <div className="flex gap-2 pt-1 flex-wrap">
-                                <Badge variant="secondary">{AGE_LABELS[pick.ageGroup] || pick.ageGroup}</Badge>
+                                <AgeGroupBadge ageGroup={pick.ageGroup} />
                                 {(pick as BookWithGenres).genres && (pick as BookWithGenres).genres!.length > 0
                                   ? (pick as BookWithGenres).genres!.map(g => <Badge key={g.id} variant="outline">{g.name}</Badge>)
                                   : pick.genre && <Badge variant="outline">{pick.genre}</Badge>

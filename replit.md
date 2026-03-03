@@ -21,11 +21,12 @@ Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici
 - **Slike knjiga:** Portrait aspect ratio 2:3 (kao prave knjige)
 
 ## Starosne skupine (ageGroup) — za knjige i korisnike
-- **R1** — Od 1. razreda (6-9 godina, 1.-3. razred)
-- **R4** — Od 4. razreda (10-12 godina, 4.-6. razred)
-- **R7** — Od 7. razreda (13-15 godina, 7.-9. razred)
-- **O** — Omladina / Young Adult (15-18 godina, srednja škola)
-- **A** — Odrasli (18+, roditelji i stariji korisnici)
+Svaka starosna skupina ima svoju boju za vizuelno razlikovanje (AgeGroupBadge komponenta):
+- **R1** — Od 1. razreda (6-9 godina, 1.-3. razred) — amber/žuta
+- **R4** — Od 4. razreda (10-12 godina, 4.-6. razred) — zelena/lime
+- **R7** — Od 7. razreda (13-15 godina, 7.-9. razred) — plava/sky
+- **O** — Omladina / Young Adult (15-18 godina, srednja škola) — ljubičasta/purple
+- **A** — Odrasli (18+, roditelji i stariji korisnici) — crvena/red
 
 ## Žanrovi (dynamic genres)
 - Žanrovi su dinamički upravljani kroz `genres` tabelu (admin CRUD na /admin/zanrovi)
