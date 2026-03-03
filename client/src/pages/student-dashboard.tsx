@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Medal, Users, School } from "lucide-react";
 import { UserBadgeDisplay, AllBadges } from "@/components/user-badge";
+import DuelSection from "@/components/duel-section";
 import type { QuizResult, Challenge } from "@shared/schema";
 
 interface RankData {
@@ -170,6 +171,8 @@ export default function StudentDashboard() {
             <AllBadges points={totalPoints} />
           </CardContent>
         </Card>
+
+        <DuelSection />
 
         {activeChallenges.length > 0 && (
           <Card>

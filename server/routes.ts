@@ -24,6 +24,7 @@ import {
   insertChallengeSchema,
   insertGenreSchema,
   insertBookListingSchema,
+  insertDuelSchema,
 } from "@shared/schema";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -3396,6 +3397,234 @@ Odgovori ISKLJUČIVO u JSON formatu:
       }
       await storage.deleteBookListing(req.params.id);
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/duels/my", requireAuth, async (req, res) => {
+    try {
+      const duels = await storage.getDuelsByUserId(req.session.userId!);
+      const enriched = await Promise.all(duels.map(async (d) => {
+        const challenger = await storage.getUser(d.challengerId);
+        const opponent = await storage.getUser(d.opponentId);
+        const winner = d.winnerId ? await storage.getUser(d.winnerId) : null;
+        return {
+          ...d,
+          challengerName: challenger?.fullName || challenger?.username || "Nepoznat",
+          challengerPoints: challenger?.points ?? 0,
+          opponentName: opponent?.fullName || opponent?.username || "Nepoznat",
+          opponentPoints: opponent?.points ?? 0,
+          winnerName: winner?.fullName || winner?.username || null,
+        };
+      }));
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/duels/active", requireAuth, async (req, res) => {
+    try {
+      const duel = await storage.getActiveDuelForUser(req.session.userId!);
+      if (!duel) return res.json(null);
+      const challenger = await storage.getUser(duel.challengerId);
+      const opponent = await storage.getUser(duel.opponentId);
+      res.json({
+        ...duel,
+        challengerName: challenger?.fullName || challenger?.username || "Nepoznat",
+        challengerPoints: challenger?.points ?? 0,
+        opponentName: opponent?.fullName || opponent?.username || "Nepoznat",
+        opponentPoints: opponent?.points ?? 0,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/duels/pending", requireAuth, async (req, res) => {
+    try {
+      const pending = await storage.getPendingDuelsForUser(req.session.userId!);
+      const enriched = await Promise.all(pending.map(async (d) => {
+        const challenger = await storage.getUser(d.challengerId);
+        return {
+          ...d,
+          challengerName: challenger?.fullName || challenger?.username || "Nepoznat",
+          challengerPoints: challenger?.points ?? 0,
+        };
+      }));
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/duels/create", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const userRole = req.session.userRole;
+      if (userRole !== "student" && userRole !== "reader") {
+        return res.status(403).json({ message: "Samo učenici i čitaoci mogu izazvati na duel." });
+      }
+
+      const existing = await storage.getActiveDuelForUser(userId);
+      if (existing) {
+        return res.status(400).json({ message: "Već imate aktivan duel. Završite ga prvo." });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "Korisnik nije pronađen" });
+
+      const opponent = await storage.findDuelOpponent(userId, 200);
+      if (!opponent) {
+        return res.status(404).json({ message: "Nema dostupnog protivnika sa sličnim brojem bodova. Pokušajte kasnije." });
+      }
+
+      const targetPoints = Math.max(20, Math.round(((user.points ?? 0) + (opponent.points ?? 0)) / 2 * 0.1));
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + 7);
+
+      const duel = await storage.createDuel({
+        challengerId: userId,
+        opponentId: opponent.id,
+        targetPoints,
+        deadline,
+        challengerStartPoints: user.points ?? 0,
+        opponentStartPoints: opponent.points ?? 0,
+      });
+
+      res.json({
+        ...duel,
+        challengerName: user.fullName || user.username,
+        opponentName: opponent.fullName || opponent.username,
+        challengerPoints: user.points ?? 0,
+        opponentPoints: opponent.points ?? 0,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/duels/:id/accept", requireAuth, async (req, res) => {
+    try {
+      const duel = await storage.getDuel(req.params.id);
+      if (!duel) return res.status(404).json({ message: "Duel nije pronađen" });
+      if (duel.opponentId !== req.session.userId) {
+        return res.status(403).json({ message: "Niste protivnik u ovom duelu" });
+      }
+      if (duel.status !== "pending") {
+        return res.status(400).json({ message: "Duel nije u statusu čekanja" });
+      }
+
+      const challenger = await storage.getUser(duel.challengerId);
+      const opponent = await storage.getUser(duel.opponentId);
+
+      const updated = await storage.updateDuelStatus(duel.id, "active");
+      res.json({
+        ...updated,
+        challengerName: challenger?.fullName || challenger?.username,
+        opponentName: opponent?.fullName || opponent?.username,
+        challengerPoints: challenger?.points ?? 0,
+        opponentPoints: opponent?.points ?? 0,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/duels/:id/decline", requireAuth, async (req, res) => {
+    try {
+      const duel = await storage.getDuel(req.params.id);
+      if (!duel) return res.status(404).json({ message: "Duel nije pronađen" });
+      if (duel.opponentId !== req.session.userId) {
+        return res.status(403).json({ message: "Niste protivnik u ovom duelu" });
+      }
+      if (duel.status !== "pending") {
+        return res.status(400).json({ message: "Duel nije u statusu čekanja" });
+      }
+      const updated = await storage.updateDuelStatus(duel.id, "declined");
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/duels/:id/check", requireAuth, async (req, res) => {
+    try {
+      const duel = await storage.getDuel(req.params.id);
+      if (!duel) return res.status(404).json({ message: "Duel nije pronađen" });
+
+      const userId = req.session.userId!;
+      if (duel.challengerId !== userId && duel.opponentId !== userId) {
+        return res.status(403).json({ message: "Niste učesnik ovog duela" });
+      }
+
+      if (duel.status === "completed" || duel.status === "expired" || duel.status === "declined") {
+        const challenger = await storage.getUser(duel.challengerId);
+        const opponent = await storage.getUser(duel.opponentId);
+        return res.json({
+          ...duel, finished: true,
+          challengerGained: (challenger?.points ?? 0) - duel.challengerStartPoints,
+          opponentGained: (opponent?.points ?? 0) - duel.opponentStartPoints,
+          challengerName: challenger?.fullName || challenger?.username,
+          opponentName: opponent?.fullName || opponent?.username,
+          challengerPoints: challenger?.points ?? 0,
+          opponentPoints: opponent?.points ?? 0,
+        });
+      }
+
+      if (duel.status !== "active") {
+        return res.json({ ...duel, finished: false });
+      }
+
+      const challenger = await storage.getUser(duel.challengerId);
+      const opponent = await storage.getUser(duel.opponentId);
+      const challengerGained = (challenger?.points ?? 0) - duel.challengerStartPoints;
+      const opponentGained = (opponent?.points ?? 0) - duel.opponentStartPoints;
+
+      const isExpired = new Date() > new Date(duel.deadline);
+
+      let winnerId: string | undefined;
+      if (challengerGained >= duel.targetPoints && opponentGained < duel.targetPoints) {
+        winnerId = duel.challengerId;
+      } else if (opponentGained >= duel.targetPoints && challengerGained < duel.targetPoints) {
+        winnerId = duel.opponentId;
+      } else if (isExpired && challengerGained >= duel.targetPoints && opponentGained >= duel.targetPoints) {
+        winnerId = challengerGained >= opponentGained ? duel.challengerId : duel.opponentId;
+      }
+
+      if (winnerId || isExpired) {
+        const freshDuel = await storage.getDuel(duel.id);
+        if (freshDuel && freshDuel.status === "active") {
+          if (winnerId) {
+            await storage.incrementDuelWins(winnerId);
+          }
+          const updated = await storage.updateDuelStatus(duel.id, winnerId ? "completed" : "expired", winnerId);
+          return res.json({
+            ...updated, finished: true, winnerId, challengerGained, opponentGained,
+            challengerName: challenger?.fullName || challenger?.username,
+            opponentName: opponent?.fullName || opponent?.username,
+            challengerPoints: challenger?.points ?? 0,
+            opponentPoints: opponent?.points ?? 0,
+          });
+        }
+        const alreadyDone = await storage.getDuel(duel.id);
+        return res.json({
+          ...alreadyDone, finished: true, challengerGained, opponentGained,
+          challengerName: challenger?.fullName || challenger?.username,
+          opponentName: opponent?.fullName || opponent?.username,
+          challengerPoints: challenger?.points ?? 0,
+          opponentPoints: opponent?.points ?? 0,
+        });
+      }
+
+      res.json({
+        ...duel, finished: false, challengerGained, opponentGained,
+        challengerName: challenger?.fullName || challenger?.username,
+        opponentName: opponent?.fullName || opponent?.username,
+        challengerPoints: challenger?.points ?? 0,
+        opponentPoints: opponent?.points ?? 0,
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

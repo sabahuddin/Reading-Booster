@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, isNull } from "drizzle-orm";
+import { eq, and, gte, lte, desc, isNull, or, ne, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   users,
@@ -54,6 +54,9 @@ import {
   bookListings,
   type BookListing,
   type InsertBookListing,
+  duels,
+  type Duel,
+  type InsertDuel,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -175,6 +178,15 @@ export interface IStorage {
   createBookListing(listing: InsertBookListing): Promise<BookListing>;
   deleteBookListing(id: string): Promise<void>;
   updateBookListing(id: string, data: Partial<InsertBookListing>): Promise<BookListing | undefined>;
+
+  createDuel(duel: InsertDuel): Promise<Duel>;
+  getDuel(id: string): Promise<Duel | undefined>;
+  getDuelsByUserId(userId: string): Promise<Duel[]>;
+  getActiveDuelForUser(userId: string): Promise<Duel | undefined>;
+  getPendingDuelsForUser(userId: string): Promise<Duel[]>;
+  updateDuelStatus(id: string, status: string, winnerId?: string): Promise<Duel | undefined>;
+  findDuelOpponent(userId: string, pointsRange: number): Promise<User | undefined>;
+  incrementDuelWins(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -801,6 +813,81 @@ export class DatabaseStorage implements IStorage {
   async updateBookListing(id: string, data: Partial<InsertBookListing>): Promise<BookListing | undefined> {
     const [updated] = await db.update(bookListings).set(data).where(eq(bookListings.id, id)).returning();
     return updated;
+  }
+
+  async createDuel(duel: InsertDuel): Promise<Duel> {
+    const [created] = await db.insert(duels).values(duel).returning();
+    return created;
+  }
+
+  async getDuel(id: string): Promise<Duel | undefined> {
+    const [duel] = await db.select().from(duels).where(eq(duels.id, id));
+    return duel;
+  }
+
+  async getDuelsByUserId(userId: string): Promise<Duel[]> {
+    return db.select().from(duels).where(
+      or(eq(duels.challengerId, userId), eq(duels.opponentId, userId))
+    ).orderBy(desc(duels.createdAt));
+  }
+
+  async getActiveDuelForUser(userId: string): Promise<Duel | undefined> {
+    const [duel] = await db.select().from(duels).where(
+      and(
+        or(eq(duels.challengerId, userId), eq(duels.opponentId, userId)),
+        or(eq(duels.status, "active"), eq(duels.status, "pending"))
+      )
+    );
+    return duel;
+  }
+
+  async getPendingDuelsForUser(userId: string): Promise<Duel[]> {
+    return db.select().from(duels).where(
+      and(eq(duels.opponentId, userId), eq(duels.status, "pending"))
+    ).orderBy(desc(duels.createdAt));
+  }
+
+  async updateDuelStatus(id: string, status: string, winnerId?: string): Promise<Duel | undefined> {
+    const updateData: any = { status };
+    if (winnerId) updateData.winnerId = winnerId;
+    const [updated] = await db.update(duels).set(updateData).where(eq(duels.id, id)).returning();
+    return updated;
+  }
+
+  async findDuelOpponent(userId: string, pointsRange: number): Promise<User | undefined> {
+    const currentUser = await this.getUser(userId);
+    if (!currentUser) return undefined;
+    const minPoints = Math.max(0, (currentUser.points ?? 0) - pointsRange);
+    const maxPoints = (currentUser.points ?? 0) + pointsRange;
+
+    const activeDuelUserIds = await db.select({ id: duels.challengerId }).from(duels).where(
+      or(eq(duels.status, "active"), eq(duels.status, "pending"))
+    );
+    const activeDuelOpponentIds = await db.select({ id: duels.opponentId }).from(duels).where(
+      or(eq(duels.status, "active"), eq(duels.status, "pending"))
+    );
+    const busyIds = new Set([
+      userId,
+      ...activeDuelUserIds.map(r => r.id),
+      ...activeDuelOpponentIds.map(r => r.id),
+    ]);
+
+    const candidates = await db.select().from(users).where(
+      and(
+        ne(users.id, userId),
+        gte(users.points, minPoints),
+        lte(users.points, maxPoints),
+        or(eq(users.role, "student"), eq(users.role, "reader"))
+      )
+    );
+
+    const available = candidates.filter(c => !busyIds.has(c.id));
+    if (available.length === 0) return undefined;
+    return available[Math.floor(Math.random() * available.length)];
+  }
+
+  async incrementDuelWins(userId: string): Promise<void> {
+    await db.update(users).set({ duelWins: sql`COALESCE(${users.duelWins}, 0) + 1` }).where(eq(users.id, userId));
   }
 }
 

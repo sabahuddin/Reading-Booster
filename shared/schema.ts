@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   subscriptionType: text("subscription_type", { enum: ["free", "standard", "full"] }).notNull().default("free"),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   ageGroup: text("age_group").default("R1"),
+  duelWins: integer("duel_wins").notNull().default(0),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -379,3 +380,25 @@ export const insertBookListingSchema = createInsertSchema(bookListings).omit({
 });
 export type InsertBookListing = z.infer<typeof insertBookListingSchema>;
 export type BookListing = typeof bookListings.$inferSelect;
+
+export const duels = pgTable("duels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  challengerId: varchar("challenger_id").notNull(),
+  opponentId: varchar("opponent_id").notNull(),
+  targetPoints: integer("target_points").notNull(),
+  deadline: timestamp("deadline").notNull(),
+  status: text("status", { enum: ["pending", "active", "completed", "expired", "declined"] }).notNull().default("pending"),
+  winnerId: varchar("winner_id"),
+  challengerStartPoints: integer("challenger_start_points").notNull(),
+  opponentStartPoints: integer("opponent_start_points").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDuelSchema = createInsertSchema(duels).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  winnerId: true,
+});
+export type InsertDuel = z.infer<typeof insertDuelSchema>;
+export type Duel = typeof duels.$inferSelect;

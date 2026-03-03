@@ -138,6 +138,19 @@ Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
 - API: GET /api/book-listings, POST /api/book-listings, DELETE /api/book-listings/:id
 - Tabela: book_listings (userId, bookTitle, bookAuthor, city, listingType, price, phone, description, active, createdAt)
 
+### Duel sistem
+- Korisnici (učenici i čitaoci) mogu izazvati protivnika sa sličnim brojem bodova na duel
+- Matchmaking: sistem automatski pronalazi protivnika u rasponu ±200 bodova
+- Cilj: osvojiti target_points novih bodova u roku od 7 dana
+- Statusni flow: pending → active → completed/expired/declined
+- Pobjednik dobija "BRAVO!" poruku i duelWins counter na profilu
+- Samo jedan aktivan duel u isto vrijeme po korisniku
+- Progress tracking u realnom vremenu (refresh svakih 30 sekundi)
+- API: GET /api/duels/my, GET /api/duels/active, GET /api/duels/pending, POST /api/duels/create, POST /api/duels/:id/accept, POST /api/duels/:id/decline, POST /api/duels/:id/check
+- Tabela: duels (id, challengerId, opponentId, targetPoints, deadline, status, winnerId, challengerStartPoints, opponentStartPoints, createdAt)
+- Polje duelWins na users tabeli
+- Komponenta: client/src/components/duel-section.tsx, prikazana na oba dashboarda (student + reader)
+
 ### Značke (Badges)
 - Automatski sistem znački baziran na bodovima korisnika
 - Nivoi: Početnik (0), Čitač (100), Knjigoljubac (500), Znalac (1000), Stručnjak (2000), Maestro (5000)
@@ -207,10 +220,10 @@ All book data, quizzes (227), and questions (2543) are stored in `server/seed-da
 - Stranica sa cijenama (/cijene)
 
 ## Database Tables
-- users, books, genres, book_genres, quizzes, questions, quiz_results, book_ratings, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges, parent_child_requests
+- users, books, genres, book_genres, quizzes, questions, quiz_results, book_ratings, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges, parent_child_requests, duels, book_listings
 
 ## User Fields
-- Standardni: username, password, role, firstName, lastName, email, points, booksRead
+- Standardni: username, password, role, firstName, lastName, email, points, booksRead, duelWins
 - Prošireni: ageGroup (R1/R4/R7/O/A), institutionType, institutionRole, approved, maxStudentAccounts, createdByTeacherId
 
 ## Primjeri mapiranja knjiga
