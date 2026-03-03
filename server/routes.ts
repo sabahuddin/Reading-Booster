@@ -1082,8 +1082,13 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.json({ canTake: true });
       }
 
+      // Određujemo prag prolaznosti prema starosnoj skupini knjige
+      const quiz = await storage.getQuiz(quizId);
+      const book = quiz ? await storage.getBook(quiz.bookId) : null;
+      const passThreshold = book?.ageGroup === "R1" ? 0.4 : 0.5;
+
       const existingPassed = existingResult.totalQuestions > 0 &&
-        (existingResult.correctAnswers / existingResult.totalQuestions) >= 0.5;
+        (existingResult.correctAnswers / existingResult.totalQuestions) >= passThreshold;
 
       if (existingPassed) {
         return res.json({ canTake: false, reason: "passed", message: "Ovaj kviz ste već uspješno položili." });
@@ -1237,8 +1242,11 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
       const quiz = await storage.getQuiz(quizId);
       const book = quiz ? await storage.getBook(quiz.bookId) : null;
-      const pointsPerQuestion: Record<string, number> = { R1: 1, R4: 3, R7: 5, O: 7, A: 10 };
-      const ptsPerQ = pointsPerQuestion[book?.ageGroup || "R1"] || 1;
+      const pointsPerQuestion: Record<string, number> = { R1: 2, R4: 3, R7: 5, O: 7, A: 10 };
+      const ptsPerQ = pointsPerQuestion[book?.ageGroup || "R1"] || 2;
+      // R1 djeca (6-9 god): prag 40%, bez oduzimanja bodova; ostali: prag 50%, oduzimanje
+      const passThreshold = book?.ageGroup === "R1" ? 0.4 : 0.5;
+      const deductWrong = book?.ageGroup !== "R1";
 
       const submittedQuestionIds = new Set(answers.map((a: any) => a.questionId));
       const servedQuestions = allQuestions.filter(q => submittedQuestionIds.has(q.id));
@@ -1258,10 +1266,14 @@ Odgovori ISKLJUČIVO u JSON formatu:
         }
       }
 
-      const passPercentage = totalServed > 0 ? (correctCount / totalServed) * 100 : 0;
-      const passed = passPercentage >= 50;
-      // Netačni odgovori oduzimaju bodove — minimalan score je 0
-      let score = passed ? Math.max(0, (correctCount - wrongCount) * ptsPerQ) : 0;
+      const passPercentage = totalServed > 0 ? (correctCount / totalServed) : 0;
+      const passed = passPercentage >= passThreshold;
+      // Netačni odgovor oduzimaju bodove samo za R4+ (ne za R1 djecu)
+      let score = passed
+        ? deductWrong
+          ? Math.max(0, (correctCount - wrongCount) * ptsPerQ)
+          : correctCount * ptsPerQ
+        : 0;
 
       const result = await storage.createQuizResult({
         userId,

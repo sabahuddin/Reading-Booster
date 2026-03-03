@@ -79,13 +79,19 @@ export default function QuizPage() {
     enabled: !!quizId,
   });
 
+  // Broj pitanja koja se prikazuju po starosnoj skupini knjige
+  const questionsLimit = useMemo(() => {
+    const limits: Record<string, number> = { R1: 10, R4: 15, R7: 20, O: 20, A: 20 };
+    return limits[book?.ageGroup || "R7"] ?? 20;
+  }, [book?.ageGroup]);
+
   // VAŽNO: questionsToUse mora biti definiran PRIJE svih callbacka koji ga koriste
   const questionsToUse = useMemo(() => {
     if (!quiz?.questions) return [];
-    if (quiz.questions.length <= 20) return quiz.questions;
+    if (quiz.questions.length <= questionsLimit) return quiz.questions;
     const shuffled = [...quiz.questions].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 20);
-  }, [quiz?.questions]);
+    return shuffled.slice(0, questionsLimit);
+  }, [quiz?.questions, questionsLimit]);
 
   const moveToNext = useCallback(() => {
     setCurrentQ(prev => {
@@ -262,6 +268,7 @@ export default function QuizPage() {
     const extResult = result as QuizResult & { passed?: boolean; passPercentage?: number };
     const passed = extResult.passed !== false;
     const percentage = extResult.passPercentage ?? Math.round((result.correctAnswers / result.totalQuestions) * 100);
+    const passThresholdPct = book?.ageGroup === "R1" ? 40 : 50;
 
     return (
       <DashboardLayout role={dashboardRole}>
@@ -278,7 +285,7 @@ export default function QuizPage() {
             <p className="text-muted-foreground">{quiz?.title}</p>
             {!passed && (
               <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm" data-testid="text-fail-message">
-                <p className="font-medium text-red-700 dark:text-red-300">Potrebno je najmanje 50% tačnih odgovora za prolaz.</p>
+                <p className="font-medium text-red-700 dark:text-red-300">Potrebno je najmanje {passThresholdPct}% tačnih odgovora za prolaz.</p>
                 <p className="text-red-600 dark:text-red-400 mt-1">Vaš rezultat: {percentage}% — bodovi nisu dodijeljeni i knjiga nije uračunata.</p>
               </div>
             )}

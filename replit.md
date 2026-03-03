@@ -1,241 +1,57 @@
 # Čitanje - Platforma za unapređenje čitanja
 
 ## Overview
-Full-stack platforma za unapređenje čitanja, inspirisana antolin.de. Korisnici čitaju knjige, rješavaju kvizove, skupljaju bodove i prate napredak. Platforma je namijenjena školama, bibliotekama i porodicama na bosansko-hrvatskom govornom području. Naglasak je na otkrivanju fizičkih knjiga i integraciji sa školskim bibliotekama. Platforma je opća sa mogućnošću porodičnog takmičenja.
+"Čitanje" is a full-stack platform designed to enhance reading comprehension and engagement for users in the Bosnian-Croatian speaking regions. Inspired by antolin.de, it allows users to read books, solve quizzes, earn points, and track their progress. The platform targets schools, libraries, and families, emphasizing the discovery of physical books and integration with school libraries. It supports general use and includes features for family-based competitions. The project's vision is to foster a love for reading and improve literacy through interactive and engaging methods.
 
-## Tech Stack
-- **Frontend:** React + TypeScript + Tailwind CSS + shadcn/ui + Framer Motion
-- **Backend:** Node.js + Express + express-session
-- **Database:** PostgreSQL with Drizzle ORM
-- **Routing:** wouter (frontend), Express (backend)
-- **State Management:** TanStack React Query v5
+## User Preferences
+Not specified.
 
-## Design
-- **Brand:** "Čitanje" (bez uzvičnika)
-- **Primarna boja:** #FF861C (HSL 28 100% 55%) — topla narandžasta, child-friendly
-- **Accent boja:** HSL(28, 95%, 48%) — malo tamnija varijanta
-- **Landing page overlay:** rgba(210,105,10,0.85) — tamnija narandžasta za kontrast na hero sekciji
-- **CTA sekcija:** hsl(28,95%,45%)
+## System Architecture
+
+### Design
+- **Brand:** "Čitanje"
+- **Primary Color:** #FF861C (warm orange, child-friendly)
+- **Accent Color:** HSL(28, 95%, 48%)
+- **Landing Page Overlay:** rgba(210,105,10,0.85)
+- **CTA Section:** hsl(28,95%,45%)
 - **Font:** Nunito / Comic Neue
-- **Logo:** Uvećan u navbar-u (h-14 w-14), smanjen padding (py-1)
-- **Slike knjiga:** Portrait aspect ratio 2:3 (kao prave knjige)
+- **Logo:** Prominently displayed in navbar.
+- **Book Images:** Portrait aspect ratio 2:3.
+- **Age Groups:** Each group (R1, R4, R7, O, A) has a distinct color for visual differentiation.
 
-## Starosne skupine (ageGroup) — za knjige i korisnike
-Svaka starosna skupina ima svoju boju za vizuelno razlikovanje (AgeGroupBadge komponenta):
-- **R1** — Od 1. razreda (6-9 godina, 1.-3. razred) — amber/žuta
-- **R4** — Od 4. razreda (10-12 godina, 4.-6. razred) — zelena/lime
-- **R7** — Od 7. razreda (13-15 godina, 7.-9. razred) — plava/sky
-- **O** — Omladina / Young Adult (15-18 godina, srednja škola) — ljubičasta/purple
-- **A** — Odrasli (18+, roditelji i stariji korisnici) — crvena/red
+### Technical Implementation
+- **Frontend:** React, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, wouter for routing, TanStack React Query v5 for state management.
+- **Backend:** Node.js, Express, express-session.
+- **Database:** PostgreSQL with Drizzle ORM.
+- **Authentication:** Session-based with `connect-pg-simple`. Passwords hashed using `crypto scrypt`.
+- **Security:** Rate limiting (100 req/15min for API, 5 login attempts/15min), XSS sanitization on all `/api` routes, password validation (min 8 chars, uppercase, number).
+- **API Prefix:** All backend routes are prefixed with `/api`.
+- **Project Structure:** Clear separation of client, server, and shared code.
+- **User Roles:** Admin, School Admin, Teacher, Parent, Reader, Student, each with specific access and functionalities.
+- **Scoring System:** Points awarded based on book's age group, with R1 children exempt from point deductions for incorrect answers.
+- **Quiz Mechanics:**
+    - Quiz question limits vary by age group (10-20 questions).
+    - Questions are randomized from a larger pool for each attempt.
+    - Pass thresholds: 40% for R1, 50% for others.
+    - Cooldown period (48h) after failed quiz.
+    - Timer: 30 seconds per question, auto-advance and auto-submit.
 
-## Žanrovi (dynamic genres)
-- Žanrovi su dinamički upravljani kroz `genres` tabelu (admin CRUD na /admin/zanrovi)
-- Knjige podržavaju više žanrova istovremeno putem `book_genres` junction tabele (many-to-many)
-- API: GET/POST /api/genres, PUT/DELETE /api/genres/:id (admin only)
-- Knjige vraćaju `genres: Genre[]` niz u API odgovorima
-- Default žanrovi: Lektira, Avantura i Fantasy, Roman, Beletristika, Bajke i Basne, Zanimljiva nauka, Poezija, Islam
-- Legacy `genre` kolona na knjigama zadržana za backward compatibility
+### Feature Specifications
+- **Library & Books:** Public library with filters (genre, age, reading difficulty), featured books, recommendations, detailed book pages, CSV bulk import.
+- **Quizzes:** Interactive, scored quizzes with quiz author and completion count. AI and CSV bulk import for quiz generation.
+- **Book Rating:** Users can rate books (1-5), upsert system for single rating per user per book.
+- **Social Share:** Integration for sharing book details on major social media platforms.
+- **Book Marketplace:** Public platform `/razmjena` for selling, donating, and exchanging books with filtering and user-managed listings.
+- **Duel System:** Users can challenge opponents with similar scores, target-based competition, real-time progress tracking.
+- **Badges:** Automatic badge system based on user points with progress display and leaderboard integration.
+- **Leaderboard:** Public display of top readers, separated by "Djeca" and "Odrasli" age groups, filterable by period (week/month/year).
+- **Teacher Dashboard:** Class overview, top readers, bonus points allocation, inactivity warnings, weekly challenge creation, student account creation, CSV export.
+- **Partners:** Admin CRUD for partners with logo upload, displayed on the homepage.
+- **Challenges:** Admin CRUD for reading challenges with rewards.
+- **Registration:** Separate tabs for general registration and institutional registration, requiring admin approval for institutions. `ageGroup` field for all users.
+- **Blog:** Admin-managed blog posts with keywords, public display, filtering, comments, and rating system.
 
-## User Roles
-- **Admin** — Upravljanje cijelom platformom (knjige, kvizovi, korisnici, blog, poruke, partneri, izazovi, institucionalna odobrenja)
-- **Školski administrator (School Admin)** — Registruje se preko "Škola" taba, zahtijeva admin odobrenje. Kreira učiteljske račune (limit: maxTeacherAccounts), prati statistiku škole. Dashboard: /skola
-- **Učitelj (Teacher)** — Kreiran od školskog admina ili admina. Pregled učenika, kreiranje učeničkih računa, CSV export, praćenje napretka, bonus bodovi, sedmični izazovi, odobravanje zahtjeva roditelja za povezivanje
-- **Roditelj (Parent)** — Šalje zahtjev za povezivanje s djetetom (unosi korisničko ime učenika), učitelj odobrava. Pregled napretka djece, porodično takmičenje kroz kategoriju A
-- **Čitalac (Reader)** — Nezavisni korisnik biblioteke, čitanje knjiga, kvizovi, bodovi (bez školske pripadnosti)
-- **Učenik (Student)** — Školski korisnik, pregled biblioteke, rješavanje kvizova, skupljanje bodova
-
-## Project Structure
-```
-client/src/
-  pages/           - Sve stranice
-  components/      - Dijeljene komponente (navbar, footer, dashboard-layout)
-  hooks/           - Custom hookovi (use-auth, use-toast, use-mobile)
-  lib/             - Utility funkcije (queryClient, utils)
-server/
-  index.ts         - Express app, session config, auth middleware, rate limiting, XSS zaštita
-  routes.ts        - Svi API routovi
-  storage.ts       - Database storage layer (IStorage interface)
-  db.ts            - Drizzle database konekcija
-  seed.ts          - Database seeding skripta
-shared/
-  schema.ts        - Drizzle sheme i Zod validacija
-```
-
-## Key Routes
-### Javne: /, /biblioteka, /razmjena, /knjiga/:id, /blog, /cijene, /kontakt, /prijava
-### Čitalac: /citanje, /citanje/biblioteka, /citanje/knjiga/:id, /citanje/kviz/:id, /citanje/rezultati, /citanje/pro
-### Učenik: /ucenik, /ucenik/biblioteka, /ucenik/knjiga/:id, /ucenik/kviz/:id, /ucenik/rezultati
-### Učitelj: /ucitelj, /ucitelj/ucenici, /ucitelj/biblioteka
-### Roditelj: /roditelj, /roditelj/djeca
-### Školski admin: /skola, /skola/ucitelji
-### Admin: /admin, /admin/knjige, /admin/kvizovi, /admin/korisnici, /admin/blog, /admin/poruke, /admin/partneri, /admin/izazovi, /admin/odobrenja, /admin/zanrovi
-
-## API Prefix: /api
-Svi backend routovi su prefiksirani sa /api. Auth koristi session cookies.
-
-## Auth & Sigurnost
-- Session-based auth sa connect-pg-simple
-- Lozinke hashirane sa crypto scrypt
-- Rate limiting: 100 zahtjeva/15min za API, 5 login pokušaja/15min
-- XSS sanitizacija na svim /api rutama
-- Validacija lozinke: min 8 karaktera, veliko slovo, broj (za nove registracije)
-- Trust proxy konfigurisan za deployment
-
-## Default Test Accounts
-- Admin: admin / admin123
-- Učitelj: ucitelj1 / ucitelj123
-- Roditelj: roditelj1 / roditelj123
-- Učenik: ucenik1 / ucenik123, ucenik2 / ucenik123
-
-## Scoring System
-- Bodovi po tačnom odgovoru zavise od starosne skupine knjige:
-  - R1 (Od 1. razreda): 1 bod
-  - R4 (Od 4. razreda): 3 boda
-  - R7 (Od 7. razreda): 5 bodova
-  - O (Omladina): 7 bodova
-  - A (Odrasli): 10 bodova
-- Netačni odgovori ne oduzimaju bodove
-- Bodovi se akumuliraju na profilu korisnika
-- Težina knjige (readingDifficulty) se prikazuje na kviz stranici, ne na knjigama
-
-## Features
-
-### Biblioteka i knjige
-- Javna biblioteka sa filterima (žanr, dob, težina čitanja, pretraga)
-- Prijedlog sedmice i najčitanija knjiga (istaknute kartice)
-- Preporuke po žanru ("Čitatelji preporučuju")
-- Detaljna stranica knjige sa "Gdje pronaći ovu knjigu?" sekcijom (biblioteka, kupovina, PDF preview)
-- Slike knjiga u portrait formatu 2:3
-- Informacije: izdavač, ISBN, godina, jezik, format, broj stranica
-- CSV bulk import knjiga sa mapiranjem na nove ageGroup (R1/R4/R7/O/A) i žanrove
-
-### Kvizovi
-- Interaktivni kvizovi vezani za knjige
-- Bodovanje sa akumulacijom na profilu
-- Quiz author field (quizAuthor) — prikazuje ko je kreirao kviz
-- Quiz completion count — prikazuje koliko puta je kviz urađen
-- AI generacija kviza (admin): POST /api/admin/generate-quiz, koristi OpenAI (Replit AI Integrations ili OPENAI_API_KEY fallback), 20 pitanja, autor: "Citanje.ba"
-- **Bulk AI generacija**: POST /api/admin/generate-quizzes-bulk, omogućava generisanje kvizova za više knjiga odjednom (batch od 5), dostupno u admin panelu.
-- Timer: 30 sekundi po pitanju, auto-advance na sljedeće pitanje, auto-submit na posljednjem
-- **Random pitanja**: Ako kviz ima >20 pitanja, učenicima se servira random 20 pitanja (admin vidi sva). Ovo sprečava prepisivanje jer svaki učenik dobije drugačiji set pitanja
-- **CSV import kvizova**: Format: bookTitle;questionText;optionA;optionB;optionC;optionD;correctAnswer (separator ;). Naslov kviza = naziv knjige, autor = "Čitanje.ba". Ako kviz za knjigu već postoji, pitanja se dodaju na postojeći kviz
-- Multi-book CSV: semicolon separator, template: GET /api/admin/templates/quizzes
-
-### Ocjena knjiga (Book Rating)
-- Korisnici mogu ocijeniti knjigu (1-5, BookOpen ikone)
-- Upsert sistem (jedna ocjena po korisniku po knjizi)
-- API: GET/POST /api/books/:id/rating
-- Prikazuje se na stranici knjige iznad social share
-
-### Dijeljenje na društvenim mrežama (Social Share)
-- Facebook, WhatsApp, Viber, Instagram, TikTok, X (Twitter)
-- Kopiraj link dugme
-
-### Razmjena knjiga (Book Marketplace)
-- Javna stranica /razmjena za prodaju, poklanjanje i razmjenu knjiga
-- Prijavljeni korisnici mogu objaviti oglas (naslov, autor, grad, tip, cijena, kontakt telefon, opis)
-- Filtriranje po tipu (prodajem/poklanjam/razmjenjujem) i gradu
-- Vlasnik oglasa može obrisati svoj oglas
-- API: GET /api/book-listings, POST /api/book-listings, DELETE /api/book-listings/:id
-- Tabela: book_listings (userId, bookTitle, bookAuthor, city, listingType, price, phone, description, active, createdAt)
-
-### Duel sistem
-- Korisnici (učenici i čitaoci) mogu izazvati protivnika sa sličnim brojem bodova na duel
-- Matchmaking: sistem automatski pronalazi protivnika u rasponu ±200 bodova
-- Cilj: osvojiti target_points novih bodova u roku od 7 dana
-- Statusni flow: pending → active → completed/expired/declined
-- Pobjednik dobija "BRAVO!" poruku i duelWins counter na profilu
-- Samo jedan aktivan duel u isto vrijeme po korisniku
-- Progress tracking u realnom vremenu (refresh svakih 30 sekundi)
-- API: GET /api/duels/my, GET /api/duels/active, GET /api/duels/pending, POST /api/duels/create, POST /api/duels/:id/accept, POST /api/duels/:id/decline, POST /api/duels/:id/check
-- Tabela: duels (id, challengerId, opponentId, targetPoints, deadline, status, winnerId, challengerStartPoints, opponentStartPoints, createdAt)
-- Polje duelWins na users tabeli
-- Komponenta: client/src/components/duel-section.tsx, prikazana na oba dashboarda (student + reader)
-
-### Značke (Badges)
-- Automatski sistem znački baziran na bodovima korisnika
-- Nivoi: Početnik (0), Čitač (100), Knjigoljubac (500), Znalac (1000), Stručnjak (2000), Maestro (5000)
-- Prikazuje se na student/reader dashboardu sa progress barom do sljedeće značke
-- Kompaktni prikaz u sidebar-u dashboarda
-- Značka emoji uz ime na leaderboardu
-- Definicije u client/src/lib/badges.ts, komponente u client/src/components/user-badge.tsx
-
-### Leaderboard
-- Javni top čitači na naslovnoj stranici
-- Odvojeni tabovi "Djeca" (R1+R4+R7+O) i "Odrasli" (A) po ageGroup korisnika
-- Filtriranje po periodu: sedmica/mjesec/godina
-- API: /api/leaderboard?period=week|month|year, /api/leaderboard/adults?period=week|month|year
-- Porodično takmičenje: roditelji (A) se mogu takmičiti kroz Beletristiku i Islam
-
-### Učiteljski dashboard
-- Pregled klase: ukupan broj učenika, pročitanih knjiga, prosjek bodova
-- Top 5 čitača sa mogućnošću dodjele bonus bodova
-- Upozorenja za neaktivne učenike (7+ dana) sa kontaktom roditelja
-- Kreiranje sedmičnih izazova (izbor knjige, cilj, opis)
-- Kreiranje učeničkih računa (auto-generirani username bez dijakritika i lozinka)
-- CSV export podataka učenika (UTF-8 BOM za Excel kompatibilnost)
-
-### Partneri (Naši partneri)
-- Admin CRUD za partnere sa upload logotipa
-- Prikaz na naslovnoj stranici iznad footera
-
-### Izazovi (Challenges)
-- Admin CRUD za čitačke izazove sa nagradama
-- Prikaz na naslovnoj stranici
-
-### Registracija
-- Tri taba: Prijava, Registracija, Institucija
-- Samoregistracija: čitalac/učenik/roditelj sa izborom starosne skupine (R1/R4/R7/O/A)
-- Institucionalna registracija: škola sa izborom uloge (učitelj/bibliotekar/sekretar), zahtijeva admin odobrenje
-- Polje ageGroup (R1/R4/R7/O/A) za odvajanje na leaderboardu i filtriranje biblioteke
-
-### Blog
-- Admin može kreirati i uređivati blog postove sa ključnim riječima (keywords)
-- Javni prikaz na /blog sa pretragom po naslovu/sažetku/autoru/ključnim riječima
-- Filtriranje po ključnim riječima (badge-ovi)
-- Najnoviji tekstovi se prikazuju prvi (sortiranje po publishedAt DESC)
-- Komentari na blog postove (prijavljeni korisnici mogu komentarisati, vlasnik/admin može brisati)
-- Ocjenjivanje blog postova (1-5 knjižica/BookOpen ikone), upsert sistem
-- API: /api/blog/:id/comments (GET/POST/DELETE), /api/blog/:id/rating (GET/POST)
-
-## Database Tables
-- users, books, genres, book_genres, quizzes, questions, quiz_results, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges, parent_child_requests
-
-## Deployment
-- Connected to GitHub: `https://github.com/sabahuddin/Reading-Booster`
-- Deployed via Coolify on Hetzner
-- Database: PostgreSQL (Coolify managed)
-- Schema sync: `npx drizzle-kit push`
-- Port: 5000
-- Environment: `DATABASE_URL`, `SESSION_SECRET`, `NODE_ENV=production`
-
-### Initial Data Setup
-All book data, quizzes (227), and questions (2543) are stored in `server/seed-data.sql`. On startup, `loadSeedData()` checks if the database is empty and loads this file automatically. After that, `seedDatabase`, `ensureAllBooks`, and `seedMissingQuizzes` run to fill in any gaps. If the production database is empty, simply restart the application in Coolify to trigger the full seeding process.
-
-### Kontakt
-- Kontakt forma za poruke
-- Admin pregled poruka
-
-### Pretplate (planirano)
-- Free / Standard / Full tier
-- Stranica sa cijenama (/cijene)
-
-## Database Tables
-- users, books, genres, book_genres, quizzes, questions, quiz_results, book_ratings, blog_posts, blog_comments, blog_ratings, contact_messages, partners, challenges, parent_child_requests, duels, book_listings
-
-## User Fields
-- Standardni: username, password, role, firstName, lastName, email, points, booksRead, duelWins
-- Prošireni: ageGroup (R1/R4/R7/O/A), institutionType, institutionRole, approved, maxStudentAccounts, createdByTeacherId
-
-## Primjeri mapiranja knjiga
-| Naslov | ageGroup | genre |
-|--------|----------|-------|
-| Ježeva kućica | R1 | bajke_basne |
-| Priče o poslanicima | R1 | islam |
-| Družba Pere Kvržice | R4 | lektira |
-| Hajduk u Beogradu | R4 | avantura_fantasy |
-| Tvrđava | A | beletristika |
-| Sira: Životopis Poslanika | A | islam |
-
-## Language
-UI je na bosanskom/hrvatskom jeziku. Sav korisnički tekst je na hrvatskom/bosanskom.
+## External Dependencies
+- **OpenAI API:** Used for AI-generated quizzes (via Replit AI Integrations or `OPENAI_API_KEY` fallback).
+- **GitHub:** For version control.
+- **Coolify / Hetzner:** For deployment and PostgreSQL database management.
