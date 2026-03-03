@@ -1148,6 +1148,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
       const userId = req.session.userId!;
 
+      // Privremeno onemogućeno ograničenje pretplate
+      /*
       const currentUser = await storage.getUser(userId);
       if (currentUser) {
         const isExpired = currentUser.subscriptionExpiresAt && new Date(currentUser.subscriptionExpiresAt) < new Date();
@@ -1159,6 +1161,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
           }
         }
       }
+      */
 
       const existingResult = await storage.getQuizResultByUserAndQuiz(userId, quizId);
       if (existingResult) {
@@ -1253,10 +1256,10 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
       return res.json({
         subscriptionType: effectiveType,
-        isFree,
-        quizLimit,
+        isFree: false, // Uvijek tretiraj kao da nije free za UI (da ne blokira)
+        quizLimit: null,
         quizzesUsed: completedCount,
-        quizzesRemaining,
+        quizzesRemaining: null,
         expiresAt: user.subscriptionExpiresAt,
       });
     } catch (error: any) {
