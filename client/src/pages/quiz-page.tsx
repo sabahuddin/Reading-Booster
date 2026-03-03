@@ -74,6 +74,11 @@ export default function QuizPage() {
     enabled: !!quizId,
   });
 
+  const { data: eligibility } = useQuery<{ canTake: boolean; reason?: string; message?: string; retryAfterHours?: number }>({
+    queryKey: ["/api/quizzes", quizId, "eligibility"],
+    enabled: !!quizId,
+  });
+
   // VAŽNO: questionsToUse mora biti definiran PRIJE svih callbacka koji ga koriste
   const questionsToUse = useMemo(() => {
     if (!quiz?.questions) return [];
@@ -179,6 +184,29 @@ export default function QuizPage() {
     { key: "c", label: "C", field: "optionC" },
     { key: "d", label: "D", field: "optionD" },
   ];
+
+  if (eligibility && !eligibility.canTake) {
+    return (
+      <DashboardLayout role={dashboardRole}>
+        <div className="max-w-xl mx-auto space-y-6 text-center">
+          <div className="space-y-4">
+            {eligibility.reason === "cooldown" ? (
+              <Timer className="mx-auto h-12 w-12 text-orange-400" />
+            ) : (
+              <Trophy className="mx-auto h-12 w-12 text-green-500" />
+            )}
+            <h1 className="text-2xl font-bold">
+              {eligibility.reason === "passed" ? "Kviz već položen" : "Pričekajte malo"}
+            </h1>
+            <p className="text-muted-foreground">{eligibility.message}</p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href={`${basePath}/biblioteka`}>Natrag u biblioteku</Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (showSubscriptionPrompt) {
     return (

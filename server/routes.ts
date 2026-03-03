@@ -1071,6 +1071,44 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // Provjera može li korisnik raditi određeni kviz (pre-check za UI)
+  app.get("/api/quizzes/:id/eligibility", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const quizId = req.params.id as string;
+      const existingResult = await storage.getQuizResultByUserAndQuiz(userId, quizId);
+
+      if (!existingResult) {
+        return res.json({ canTake: true });
+      }
+
+      const existingPassed = existingResult.totalQuestions > 0 &&
+        (existingResult.correctAnswers / existingResult.totalQuestions) >= 0.5;
+
+      if (existingPassed) {
+        return res.json({ canTake: false, reason: "passed", message: "Ovaj kviz ste već uspješno položili." });
+      }
+
+      const cooldown48h = 48 * 60 * 60 * 1000;
+      const timeSinceFailed = Date.now() - new Date(existingResult.completedAt).getTime();
+      if (timeSinceFailed < cooldown48h) {
+        const msLeft = cooldown48h - timeSinceFailed;
+        const hoursLeft = Math.floor(msLeft / 3600000);
+        const minutesLeft = Math.ceil((msLeft % 3600000) / 60000);
+        return res.json({
+          canTake: false,
+          reason: "cooldown",
+          message: `Kviz ste pali. Možete ga ponovo pokušati za ${hoursLeft} sati i ${minutesLeft} minuta.`,
+          retryAfterHours: hoursLeft,
+        });
+      }
+
+      return res.json({ canTake: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // ==================== QUESTIONS ROUTES ====================
 
   app.get("/api/quizzes/:quizId/questions", async (req, res) => {
@@ -1163,17 +1201,27 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
       const existingResult = await storage.getQuizResultByUserAndQuiz(userId, quizId);
       if (existingResult) {
-        return res.status(400).json({ message: "You have already taken this quiz" });
-      }
+        const existingPassed = existingResult.totalQuestions > 0 &&
+          (existingResult.correctAnswers / existingResult.totalQuestions) >= 0.5;
 
-      const lastResult = await storage.getLastQuizResultForUser(userId);
-      if (lastResult) {
-        const cooldownMs = 30 * 60 * 1000;
-        const timeSinceLast = Date.now() - new Date(lastResult.completedAt).getTime();
-        if (timeSinceLast < cooldownMs) {
-          const minutesLeft = Math.ceil((cooldownMs - timeSinceLast) / 60000);
-          return res.status(429).json({ message: `Morate pričekati još ${minutesLeft} minuta prije sljedećeg kviza.` });
+        if (existingPassed) {
+          return res.status(400).json({ message: "Ovaj kviz ste već uspješno položili." });
         }
+
+        // Kviz je pao — 48h cooldown
+        const cooldown48h = 48 * 60 * 60 * 1000;
+        const timeSinceFailed = Date.now() - new Date(existingResult.completedAt).getTime();
+        if (timeSinceFailed < cooldown48h) {
+          const hoursLeft = Math.ceil((cooldown48h - timeSinceFailed) / 3600000);
+          const minutesLeft = Math.ceil(((cooldown48h - timeSinceFailed) % 3600000) / 60000);
+          return res.status(429).json({
+            message: `Kviz ste pali. Možete ga ponovo pokušati za ${hoursLeft} sati i ${minutesLeft} minuta.`,
+            retryAfterHours: hoursLeft,
+          });
+        }
+
+        // 48h je prošlo — obriši stari neuspješni rezultat i dozvoli ponovni pokušaj
+        await storage.deleteQuizResultByUserAndQuiz(userId, quizId);
       }
 
       const allQuestions = await storage.getQuestionsByQuizId(quizId);
@@ -1212,7 +1260,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
       const passPercentage = totalServed > 0 ? (correctCount / totalServed) * 100 : 0;
       const passed = passPercentage >= 50;
-      let score = passed ? correctCount * ptsPerQ : 0;
+      // Netačni odgovori oduzimaju bodove — minimalan score je 0
+      let score = passed ? Math.max(0, (correctCount - wrongCount) * ptsPerQ) : 0;
 
       const result = await storage.createQuizResult({
         userId,
@@ -3418,11 +3467,11 @@ Odgovori ISKLJUČIVO u JSON formatu:
         const winner = d.winnerId ? await storage.getUser(d.winnerId) : null;
         return {
           ...d,
-          challengerName: challenger?.fullName || challenger?.username || "Nepoznat",
+          challengerName: challenger?.username || "Nepoznat",
           challengerPoints: challenger?.points ?? 0,
-          opponentName: opponent?.fullName || opponent?.username || "Nepoznat",
+          opponentName: opponent?.username || "Nepoznat",
           opponentPoints: opponent?.points ?? 0,
-          winnerName: winner?.fullName || winner?.username || null,
+          winnerName: winner?.username || null,
         };
       }));
       res.json(enriched);
@@ -3439,9 +3488,9 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const opponent = await storage.getUser(duel.opponentId);
       res.json({
         ...duel,
-        challengerName: challenger?.fullName || challenger?.username || "Nepoznat",
+        challengerName: challenger?.username || "Nepoznat",
         challengerPoints: challenger?.points ?? 0,
-        opponentName: opponent?.fullName || opponent?.username || "Nepoznat",
+        opponentName: opponent?.username || "Nepoznat",
         opponentPoints: opponent?.points ?? 0,
       });
     } catch (error: any) {
@@ -3456,7 +3505,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
         const challenger = await storage.getUser(d.challengerId);
         return {
           ...d,
-          challengerName: challenger?.fullName || challenger?.username || "Nepoznat",
+          challengerName: challenger?.username || "Nepoznat",
           challengerPoints: challenger?.points ?? 0,
         };
       }));
@@ -3502,8 +3551,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
       res.json({
         ...duel,
-        challengerName: user.fullName || user.username,
-        opponentName: opponent.fullName || opponent.username,
+        challengerName: user.username,
+        opponentName: opponent.username,
         challengerPoints: user.points ?? 0,
         opponentPoints: opponent.points ?? 0,
       });
@@ -3529,8 +3578,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const updated = await storage.updateDuelStatus(duel.id, "active");
       res.json({
         ...updated,
-        challengerName: challenger?.fullName || challenger?.username,
-        opponentName: opponent?.fullName || opponent?.username,
+        challengerName: challenger?.username,
+        opponentName: opponent?.username,
         challengerPoints: challenger?.points ?? 0,
         opponentPoints: opponent?.points ?? 0,
       });
@@ -3573,8 +3622,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
           ...duel, finished: true,
           challengerGained: (challenger?.points ?? 0) - duel.challengerStartPoints,
           opponentGained: (opponent?.points ?? 0) - duel.opponentStartPoints,
-          challengerName: challenger?.fullName || challenger?.username,
-          opponentName: opponent?.fullName || opponent?.username,
+          challengerName: challenger?.username,
+          opponentName: opponent?.username,
           challengerPoints: challenger?.points ?? 0,
           opponentPoints: opponent?.points ?? 0,
         });
@@ -3609,8 +3658,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
           const updated = await storage.updateDuelStatus(duel.id, winnerId ? "completed" : "expired", winnerId);
           return res.json({
             ...updated, finished: true, winnerId, challengerGained, opponentGained,
-            challengerName: challenger?.fullName || challenger?.username,
-            opponentName: opponent?.fullName || opponent?.username,
+            challengerName: challenger?.username,
+            opponentName: opponent?.username,
             challengerPoints: challenger?.points ?? 0,
             opponentPoints: opponent?.points ?? 0,
           });
@@ -3618,8 +3667,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
         const alreadyDone = await storage.getDuel(duel.id);
         return res.json({
           ...alreadyDone, finished: true, challengerGained, opponentGained,
-          challengerName: challenger?.fullName || challenger?.username,
-          opponentName: opponent?.fullName || opponent?.username,
+          challengerName: challenger?.username,
+          opponentName: opponent?.username,
           challengerPoints: challenger?.points ?? 0,
           opponentPoints: opponent?.points ?? 0,
         });
@@ -3627,8 +3676,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
       res.json({
         ...duel, finished: false, challengerGained, opponentGained,
-        challengerName: challenger?.fullName || challenger?.username,
-        opponentName: opponent?.fullName || opponent?.username,
+        challengerName: challenger?.username,
+        opponentName: opponent?.username,
         challengerPoints: challenger?.points ?? 0,
         opponentPoints: opponent?.points ?? 0,
       });
