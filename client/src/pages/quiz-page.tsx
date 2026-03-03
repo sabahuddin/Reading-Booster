@@ -167,15 +167,15 @@ export default function QuizPage() {
     return shuffled.slice(0, 20);
   }, [quiz?.questions]);
 
-  const totalQ = questionsToUse.length;
-  const question = questionsToUse[currentQ];
-  const progressValue = totalQ > 0 ? ((currentQ + 1) / totalQ) * 100 : 0;
+  const currentQuestion = questionsToUse[currentQ];
+  const totalQuestionsCount = questionsToUse.length;
+  const progressValue = totalQuestionsCount > 0 ? ((currentQ + 1) / totalQuestionsCount) * 100 : 0;
   const allAnswered = questionsToUse.every((q) => answers[q.id]);
-  const isLast = currentQ === totalQ - 1;
+  const isLast = currentQ === totalQuestionsCount - 1;
 
   const selectAnswer = (answer: string) => {
     if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [question.id]: answer }));
+    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
   };
 
   const options: { key: string; label: string; field: keyof Question }[] = [
@@ -351,7 +351,7 @@ export default function QuizPage() {
               )}
               <div className="flex items-center gap-3 flex-wrap mt-1">
                 <p className="text-sm text-muted-foreground">
-                  Pitanje {currentQ + 1} od {totalQ}
+                  Pitanje {currentQ + 1} od {totalQuestionsCount}
                 </p>
                 <Badge variant={timeLeft <= 5 ? "destructive" : timeLeft <= 10 ? "default" : "outline"} data-testid="badge-timer" className="tabular-nums">
                   <Timer className="mr-1 h-3 w-3" />
@@ -371,12 +371,12 @@ export default function QuizPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base leading-relaxed" data-testid="text-question">
-                  {question.questionText}
+                  {currentQuestion.questionText}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {options.map((opt) => {
-                  const selected = answers[question.id] === opt.key;
+                  const selected = answers[currentQuestion.id] === opt.key;
                   return (
                     <button
                       key={opt.key}
@@ -395,7 +395,7 @@ export default function QuizPage() {
                         >
                           {opt.label}
                         </Badge>
-                        <span className="text-sm">{question[opt.field] as string}</span>
+                        <span className="text-sm">{currentQuestion[opt.field] as string}</span>
                       </div>
                     </button>
                   );
@@ -445,7 +445,7 @@ export default function QuizPage() {
               ) : (
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentQ((p) => Math.min(totalQ - 1, p + 1))}
+                  onClick={() => setCurrentQ((p) => Math.min(totalQuestionsCount - 1, p + 1))}
                   data-testid="button-next"
                 >
                   <span>Sljedeće</span>
