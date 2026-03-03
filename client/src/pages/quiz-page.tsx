@@ -167,8 +167,8 @@ export default function QuizPage() {
     return shuffled.slice(0, 20);
   }, [quiz?.questions]);
 
-  const currentQuestion = questionsToUse[currentQ];
   const totalQuestionsCount = questionsToUse.length;
+  const currentQuestion = questionsToUse[currentQ];
   const progressValue = totalQuestionsCount > 0 ? ((currentQ + 1) / totalQuestionsCount) * 100 : 0;
   const allAnswered = questionsToUse.every((q) => answers[q.id]);
   const isLast = currentQ === totalQuestionsCount - 1;
