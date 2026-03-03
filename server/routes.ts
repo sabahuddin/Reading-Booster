@@ -3298,6 +3298,53 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // Promjena lozinke za dijete koje je roditelj kreirao (ne školski učenici)
+  app.patch("/api/parent/children/:id/password", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Pristup odbijen" });
+      }
+      const parentId = req.session.userId!;
+      const child = await storage.getUser(req.params.id);
+      if (!child || child.parentId !== parentId) {
+        return res.status(403).json({ message: "Nema pristupa ovom profilu" });
+      }
+      if (child.createdByTeacherId) {
+        return res.status(403).json({ message: "Lozinku školskih učenika može mijenjati samo nastavnik" });
+      }
+      const { newPassword } = req.body;
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: "Lozinka mora imati najmanje 6 karaktera" });
+      }
+      const hashed = await hashPassword(newPassword);
+      await storage.updateUser(child.id, { password: hashed });
+      return res.json({ message: "Lozinka uspješno promijenjena" });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Brisanje profila djeteta koje je roditelj kreirao
+  app.delete("/api/parent/children/:id", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== "parent") {
+        return res.status(403).json({ message: "Pristup odbijen" });
+      }
+      const parentId = req.session.userId!;
+      const child = await storage.getUser(req.params.id);
+      if (!child || child.parentId !== parentId) {
+        return res.status(403).json({ message: "Nema pristupa ovom profilu" });
+      }
+      if (child.createdByTeacherId) {
+        return res.status(403).json({ message: "Školske učenike ne možete obrisati" });
+      }
+      await storage.deleteUser(child.id);
+      return res.json({ message: "Profil uspješno obrisan" });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/reader/family-children", requireAuth, async (req, res) => {
     try {
       if (req.session.userRole !== "reader") {
