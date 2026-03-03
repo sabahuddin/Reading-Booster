@@ -348,6 +348,7 @@ export default function TeacherStudents() {
   const [resetResult, setResetResult] = useState<ResetPasswordResult | null>(null);
   const [editStudent, setEditStudent] = useState<StudentUser | null>(null);
   const [editName, setEditName] = useState("");
+  const [editClassName, setEditClassName] = useState("");
   const [deleteStudent, setDeleteStudent] = useState<StudentUser | null>(null);
 
   const form = useForm<CreateStudentValues>({
@@ -391,14 +392,15 @@ export default function TeacherStudents() {
   });
 
   const editMutation = useMutation({
-    mutationFn: async ({ id, fullName }: { id: string; fullName: string }) => {
-      const res = await apiRequest("PUT", `/api/teacher/update-student/${id}`, { fullName });
+    mutationFn: async ({ id, fullName, className }: { id: string; fullName: string; className: string }) => {
+      const res = await apiRequest("PUT", `/api/teacher/update-student/${id}`, { fullName, className });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/teacher/students"] });
       setEditStudent(null);
       setEditName("");
+      setEditClassName("");
       toast({ title: "Učenik uspješno ažuriran" });
     },
     onError: (err: any) => {
@@ -513,6 +515,7 @@ export default function TeacherStudents() {
                   <TableRow>
                     <TableHead>Ime i prezime</TableHead>
                     <TableHead>Korisničko ime</TableHead>
+                    <TableHead>Razred</TableHead>
                     <TableHead>Bodovi</TableHead>
                     <TableHead>Akcije</TableHead>
                   </TableRow>
@@ -522,6 +525,12 @@ export default function TeacherStudents() {
                     <TableRow key={s.id} data-testid={`row-student-${s.id}`}>
                       <TableCell className="font-medium">{s.fullName}</TableCell>
                       <TableCell className="text-muted-foreground">{s.username}</TableCell>
+                      <TableCell>
+                        {s.className
+                          ? <Badge variant="outline">{s.className}</Badge>
+                          : <span className="text-muted-foreground text-sm">—</span>
+                        }
+                      </TableCell>
                       <TableCell>
                         <Badge variant="default">
                           <Star className="mr-1" />
@@ -542,8 +551,8 @@ export default function TeacherStudents() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => { setEditStudent(s); setEditName(s.fullName); }}
-                            title="Uredi ime"
+                            onClick={() => { setEditStudent(s); setEditName(s.fullName); setEditClassName(s.className || ""); }}
+                            title="Uredi učenika"
                             data-testid={`button-edit-student-${s.id}`}
                           >
                             <Pencil />
@@ -640,7 +649,7 @@ export default function TeacherStudents() {
           onClose={() => setResetResult(null)}
         />
 
-        <Dialog open={!!editStudent} onOpenChange={(v) => { if (!v) { setEditStudent(null); setEditName(""); } }}>
+        <Dialog open={!!editStudent} onOpenChange={(v) => { if (!v) { setEditStudent(null); setEditName(""); setEditClassName(""); } }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Uredi učenika</DialogTitle>
@@ -655,9 +664,18 @@ export default function TeacherStudents() {
                   data-testid="input-edit-student-name"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Razred</label>
+                <Input
+                  value={editClassName}
+                  onChange={(e) => setEditClassName(e.target.value)}
+                  placeholder="npr. 5a, 6b, 7c..."
+                  data-testid="input-edit-student-class"
+                />
+              </div>
               <Button
                 className="w-full"
-                onClick={() => editStudent && editMutation.mutate({ id: editStudent.id, fullName: editName })}
+                onClick={() => editStudent && editMutation.mutate({ id: editStudent.id, fullName: editName, className: editClassName })}
                 disabled={editMutation.isPending || editName.trim().length < 2}
                 data-testid="button-submit-edit-student"
               >

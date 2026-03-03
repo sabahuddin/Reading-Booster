@@ -139,19 +139,26 @@ export default function TeacherDashboard() {
     .sort((a: any, b: any) => (b.points || 0) - (a.points || 0))
     .slice(0, 5);
 
+  // Svi učenici sortirani po bodovima — bez limita
   const barData = (classStats?.studentStats || [])
     .sort((a, b) => b.points - a.points)
-    .slice(0, 10)
     .map(s => ({
       name: s.fullName.split(" ")[0],
       bodovi: s.points,
       kvizovi: s.quizzesTaken,
     }));
 
-  const pieData = (classStats?.genreDistribution || []).map(g => ({
-    name: GENRE_LABELS[g.name] || g.name,
-    value: g.count,
-  }));
+  // Top 10 žanrova + "Ostali žanrovi"
+  const rawPie = (classStats?.genreDistribution || [])
+    .sort((a, b) => b.count - a.count);
+  const top10 = rawPie.slice(0, 10);
+  const others = rawPie.slice(10);
+  const othersCount = others.reduce((s, g) => s + g.count, 0);
+  const pieData = [
+    ...top10.map(g => ({ name: GENRE_LABELS[g.name] || g.name, value: g.count })),
+    ...(othersCount > 0 ? [{ name: "Ostali žanrovi", value: othersCount }] : []),
+  ];
+  const PIE_COLORS = [...CHART_COLORS, "#94A3B8"]; // posljednja boja za "Ostali"
 
   const handleAddBonus = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -273,78 +280,90 @@ export default function TeacherDashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {barData.length > 0 && (
-            <Card data-testid="card-bar-chart">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  Bodovi po učeniku
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={barData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
-                      formatter={(value: number, name: string) => [
-                        value,
-                        name === "bodovi" ? "Bodovi" : "Kvizovi",
-                      ]}
-                    />
-                    <Bar dataKey="bodovi" fill="#FF861C" radius={[4, 4, 0, 0]} name="bodovi" />
-                    <Bar dataKey="kvizovi" fill="#4A90D9" radius={[4, 4, 0, 0]} name="kvizovi" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
+        {/* Bar chart — puna širina, svi učenici */}
+        {barData.length > 0 && (
+          <Card data-testid="card-bar-chart">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Bodovi po učeniku
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={Math.max(280, barData.length * 36)}>
+                <BarChart data={barData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                    formatter={(value: number, name: string) => [
+                      value,
+                      name === "bodovi" ? "Bodovi" : "Kvizovi",
+                    ]}
+                  />
+                  <Bar dataKey="bodovi" fill="#FF861C" radius={[4, 4, 0, 0]} name="bodovi" />
+                  <Bar dataKey="kvizovi" fill="#4A90D9" radius={[4, 4, 0, 0]} name="kvizovi" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
-          {pieData.length > 0 && (
-            <Card data-testid="card-pie-chart">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChartIcon className="h-5 w-5 text-primary" />
-                  Čitanje po žanrovima
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={3}
-                      dataKey="value"
-                      label={({ name, percent }) =>
-                        `${name} (${(percent * 100).toFixed(0)}%)`
-                      }
-                      labelLine={false}
-                    >
-                      {pieData.map((_entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={CHART_COLORS[index % CHART_COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
-                      formatter={(value: number) => [`${value} kvizova`, "Broj"]}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* Pie chart — top 10 žanrova + "Ostali", legenda s desne strane */}
+        {pieData.length > 0 && (
+          <Card data-testid="card-pie-chart">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChartIcon className="h-5 w-5 text-primary" />
+                Čitanje po žanrovima
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0" style={{ width: 220, height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={95}
+                        paddingAngle={2}
+                        dataKey="value"
+                        labelLine={false}
+                      >
+                        {pieData.map((_entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                        formatter={(value: number) => [`${value} kvizova`, "Broj"]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-1.5 overflow-hidden">
+                  {pieData.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-2 text-sm">
+                      <div
+                        className="w-3 h-3 rounded-sm flex-shrink-0"
+                        style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                      />
+                      <span className="truncate text-muted-foreground">{entry.name}</span>
+                      <span className="ml-auto font-medium flex-shrink-0">{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {classStats?.studentStats && classStats.studentStats.length > 0 && (
           <Card data-testid="card-student-progress">

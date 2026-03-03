@@ -888,11 +888,31 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
   // ==================== BOOKS ROUTES ====================
 
-  app.get("/api/books", async (_req, res) => {
+  app.get("/api/books", async (req, res) => {
     try {
       const allBooks = await storage.getAllBooks();
+      let filtered = allBooks;
+
+      // Ako je prijavljen učenik/čitalac, filtriraj po starosnoj skupini
+      if (req.session?.userId && (req.session.userRole === "student" || req.session.userRole === "reader")) {
+        const user = await storage.getUser(req.session.userId);
+        if (user?.ageGroup) {
+          const allowedGroups: Record<string, string[]> = {
+            R1: ["R1", "R4"],
+            R4: ["R4", "R7"],
+            R7: ["R7", "O"],
+            O: ["O", "A"],
+            A: ["O", "A"],
+          };
+          const allowed = allowedGroups[user.ageGroup] ?? null;
+          if (allowed) {
+            filtered = allBooks.filter(b => allowed.includes(b.ageGroup || ""));
+          }
+        }
+      }
+
       const booksWithGenres = await Promise.all(
-        allBooks.map(async (book) => {
+        filtered.map(async (book) => {
           const bookGenresList = await storage.getBookGenres(book.id);
           return { ...book, genres: bookGenresList };
         })
@@ -2283,12 +2303,15 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.status(403).json({ message: "Nemate pristup ovom učeniku." });
       }
 
-      const { fullName } = req.body;
+      const { fullName, className } = req.body;
       if (!fullName || fullName.trim().length < 2) {
         return res.status(400).json({ message: "Ime i prezime mora imati najmanje 2 karaktera." });
       }
 
-      const updated = await storage.updateUser(studentId, { fullName: fullName.trim() } as any);
+      const updateData: any = { fullName: fullName.trim() };
+      if (className !== undefined) updateData.className = className.trim() || null;
+
+      const updated = await storage.updateUser(studentId, updateData);
       if (!updated) {
         return res.status(404).json({ message: "Učenik nije pronađen." });
       }
