@@ -369,9 +369,6 @@ export default function QuizPage() {
                 {book?.readingDifficulty && (
                   <DifficultyIcon difficulty={book.readingDifficulty} size="sm" />
                 )}
-                <Badge variant="outline" data-testid="badge-points-per-q">
-                  {ptsPerQ} {ptsPerQ === 1 ? "bod" : (ptsPerQ < 5 ? "boda" : "bodova")} po pitanju
-                </Badge>
               </div>
             </div>
 
