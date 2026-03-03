@@ -1123,16 +1123,14 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const user = await storage.getUser(req.session.userId!);
       if (!user) return res.status(404).json({ message: "User not found" });
       const completedQuizzes = await storage.getQuizResultsCountByUserId(user.id);
-      const isExpired = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) < new Date();
-      const effectiveType = (user.subscriptionType !== "free" && isExpired) ? "free" : user.subscriptionType;
-      const FREE_QUIZ_LIMIT = 3;
+      // Pretplata privremeno onemogućena — svi korisnici imaju neograničen pristup
       return res.json({
-        subscriptionType: effectiveType,
+        subscriptionType: user.subscriptionType,
         subscriptionExpiresAt: user.subscriptionExpiresAt,
         completedQuizzes,
-        freeQuizLimit: FREE_QUIZ_LIMIT,
-        canTakeQuiz: effectiveType !== "free" || completedQuizzes < FREE_QUIZ_LIMIT,
-        canParticipateInChallenges: effectiveType === "full",
+        freeQuizLimit: null,
+        canTakeQuiz: true,
+        canParticipateInChallenges: true,
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });

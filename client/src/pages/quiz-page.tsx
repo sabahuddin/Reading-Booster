@@ -185,7 +185,7 @@ export default function QuizPage() {
     { key: "d", label: "D", field: "optionD" },
   ];
 
-  if (showSubscriptionPrompt || (subStatus && !subStatus.canTakeQuiz)) {
+  if (showSubscriptionPrompt) {
     return (
       <DashboardLayout role={dashboardRole}>
         <div className="max-w-xl mx-auto space-y-6">
@@ -329,7 +329,7 @@ export default function QuizPage() {
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-32 w-full" />
           </div>
-        ) : !quiz || totalQ === 0 ? (
+        ) : !quiz || totalQuestionsCount === 0 ? (
           <div className="text-center py-16">
             <FileQuestion className="mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium">Kviz nije pronađen</p>
