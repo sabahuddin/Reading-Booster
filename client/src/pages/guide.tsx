@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   BookOpen, Users, GraduationCap, School as SchoolIcon,
   Printer, FileDown, PieChart, TrendingUp, Sparkles,
-  Star, Target, Award, Flame, Trophy, Heart
+  Star, Target, Award, Flame, Trophy, Heart,
+  Swords, Store, ShieldCheck, Lock, Trash2, BarChart2, Medal
 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -438,49 +439,86 @@ export default function GuidePage() {
                 <CardHeader>
                   <CardTitle className="text-3xl flex items-center gap-3">
                     <BookOpen className="w-10 h-10 text-primary" />
-                    Vodič za čitaoce
+                    Vodič za čitaoce i učenike
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-8">
-                    <div className="grid md:grid-cols-2 gap-8 items-start">
-                      <div className="space-y-4">
-                        <p className="text-xl text-muted-foreground">Postani kralj ili kraljica čitanja u nekoliko koraka!</p>
-                        <ul className="space-y-4">
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
-                            <p><strong>Pronađi knjigu:</strong> Pretraži našu online biblioteku i pronađi knjigu koja ti se sviđa.</p>
-                          </li>
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                            <p><strong>Pročitaj je:</strong> Uzmi pravu, fizičku knjigu iz svoje, školske ili gradske biblioteke (ili je kupi) i uživaj u čitanju.</p>
-                          </li>
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
-                            <p><strong>Riješi kviz:</strong> Kada pročitaš knjigu, vrati se ovdje i pokaži svoje znanje kroz kratki kviz.</p>
-                          </li>
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">4</span>
-                            <p><strong>Sakupljaj bodove:</strong> Svaki tačan odgovor donosi ti bodove koji te penju na tabeli najboljih čitalaca!</p>
-                          </li>
-                        </ul>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
-                          <h4 className="font-bold text-lg text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4" /> Savjet
-                          </h4>
-                          <p className="text-base text-amber-800 dark:text-amber-200">
-                            Registriraj se besplatno kao Čitalac i odmah počni sa čitanjem! Ako su te učitelj/ica već registrirali, koristi podatke koje si dobio/la.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
+                <CardContent className="space-y-8">
+                  <div className="grid md:grid-cols-2 gap-8 items-start">
                     <div className="space-y-4">
-                      <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Tvoja čitaonica</h4>
-                      <StudentDashboardMock />
+                      <p className="text-xl text-muted-foreground">Postani kralj ili kraljica čitanja u nekoliko koraka!</p>
+                      <ul className="space-y-4">
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
+                          <p><strong>Pronađi knjigu:</strong> Pretraži biblioteku — knjige su filtrirane prema tvojoj dobi, tako da uvijek vidiš prikladan sadržaj.</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
+                          <p><strong>Pročitaj je:</strong> Uzmi fizičku knjigu iz biblioteke ili kupi je. Nema e-knjiga — poanta je pravo čitanje!</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
+                          <p><strong>Riješi kviz:</strong> Timer od 30 sekundi po pitanju. Svaki razred ima drugačiji broj pitanja i bodova — teže knjige donose više bodova!</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">4</span>
+                          <p><strong>Sakupljaj bodove i značke:</strong> Bodovi te penju kroz 6 nivoa — od Početnika do Maestra! Prati rang-listu i takmič se.</p>
+                        </li>
+                      </ul>
                     </div>
+                    <div className="space-y-4">
+                      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
+                        <h4 className="font-bold text-lg text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" /> Savjet
+                        </h4>
+                        <p className="text-base text-amber-800 dark:text-amber-200">
+                          Ako ne prođeš kviz, čekaj 48 sati i pokušaj ponovo — pitanja se svaki put randomiziraju! Mlađi čitaoci (R1) nemaju oduzimanje bodova za pogrešne odgovore.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-xl border bg-card space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold">
+                        <Swords className="w-5 h-5" /> Dvoboji
+                      </div>
+                      <p className="text-sm text-muted-foreground">Izazovi čitaoca sličnih bodova. Ko skupi više bodova u dogovorenom roku — pobijedi! Dvoboji se vode na tvom profilu.</p>
+                    </div>
+                    <div className="p-4 rounded-xl border bg-card space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold">
+                        <Medal className="w-5 h-5" /> Značke i nivoi
+                      </div>
+                      <p className="text-sm text-muted-foreground">6 nivoa: Početnik → Čitalac → Knjigoljubac → Znalac → Stručnjak → Maestro. Svaka značka se automatski dodjeljuje kad pređeš prag bodova.</p>
+                    </div>
+                    <div className="p-4 rounded-xl border bg-card space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold">
+                        <Star className="w-5 h-5" /> Ocjenjivanje knjiga
+                      </div>
+                      <p className="text-sm text-muted-foreground">Svaka knjiga ima ocjenu (1-5 otvorenih knjiga). Ocijeni pročitanu knjigu i pomozi drugima u odabiru.</p>
+                    </div>
+                    <div className="p-4 rounded-xl border bg-card space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold">
+                        <Store className="w-5 h-5" /> Berza knjiga
+                      </div>
+                      <p className="text-sm text-muted-foreground">Na stranici /razmjena možeš objaviti oglas za prodaju, poklon ili razmjenu fizičkih knjiga. Daj knjizi drugi život!</p>
+                    </div>
+                    <div className="p-4 rounded-xl border bg-card space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold">
+                        <ShieldCheck className="w-5 h-5" /> Filtriranje po dobi
+                      </div>
+                      <p className="text-sm text-muted-foreground">Učenici vide samo knjige prikladne svom uzrastu + jednu razinu više. Starije knjige su skrivene dok ne porasteš.</p>
+                    </div>
+                    <div className="p-4 rounded-xl border bg-card space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold">
+                        <Trophy className="w-5 h-5" /> Rang-lista
+                      </div>
+                      <p className="text-sm text-muted-foreground">Javna rang-lista djece i odraslih. Filtriraš po sedmici, mjesecu ili godini. Vidljiva je i na početnoj stranici!</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Tvoja čitaonica</h4>
+                    <StudentDashboardMock />
                   </div>
                 </CardContent>
               </Card>
@@ -494,42 +532,58 @@ export default function GuidePage() {
                     Vodič za roditelje
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-8">
-                    <div className="grid md:grid-cols-2 gap-8 items-start">
-                      <div className="space-y-4">
-                        <p className="text-xl text-muted-foreground font-medium">Budite podrška svom djetetu na putu stjecanja znanja.</p>
-                        <ul className="space-y-4">
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
-                            <p><strong>Pratite njihov napredak:</strong> Vidite koje knjige vaše dijete čita i kakve rezultate postiže na kvizovima.</p>
-                          </li>
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                            <p><strong>Porodično takmičenje:</strong> Registrirajte svoj račun u kategoriji "Odrasli" i takmičite se ko će više pročitati!</p>
-                          </li>
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
-                            <p><strong>Povezivanje:</strong> Ako je dijete dobilo račun u školi, jednostavno ga povežite sa svojim profilom i pratite vaše dijete.</p>
-                          </li>
-                        </ul>
+                <CardContent className="space-y-8">
+                  <div className="grid md:grid-cols-2 gap-8 items-start">
+                    <div className="space-y-4">
+                      <p className="text-xl text-muted-foreground font-medium">Budite podrška svom djetetu i aktivni učesnik u čitalačkoj avanturi.</p>
+                      <ul className="space-y-4">
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
+                          <p><strong>Kreirajte dječije profile:</strong> Možete dodati do 3 dječija računa. Unesite ime, korisničko ime, lozinku i starosnu grupu.</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
+                          <p><strong>Pratite napredak:</strong> Vidite bodove, pročitane knjige i kviz rezultate svakog djeteta u realnom vremenu.</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
+                          <p><strong>Upravljajte računima:</strong> Promijenite lozinku djeteta ili obrišite profil ako treba — sve putem roditeljskog panela.</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">4</span>
+                          <p><strong>Povežite se sa školom:</strong> Ako je dijete dobilo račun od učitelja, pošaljite zahtjev za linkovanje i pratite ga zajedno.</p>
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
+                        <h4 className="font-bold text-lg text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" /> Savjet za roditelje
+                        </h4>
+                        <p className="text-base text-amber-800 dark:text-amber-200">
+                          Takmičite se zajedno s djecom! Registrirajte i vlastiti čitalački račun — ko skupi više bodova u porodici? Čitanje postaje zajednička igra!
+                        </p>
                       </div>
-                      <div className="space-y-4">
-                        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
-                          <h4 className="font-bold text-lg text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4" /> Savjet za roditelje
-                          </h4>
-                          <p className="text-base text-amber-800 dark:text-amber-200">
-                            Odaberite porodični paket i takmičite se zajedno s djecom. Čitanje može postati zajednička porodična aktivnost!
-                          </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg border bg-card space-y-1">
+                          <div className="flex items-center gap-1.5 text-primary font-bold text-sm">
+                            <Lock className="w-4 h-4" /> Promjena lozinke
+                          </div>
+                          <p className="text-xs text-muted-foreground">Promijenite lozinku djeteta direktno iz roditeljskog panela bez kontaktiranja podrške.</p>
+                        </div>
+                        <div className="p-3 rounded-lg border bg-card space-y-1">
+                          <div className="flex items-center gap-1.5 text-primary font-bold text-sm">
+                            <Trash2 className="w-4 h-4" /> Brisanje profila
+                          </div>
+                          <p className="text-xs text-muted-foreground">Profil koji je roditelj kreirao može se i obrisati — s potvrdom kako bi se spriječila greška.</p>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Roditeljski pregled</h4>
-                      <ParentDashboardMock />
-                    </div>
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Roditeljski pregled</h4>
+                    <ParentDashboardMock />
                   </div>
                 </CardContent>
               </Card>
@@ -543,42 +597,58 @@ export default function GuidePage() {
                     Vodič za učitelje
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-8">
-                    <div className="grid md:grid-cols-2 gap-8 items-start">
-                      <div className="space-y-4">
-                        <p className="text-xl text-muted-foreground font-medium">Pretvorite lektiru u najdraži čas vaših učenika.</p>
-                        <ul className="space-y-4">
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
-                            <p><strong>Analitika i Praćenje:</strong> Pratite broj pročitanih knjiga (ukupno i mjesečno), prosjek bodova po učeniku i trendove rasta.</p>
-                          </li>
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
-                            <p><strong>Izvještaji:</strong> Jednim klikom generirajte PDF izvještaj za cijeli razred ili eksportirajte podatke u Excel format.</p>
-                          </li>
-                          <li className="flex gap-4">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
-                            <p><strong>Motivacija:</strong> Kreirajte izazove, dodjeljujte značke i bonus bodove za najvrednije čitaoce.</p>
-                          </li>
-                        </ul>
+                <CardContent className="space-y-8">
+                  <div className="grid md:grid-cols-2 gap-8 items-start">
+                    <div className="space-y-4">
+                      <p className="text-xl text-muted-foreground font-medium">Pretvorite lektiru u najdraži čas vaših učenika.</p>
+                      <ul className="space-y-4">
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
+                          <p><strong>Kreirajte učenike:</strong> Dodajte učenike s korisničkim imenom, lozinkom, razredom (npr. 5a) i starosnom grupom. Lozinku možete mijenjati u svako doba.</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
+                          <p><strong>Pratite grafički:</strong> Bar grafikon prikazuje sve učenike sortirane po bodovima, a pie grafikon top 10 žanrova koje vaši učenici čitaju.</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">3</span>
+                          <p><strong>Bonus bodovi:</strong> Nagradite truda vrijednog učenika ručnim dodavanjem bonus bodova s razlogom — npr. "Napisao/la prikaz knjige".</p>
+                        </li>
+                        <li className="flex gap-4">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">4</span>
+                          <p><strong>Odobri roditelje:</strong> Roditelji koji žele pratiti schulskog učenika šalju zahtjev — vi ga odobravate ili odbijate.</p>
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
+                        <h4 className="font-bold text-lg text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" /> Savjet za rad
+                        </h4>
+                        <p className="text-base text-amber-800 dark:text-amber-200">
+                          Koristite "Print" opciju prije roditeljskog sastanka kako biste svakom roditelju uručili pregled čitalačkih navika djeteta. Razred (5a, 6b...) upišite kod svakog učenika za bolju organizaciju.
+                        </p>
                       </div>
-                      <div className="space-y-4">
-                        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
-                          <h4 className="font-bold text-lg text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4" /> Savjet za rad
-                          </h4>
-                          <p className="text-base text-amber-800 dark:text-amber-200">
-                            Koristite "Print" opciju prije roditeljskog sastanka kako biste svakom roditelju uručili detaljan pregled čitalačkih navika njihovog djeteta.
-                          </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg border bg-card space-y-1">
+                          <div className="flex items-center gap-1.5 text-primary font-bold text-sm">
+                            <BarChart2 className="w-4 h-4" /> Bodovi svih učenika
+                          </div>
+                          <p className="text-xs text-muted-foreground">Horizontalni grafikon prikazuje sve učenike sortirane po bodovima — odmah vidite ko prednjači.</p>
+                        </div>
+                        <div className="p-3 rounded-lg border bg-card space-y-1">
+                          <div className="flex items-center gap-1.5 text-primary font-bold text-sm">
+                            <PieChart className="w-4 h-4" /> Žanrovi čitanja
+                          </div>
+                          <p className="text-xs text-muted-foreground">Top 10 žanrova koje vaš razred čita, s legendom i grupom "Ostali žanrovi" — korisno za planiranje lektire.</p>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Interaktivni prikaz panela</h4>
-                      <TeacherDashboardMock />
-                    </div>
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-center text-slate-500 uppercase tracking-widest text-sm">Interaktivni prikaz panela</h4>
+                    <TeacherDashboardMock />
                   </div>
                 </CardContent>
               </Card>

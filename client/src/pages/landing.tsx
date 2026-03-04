@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { BookOpen, Brain, TrendingUp, Users, UserPlus, BookText, ClipboardCheck, Sparkles, Rocket, Trophy, Medal, Award, Calendar, Gift, ExternalLink, Handshake } from "lucide-react";
+import { BookOpen, Brain, TrendingUp, Users, UserPlus, BookText, ClipboardCheck, Sparkles, Rocket, Trophy, Medal, Award, Calendar, Gift, ExternalLink, Handshake, Swords, Store, Star, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,27 +38,51 @@ const fadeIn = {
 const features = [
   {
     icon: BookOpen,
-    title: "Mnogo knjiga",
+    title: "Velika biblioteka",
     description:
-      "Istraži našu veliku biblioteku punu zanimljivih knjiga za sve uzraste!",
+      "Stotine knjiga razvrstanih po uzrastu i žanru. Uvijek ćeš naći nešto zanimljivo za čitanje!",
   },
   {
     icon: Brain,
-    title: "Zabavni kvizovi",
+    title: "Pametni kvizovi",
     description:
-      "Nakon čitanja, riješi kviz i pokaži koliko znaš. Svaki tačan odgovor donosi ti bodove!",
+      "Kvizovi prilagođeni tvojoj dobi — timer, nasumična pitanja i bodovi koji rastu s teškoćom knjige!",
+  },
+  {
+    icon: Swords,
+    title: "Dvoboji čitanja",
+    description:
+      "Izazovi prijatelja ili nekog sličnih bodova na dvoboj! Ko skupi više bodova u zadanom roku — pobijedi!",
+  },
+  {
+    icon: Trophy,
+    title: "Rang-lista i značke",
+    description:
+      "Osvoji titulu Maestra čitanja! Prati svoje mjesto na tabeli i skupljaj značke kako rasteš.",
+  },
+  {
+    icon: Store,
+    title: "Berza knjiga",
+    description:
+      "Prodaj, pokloni ili razmijeni fizičke knjige s drugim čitaocima. Daj knjizi drugi život!",
+  },
+  {
+    icon: Star,
+    title: "Ocijeni knjige",
+    description:
+      "Pomozi drugima u odabiru — ocijeni pročitanu knjigu i pročitaj šta misle ostali čitaoci.",
   },
   {
     icon: TrendingUp,
-    title: "Prati svoj napredak",
+    title: "Prati napredak",
     description:
-      "Gledaj kako tvoji bodovi rastu! Prati koliko si knjiga pročitao/la i kvizova riješio/la.",
+      "Učitelji i roditelji imaju dashboarde s grafikonima. Svaki učenik vidi svoje rezultate i historiju.",
   },
   {
-    icon: Users,
-    title: "Zajedno učimo",
+    icon: ShieldCheck,
+    title: "Sigurno za djecu",
     description:
-      "Tvoji učitelji i roditelji mogu pratiti tvoj napredak i pomoći ti da postaneš bolji čitalac!",
+      "Knjige su filtrirane po dobi. Mlađa djeca vide samo sadržaj koji je primjeren njihovom uzrastu.",
   },
 ];
 
@@ -450,7 +474,7 @@ function AboutSection() {
           {/* Guide & Scenarios */}
           <div className="space-y-8 pt-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold mb-4">Vodič i scenariji korištenja</h2>
+              <h2 className="text-3xl font-bold mb-4">Ko može koristiti Čitanje.ba?</h2>
               <div className="h-1 w-20 bg-primary mx-auto rounded-full" />
             </div>
 
@@ -458,24 +482,40 @@ function AboutSection() {
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">1</div>
                 <div>
-                  <h4 className="font-bold text-xl mb-1">Scenarij za škole</h4>
-                  <p className="text-muted-foreground">Učitelji kreiraju razrede i prate napredak učenika. Čitanje lektire postaje interaktivno, a najbolji čitaoci u razredu dobijaju digitalna i stvarna priznanja.</p>
+                  <h4 className="font-bold text-xl mb-1">Učenici i čitaoci</h4>
+                  <p className="text-muted-foreground">Pronađi knjigu, pročitaj je u fizičkom obliku, vrati se i riješi kviz. Osvoji bodove, značke i popni se na rang-listu. Možeš čak i izazvati prijatelja na dvoboj čitanja!</p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">2</div>
                 <div>
-                  <h4 className="font-bold text-xl mb-1">Porodično takmičenje</h4>
-                  <p className="text-muted-foreground">Roditelji se mogu registrirati, povezati sa svojom djecom i zajedno učestvovati u izazovima. Takmičite se ko će sakupiti više bodova!</p>
+                  <h4 className="font-bold text-xl mb-1">Učitelji i škole</h4>
+                  <p className="text-muted-foreground">Kreira se razred, dodaju učenici i prati napredak svakog djeteta. Grafikon bodova po učeniku i žanrovski prikaz čitanja pomažu u planiranju nastave. Bonus bodovi za najvrjednije!</p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">3</div>
                 <div>
-                  <h4 className="font-bold text-xl mb-1">Islamski modul</h4>
-                  <p className="text-muted-foreground">Poseban fokus na islamsku literaturu omogućava učiteljima da motivišu učenike na čitanje priča o poslanicima i islamske historije uz zabavne kvizove.</p>
+                  <h4 className="font-bold text-xl mb-1">Roditelji</h4>
+                  <p className="text-muted-foreground">Registriraj se, dodaj do 3 djeteta i prati ko više čita. Možeš mijenjati lozinku djeteta, brisati profil i direktno pratiti napredak — sve na jednom mjestu.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">4</div>
+                <div>
+                  <h4 className="font-bold text-xl mb-1">Berza knjiga</h4>
+                  <p className="text-muted-foreground">Svako može objaviti oglas za prodaju, poklon ili razmjenu fizičkih knjiga. Idealno za knjige koje su pročitane, a zaslužuju novog čitaoca.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">5</div>
+                <div>
+                  <h4 className="font-bold text-xl mb-1">Islamski sadržaj</h4>
+                  <p className="text-muted-foreground">Poseban fokus na islamsku literaturu — priče o poslanicima, islamska historija i ahlak dostupni su uz zabavne kvizove prilagođene dobi čitaoca.</p>
                 </div>
               </div>
             </div>
