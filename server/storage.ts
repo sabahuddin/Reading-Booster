@@ -20,6 +20,8 @@ import {
   bookGenres,
   deletedItems,
   parentChildRequests,
+  pageViews,
+  type PageView,
   type User,
   type InsertUser,
   type Book,
@@ -188,6 +190,12 @@ export interface IStorage {
   updateDuelStatus(id: string, status: string, winnerId?: string): Promise<Duel | undefined>;
   findDuelOpponent(userId: string, pointsRange: number): Promise<User | undefined>;
   incrementDuelWins(userId: string): Promise<void>;
+
+  logPageView(data: { path: string; ipHash?: string; country?: string; countryCode?: string; city?: string; userAgent?: string; referrer?: string; userId?: string }): Promise<void>;
+  getAnalyticsSummary(): Promise<{ today: number; week: number; month: number; total: number; uniqueToday: number; uniqueMonth: number }>;
+  getPageViewsByDay(days: number): Promise<{ date: string; views: number; unique: number }[]>;
+  getTopPages(limit: number): Promise<{ path: string; views: number }[]>;
+  getTopCountries(limit: number): Promise<{ country: string; countryCode: string; views: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -895,6 +903,97 @@ export class DatabaseStorage implements IStorage {
 
   async incrementDuelWins(userId: string): Promise<void> {
     await db.update(users).set({ duelWins: sql`COALESCE(${users.duelWins}, 0) + 1` }).where(eq(users.id, userId));
+  }
+
+  async logPageView(data: { path: string; ipHash?: string; country?: string; countryCode?: string; city?: string; userAgent?: string; referrer?: string; userId?: string }): Promise<void> {
+    await db.insert(pageViews).values({
+      path: data.path,
+      ipHash: data.ipHash,
+      country: data.country,
+      countryCode: data.countryCode,
+      city: data.city,
+      userAgent: data.userAgent,
+      referrer: data.referrer,
+      userId: data.userId,
+    });
+  }
+
+  async getAnalyticsSummary(): Promise<{ today: number; week: number; month: number; total: number; uniqueToday: number; uniqueMonth: number }> {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - 7);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [todayResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(pageViews).where(gte(pageViews.visitedAt, startOfToday));
+    const [weekResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(pageViews).where(gte(pageViews.visitedAt, startOfWeek));
+    const [monthResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(pageViews).where(gte(pageViews.visitedAt, startOfMonth));
+    const [totalResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(pageViews);
+    const [uniqueTodayResult] = await db.select({ count: sql<number>`COUNT(DISTINCT ip_hash)` }).from(pageViews).where(gte(pageViews.visitedAt, startOfToday));
+    const [uniqueMonthResult] = await db.select({ count: sql<number>`COUNT(DISTINCT ip_hash)` }).from(pageViews).where(gte(pageViews.visitedAt, startOfMonth));
+
+    return {
+      today: Number(todayResult?.count || 0),
+      week: Number(weekResult?.count || 0),
+      month: Number(monthResult?.count || 0),
+      total: Number(totalResult?.count || 0),
+      uniqueToday: Number(uniqueTodayResult?.count || 0),
+      uniqueMonth: Number(uniqueMonthResult?.count || 0),
+    };
+  }
+
+  async getPageViewsByDay(days: number): Promise<{ date: string; views: number; unique: number }[]> {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const rows = await db.execute(sql`
+      SELECT 
+        DATE(visited_at) as date,
+        COUNT(*) as views,
+        COUNT(DISTINCT ip_hash) as unique
+      FROM page_views
+      WHERE visited_at >= ${since.toISOString()}
+      GROUP BY DATE(visited_at)
+      ORDER BY date ASC
+    `);
+
+    return (rows.rows as any[]).map(r => ({
+      date: r.date,
+      views: Number(r.views),
+      unique: Number(r.unique),
+    }));
+  }
+
+  async getTopPages(limit: number): Promise<{ path: string; views: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT path, COUNT(*) as views
+      FROM page_views
+      GROUP BY path
+      ORDER BY views DESC
+      LIMIT ${limit}
+    `);
+
+    return (rows.rows as any[]).map(r => ({
+      path: r.path,
+      views: Number(r.views),
+    }));
+  }
+
+  async getTopCountries(limit: number): Promise<{ country: string; countryCode: string; views: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT country, country_code as "countryCode", COUNT(*) as views
+      FROM page_views
+      WHERE country IS NOT NULL AND country != ''
+      GROUP BY country, country_code
+      ORDER BY views DESC
+      LIMIT ${limit}
+    `);
+
+    return (rows.rows as any[]).map(r => ({
+      country: r.country || 'Nepoznato',
+      countryCode: r.countryCode || '',
+      views: Number(r.views),
+    }));
   }
 }
 

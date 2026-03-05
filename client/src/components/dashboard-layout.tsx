@@ -49,6 +49,7 @@ import {
   Sparkles,
   Tags,
   KeyRound,
+  BarChart2,
 } from "lucide-react";
 import { UserBadgeDisplay } from "@/components/user-badge";
 
@@ -98,6 +99,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Izazovi", url: "/admin/izazovi", icon: Award },
     { title: "Blog", url: "/admin/blog", icon: PenTool },
     { title: "Poruke", url: "/admin/poruke", icon: Mail },
+    { title: "Analitika", url: "/admin/analitika", icon: BarChart2 },
   ],
 };
 

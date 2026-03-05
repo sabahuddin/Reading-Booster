@@ -3881,5 +3881,77 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // ─── ANALYTICS ────────────────────────────────────────────────────────
+  // In-memory cache for IP geolocation (avoid rate limits)
+  const geoCache = new Map<string, { country: string; countryCode: string; city: string }>();
+
+  async function getGeoForIp(ip: string): Promise<{ country: string; countryCode: string; city: string } | null> {
+    if (!ip || ip === '::1' || ip === '127.0.0.1') return null;
+    if (geoCache.has(ip)) return geoCache.get(ip)!;
+    try {
+      const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,countryCode,city`, { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) return null;
+      const data = await res.json() as any;
+      if (data.status === 'success') {
+        const geo = { country: data.country || '', countryCode: data.countryCode || '', city: data.city || '' };
+        geoCache.set(ip, geo);
+        return geo;
+      }
+    } catch {}
+    return null;
+  }
+
+  // POST /api/analytics/pageview — public, log a page view
+  app.post("/api/analytics/pageview", async (req: Request, res: Response) => {
+    try {
+      const { path, referrer } = req.body;
+      if (!path || typeof path !== 'string') return res.status(400).json({ ok: false });
+
+      // Skip API calls and static asset tracking
+      if (path.startsWith('/api/') || path.startsWith('/uploads/') || path.includes('.')) {
+        return res.json({ ok: true });
+      }
+
+      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || '';
+      const { createHash } = await import('crypto');
+      const ipHash = ip ? createHash('sha256').update(ip + process.env.SESSION_SECRET).digest('hex').slice(0, 16) : undefined;
+      const userAgent = req.headers['user-agent'] || '';
+      const userId = (req.session as any)?.userId;
+
+      // Geolocation in background
+      const geo = await getGeoForIp(ip);
+
+      await storage.logPageView({
+        path,
+        ipHash,
+        country: geo?.country,
+        countryCode: geo?.countryCode,
+        city: geo?.city,
+        userAgent: userAgent.slice(0, 200),
+        referrer: referrer ? String(referrer).slice(0, 500) : undefined,
+        userId,
+      });
+
+      res.json({ ok: true });
+    } catch (error) {
+      res.json({ ok: true }); // Fail silently — analytics shouldn't break the site
+    }
+  });
+
+  // GET /api/admin/analytics — admin only
+  app.get("/api/admin/analytics", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const [summary, byDay, topPages, topCountries] = await Promise.all([
+        storage.getAnalyticsSummary(),
+        storage.getPageViewsByDay(30),
+        storage.getTopPages(15),
+        storage.getTopCountries(20),
+      ]);
+      res.json({ summary, byDay, topPages, topCountries });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   return httpServer;
 }

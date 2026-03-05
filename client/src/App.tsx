@@ -35,6 +35,7 @@ import AdminPartners from "@/pages/admin-partners";
 import AdminChallenges from "@/pages/admin-challenges";
 import AdminApprovals from "@/pages/admin-approvals";
 import AdminGenres from "@/pages/admin-genres";
+import AdminAnalytics from "@/pages/admin-analytics";
 import StudentDashboard from "@/pages/student-dashboard";
 import ReaderDashboard from "@/pages/reader-dashboard";
 import Library from "@/pages/library";
@@ -54,8 +55,10 @@ import { CookieBanner } from "@/components/cookie-banner";
 import SchoolDashboard from "@/pages/school-dashboard";
 import SchoolAdminDashboard from "@/pages/school-admin-dashboard";
 import BookListingsPage from "@/pages/book-listings";
+import { usePageTracking } from "@/hooks/use-page-tracking";
 
 function Router() {
+  usePageTracking();
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
@@ -102,6 +105,7 @@ function Router() {
       <Route path="/admin/partneri" component={AdminPartners} />
       <Route path="/admin/izazovi" component={AdminChallenges} />
       <Route path="/admin/odobrenja" component={AdminApprovals} />
+      <Route path="/admin/analitika" component={AdminAnalytics} />
       <Route component={NotFound} />
     </Switch>
   );

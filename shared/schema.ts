@@ -402,3 +402,18 @@ export const insertDuelSchema = createInsertSchema(duels).omit({
 });
 export type InsertDuel = z.infer<typeof insertDuelSchema>;
 export type Duel = typeof duels.$inferSelect;
+
+export const pageViews = pgTable("page_views", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  path: text("path").notNull(),
+  country: text("country"),
+  countryCode: text("country_code"),
+  city: text("city"),
+  ipHash: text("ip_hash"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+  userId: varchar("user_id"),
+  visitedAt: timestamp("visited_at").notNull().defaultNow(),
+});
+
+export type PageView = typeof pageViews.$inferSelect;

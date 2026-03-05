@@ -143,6 +143,14 @@ Ne definirano.
 - Razred unosi učiteljica ili roditelj
 - Lozinka: samo učiteljica ili roditelj mogu mijenjati (učenici dobivaju kartice)
 
+### Analitika posjeta (`/admin/analitika`)
+- Automatsko praćenje posjeta na svakom route changeu (hook `usePageTracking`)
+- IP geolokacija via ip-api.com (besplatno, bez API ključa, cachiran)
+- `page_views` tabela: path, country, countryCode, city, ipHash (SHA256), userAgent, referrer, userId, visitedAt
+- IP se hashira (SHA256 + SESSION_SECRET) — nikad ne čuvamo sirovi IP
+- Admin dashboard: summary kartice, area chart (30 dana), top countries s flagovima, top stranice
+- Ruta: `GET /api/admin/analytics`, endpoint za log: `POST /api/analytics/pageview`
+
 ### Partneri
 - Admin CRUD za partnere s upload loga
 - Prikazano na homepage-u
