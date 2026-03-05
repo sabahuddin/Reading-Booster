@@ -3941,13 +3941,18 @@ Odgovori ISKLJUČIVO u JSON formatu:
   // GET /api/admin/analytics — admin only
   app.get("/api/admin/analytics", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const [summary, byDay, topPages, topCountries] = await Promise.all([
+      const [summary, byDay, topPages, topCountries, topCities, byHour, devices, referrers, quizByDay] = await Promise.all([
         storage.getAnalyticsSummary(),
         storage.getPageViewsByDay(30),
         storage.getTopPages(15),
         storage.getTopCountries(20),
+        storage.getTopCities(15),
+        storage.getViewsByHour(),
+        storage.getDeviceBreakdown(),
+        storage.getTopReferrers(10),
+        storage.getQuizCompletionsByDay(30),
       ]);
-      res.json({ summary, byDay, topPages, topCountries });
+      res.json({ summary, byDay, topPages, topCountries, topCities, byHour, devices, referrers, quizByDay });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

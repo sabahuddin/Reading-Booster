@@ -196,6 +196,11 @@ export interface IStorage {
   getPageViewsByDay(days: number): Promise<{ date: string; views: number; unique: number }[]>;
   getTopPages(limit: number): Promise<{ path: string; views: number }[]>;
   getTopCountries(limit: number): Promise<{ country: string; countryCode: string; views: number }[]>;
+  getTopCities(limit: number): Promise<{ city: string; country: string; countryCode: string; views: number }[]>;
+  getViewsByHour(): Promise<{ hour: number; views: number }[]>;
+  getDeviceBreakdown(): Promise<{ device: string; views: number }[]>;
+  getTopReferrers(limit: number): Promise<{ referrer: string; views: number }[]>;
+  getQuizCompletionsByDay(days: number): Promise<{ date: string; completions: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -993,6 +998,100 @@ export class DatabaseStorage implements IStorage {
       country: r.country || 'Nepoznato',
       countryCode: r.countryCode || '',
       views: Number(r.views),
+    }));
+  }
+
+  async getTopCities(limit: number): Promise<{ city: string; country: string; countryCode: string; views: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT city, country, country_code as "countryCode", COUNT(*) as views
+      FROM page_views
+      WHERE city IS NOT NULL AND city != ''
+      GROUP BY city, country, country_code
+      ORDER BY views DESC
+      LIMIT ${limit}
+    `);
+    return (rows.rows as any[]).map(r => ({
+      city: r.city || 'Nepoznato',
+      country: r.country || '',
+      countryCode: r.countryCode || '',
+      views: Number(r.views),
+    }));
+  }
+
+  async getViewsByHour(): Promise<{ hour: number; views: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT EXTRACT(HOUR FROM visited_at) as hour, COUNT(*) as views
+      FROM page_views
+      GROUP BY EXTRACT(HOUR FROM visited_at)
+      ORDER BY hour ASC
+    `);
+    const result: { hour: number; views: number }[] = [];
+    const map = new Map((rows.rows as any[]).map(r => [Number(r.hour), Number(r.views)]));
+    for (let h = 0; h < 24; h++) {
+      result.push({ hour: h, views: map.get(h) || 0 });
+    }
+    return result;
+  }
+
+  async getDeviceBreakdown(): Promise<{ device: string; views: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT user_agent, COUNT(*) as views
+      FROM page_views
+      WHERE user_agent IS NOT NULL AND user_agent != ''
+      GROUP BY user_agent
+    `);
+    const counts: Record<string, number> = { Mobilni: 0, Desktop: 0, Tablet: 0, Nepoznato: 0 };
+    for (const r of rows.rows as any[]) {
+      const ua = (r.user_agent || '').toLowerCase();
+      const n = Number(r.views);
+      if (ua.includes('tablet') || ua.includes('ipad')) {
+        counts['Tablet'] += n;
+      } else if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('samsung')) {
+        counts['Mobilni'] += n;
+      } else if (ua.includes('mozilla') || ua.includes('chrome') || ua.includes('safari') || ua.includes('firefox') || ua.includes('edge')) {
+        counts['Desktop'] += n;
+      } else {
+        counts['Nepoznato'] += n;
+      }
+    }
+    return Object.entries(counts)
+      .filter(([, v]) => v > 0)
+      .map(([device, views]) => ({ device, views }))
+      .sort((a, b) => b.views - a.views);
+  }
+
+  async getTopReferrers(limit: number): Promise<{ referrer: string; views: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT referrer, COUNT(*) as views
+      FROM page_views
+      WHERE referrer IS NOT NULL AND referrer != ''
+      GROUP BY referrer
+      ORDER BY views DESC
+      LIMIT ${limit}
+    `);
+    return (rows.rows as any[]).map(r => {
+      let ref = r.referrer || '';
+      try {
+        const u = new URL(ref);
+        ref = u.hostname.replace(/^www\./, '');
+      } catch {}
+      return { referrer: ref, views: Number(r.views) };
+    });
+  }
+
+  async getQuizCompletionsByDay(days: number): Promise<{ date: string; completions: number }[]> {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const rows = await db.execute(sql`
+      SELECT DATE(completed_at) as date, COUNT(*) as completions
+      FROM quiz_results
+      WHERE completed_at >= ${since.toISOString()}
+      GROUP BY DATE(completed_at)
+      ORDER BY date ASC
+    `);
+    return (rows.rows as any[]).map(r => ({
+      date: r.date,
+      completions: Number(r.completions),
     }));
   }
 }

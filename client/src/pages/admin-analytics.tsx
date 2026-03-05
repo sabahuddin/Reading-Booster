@@ -3,9 +3,12 @@ import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, Legend
+  BarChart, Bar, Cell, PieChart, Pie, Legend,
 } from "recharts";
-import { Eye, Users, Globe, TrendingUp, Calendar, MousePointerClick } from "lucide-react";
+import {
+  Eye, Users, Globe, TrendingUp, Calendar, MousePointerClick,
+  Smartphone, Monitor, MapPin, ExternalLink, BookOpen,
+} from "lucide-react";
 
 function countryFlag(code: string) {
   if (!code || code.length !== 2) return "🌍";
@@ -39,15 +42,32 @@ function formatPath(path: string) {
   return path;
 }
 
-const CHART_COLORS = ["#FF861C", "#f97316", "#fb923c", "#fdba74", "#fed7aa"];
+function hourLabel(h: number) {
+  return `${String(h).padStart(2, "0")}:00`;
+}
+
+const CHART_COLORS = ["#FF861C", "#f97316", "#fb923c", "#fdba74", "#fed7aa", "#4f46e5", "#7c3aed", "#db2777", "#059669", "#0891b2"];
+const DEVICE_COLORS: Record<string, string> = {
+  "Desktop": "#4f46e5",
+  "Mobilni": "#FF861C",
+  "Tablet": "#059669",
+  "Nepoznato": "#94a3b8",
+};
+
+type AnalyticsData = {
+  summary: { today: number; week: number; month: number; total: number; uniqueToday: number; uniqueMonth: number };
+  byDay: { date: string; views: number; unique: number }[];
+  topPages: { path: string; views: number }[];
+  topCountries: { country: string; countryCode: string; views: number }[];
+  topCities: { city: string; country: string; countryCode: string; views: number }[];
+  byHour: { hour: number; views: number }[];
+  devices: { device: string; views: number }[];
+  referrers: { referrer: string; views: number }[];
+  quizByDay: { date: string; completions: number }[];
+};
 
 export default function AdminAnalytics() {
-  const { data, isLoading } = useQuery<{
-    summary: { today: number; week: number; month: number; total: number; uniqueToday: number; uniqueMonth: number };
-    byDay: { date: string; views: number; unique: number }[];
-    topPages: { path: string; views: number }[];
-    topCountries: { country: string; countryCode: string; views: number }[];
-  }>({
+  const { data, isLoading } = useQuery<AnalyticsData>({
     queryKey: ["/api/admin/analytics"],
   });
 
@@ -55,21 +75,43 @@ export default function AdminAnalytics() {
   const byDay = data?.byDay || [];
   const topPages = data?.topPages || [];
   const topCountries = data?.topCountries || [];
+  const topCities = data?.topCities || [];
+  const byHour = data?.byHour || [];
+  const devices = data?.devices || [];
+  const referrers = data?.referrers || [];
+  const quizByDay = data?.quizByDay || [];
 
-  const chartData = byDay.map(d => ({
+  const dailyChartData = byDay.map(d => ({
     date: new Date(d.date).toLocaleDateString("bs-BA", { day: "2-digit", month: "2-digit" }),
     "Pregledi": d.views,
     "Jedinstveni": d.unique,
   }));
 
+  const combinedByDay = byDay.map(d => {
+    const qd = quizByDay.find(q => String(q.date).startsWith(String(d.date).substring(0, 10)));
+    return {
+      date: new Date(d.date).toLocaleDateString("bs-BA", { day: "2-digit", month: "2-digit" }),
+      "Pregledi": d.views,
+      "Kvizovi": qd?.completions || 0,
+    };
+  });
+
+  const hourChartData = byHour.map(h => ({
+    sat: hourLabel(h.hour),
+    "Posjete": h.views,
+  }));
+
   const totalViews = topCountries.reduce((s, c) => s + c.views, 0);
+  const totalDeviceViews = devices.reduce((s, d) => s + d.views, 0);
+
+  const pieData = devices.map(d => ({ name: d.device, value: d.views }));
 
   return (
     <DashboardLayout role="admin">
       <div className="p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Statistika posjeta</h1>
-          <p className="text-muted-foreground">Pregled posjetilaca i njihove lokacije</p>
+          <p className="text-muted-foreground">Pregled posjetilaca, lokacija i ponašanja</p>
         </div>
 
         {/* Summary Cards */}
@@ -97,27 +139,27 @@ export default function AdminAnalytics() {
           ))}
         </div>
 
-        {/* Daily Chart */}
+        {/* Daily Chart: Pregledi + Kvizovi */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Posjete — zadnjih 30 dana</CardTitle>
+            <CardTitle className="text-base">Pregledi i kvizovi — zadnjih 30 dana</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="h-64 flex items-center justify-center text-muted-foreground">Učitavanje...</div>
-            ) : chartData.length === 0 ? (
+            ) : combinedByDay.length === 0 ? (
               <div className="h-64 flex items-center justify-center text-muted-foreground">Nema podataka</div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                <AreaChart data={combinedByDay} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#FF861C" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#FF861C" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="colorUnique" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                    <linearGradient id="colorQuiz" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
@@ -126,8 +168,38 @@ export default function AdminAnalytics() {
                   <Tooltip />
                   <Legend />
                   <Area type="monotone" dataKey="Pregledi" stroke="#FF861C" fill="url(#colorViews)" strokeWidth={2} dot={false} />
-                  <Area type="monotone" dataKey="Jedinstveni" stroke="#4f46e5" fill="url(#colorUnique)" strokeWidth={2} dot={false} />
+                  <Area type="monotone" dataKey="Kvizovi" stroke="#059669" fill="url(#colorQuiz)" strokeWidth={2} dot={false} />
                 </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sat aktivnosti */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Aktivnost po satu (svi dani)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-48 flex items-center justify-center text-muted-foreground">Učitavanje...</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={hourChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                  <XAxis dataKey="sat" tick={{ fontSize: 10 }} tickLine={false} interval={1} />
+                  <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="Posjete" radius={[3, 3, 0, 0]}>
+                    {hourChartData.map((entry, i) => {
+                      const v = entry["Posjete"];
+                      const max = Math.max(...hourChartData.map(h => h["Posjete"]), 1);
+                      const intensity = v / max;
+                      const alpha = Math.round(40 + intensity * 215);
+                      return <Cell key={i} fill={`rgba(255, 134, 28, ${(alpha / 255).toFixed(2)})`} />;
+                    })}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
@@ -159,10 +231,44 @@ export default function AdminAnalytics() {
                             <span className="text-muted-foreground">{c.views.toLocaleString()} ({pct}%)</span>
                           </div>
                           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-orange-400"
-                              style={{ width: `${pct}%` }}
-                            />
+                            <div className="h-full rounded-full bg-orange-400" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Cities */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-orange-400" /> Top gradovi
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-40 flex items-center justify-center text-muted-foreground">Učitavanje...</div>
+              ) : topCities.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">Nema podataka o gradovima</div>
+              ) : (
+                <div className="space-y-2">
+                  {topCities.slice(0, 10).map((c, i) => {
+                    const maxCity = topCities[0]?.views || 1;
+                    const pct = Math.round((c.views / maxCity) * 100);
+                    return (
+                      <div key={c.city + i} className="flex items-center gap-3" data-testid={`city-${i}`}>
+                        <span className="text-xl w-7 text-center">{countryFlag(c.countryCode)}</span>
+                        <div className="flex-1">
+                          <div className="flex justify-between text-sm mb-0.5">
+                            <span className="font-medium">{c.city}</span>
+                            <span className="text-muted-foreground">{c.views.toLocaleString()}</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-orange-300" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       </div>
@@ -213,9 +319,134 @@ export default function AdminAnalytics() {
               )}
             </CardContent>
           </Card>
+
+          {/* Referreri */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ExternalLink className="w-4 h-4 text-orange-400" /> Odakle dolaze posjetioci
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-40 flex items-center justify-center text-muted-foreground">Učitavanje...</div>
+              ) : referrers.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
+                  <div className="text-center space-y-1">
+                    <p>Nema podataka o referrerima</p>
+                    <p className="text-xs">(Većina posjetilaca dolazi direktno ili putem bookmarkova)</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {referrers.slice(0, 10).map((r, i) => {
+                    const maxR = referrers[0]?.views || 1;
+                    const pct = Math.round((r.views / maxR) * 100);
+                    return (
+                      <div key={r.referrer + i} className="flex items-center gap-3" data-testid={`referrer-${i}`}>
+                        <span className="text-xs text-muted-foreground w-5 text-right font-mono">{i + 1}.</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between text-sm mb-0.5">
+                            <span className="font-medium truncate">{r.referrer}</span>
+                            <span className="text-muted-foreground shrink-0 ml-2">{r.views.toLocaleString()}</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${pct}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Countries Bar Chart */}
+        {/* Uređaji + Kvizovi po danu */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Uređaji — Pie chart */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-orange-400" />
+                <Smartphone className="w-4 h-4 text-orange-400" />
+                Tip uređaja
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-48 flex items-center justify-center text-muted-foreground">Učitavanje...</div>
+              ) : devices.length === 0 ? (
+                <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Nema podataka</div>
+              ) : (
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value">
+                        {pieData.map((entry) => (
+                          <Cell key={entry.name} fill={DEVICE_COLORS[entry.name] || "#94a3b8"} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(val: number) => [`${val.toLocaleString()}`, "Posjeta"]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {devices.map((d) => {
+                      const pct = totalDeviceViews > 0 ? Math.round((d.views / totalDeviceViews) * 100) : 0;
+                      return (
+                        <div key={d.device} className="flex items-center justify-between text-sm" data-testid={`device-${d.device.toLowerCase()}`}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DEVICE_COLORS[d.device] || "#94a3b8" }} />
+                            <span>{d.device}</span>
+                          </div>
+                          <span className="text-muted-foreground font-mono">{pct}% ({d.views.toLocaleString()})</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Kvizovi po danu */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-orange-400" /> Kvizovi riješeni — zadnjih 30 dana
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-48 flex items-center justify-center text-muted-foreground">Učitavanje...</div>
+              ) : quizByDay.length === 0 ? (
+                <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Nema podataka o kvizovima</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart
+                    data={quizByDay.map(d => ({
+                      date: new Date(d.date).toLocaleDateString("bs-BA", { day: "2-digit", month: "2-digit" }),
+                      "Kvizovi": d.completions,
+                    }))}
+                    margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <Tooltip />
+                    <Bar dataKey="Kvizovi" fill="#059669" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Distribucija po zemljama — Bar chart */}
         {topCountries.length > 0 && (
           <Card>
             <CardHeader className="pb-2">

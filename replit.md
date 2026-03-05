@@ -148,7 +148,16 @@ Ne definirano.
 - IP geolokacija via ip-api.com (besplatno, bez API ključa, cachiran)
 - `page_views` tabela: path, country, countryCode, city, ipHash (SHA256), userAgent, referrer, userId, visitedAt
 - IP se hashira (SHA256 + SESSION_SECRET) — nikad ne čuvamo sirovi IP
-- Admin dashboard: summary kartice, area chart (30 dana), top countries s flagovima, top stranice
+- Admin dashboard prikazuje:
+  - Summary kartice (danas, sedmica, mjesec, ukupno, jedinstveni, zemlje, stranice)
+  - Area chart pregledi + kvizovi riješeni (30 dana)
+  - Bar chart aktivnosti po satu dana (0–23h)
+  - Top 10 zemalja s flagovima i bar graphom
+  - Top 15 gradova s flagovima
+  - Top 10 najpopularnijih stranica
+  - Top 10 referrera (odakle dolaze posjetioci)
+  - Pie chart tipa uređaja (Desktop, Mobilni, Tablet)
+  - Bar chart kvizova riješenih po danu (30 dana)
 - Ruta: `GET /api/admin/analytics`, endpoint za log: `POST /api/analytics/pageview`
 
 ### Partneri
