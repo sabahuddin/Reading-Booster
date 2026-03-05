@@ -726,7 +726,7 @@ export default function LandingPage() {
             <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
               <BookOpen className="h-14 w-14 text-primary mx-auto mb-4" />
               <h3 className="text-3xl font-bold mb-3">Bogata biblioteka</h3>
-              <p className="text-lg text-muted-foreground">Nekoliko stotina naslova prilagođenih svim uzrastima i interesovanjima. (A tek smo krenuli!).</p>
+              <p className="text-lg text-muted-foreground">Gotovo dvije hiljade naslova prilagođenih svim uzrastima i interesovanjima. (A tek smo krenuli!).</p>
             </div>
             <div className="text-center p-8 rounded-2xl bg-primary/5 border border-primary/10">
               <Users className="h-14 w-14 text-primary mx-auto mb-4" />
