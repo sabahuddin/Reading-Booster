@@ -3938,10 +3938,24 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // Analytics cache — 5 minute TTL, reduces DB load significantly
+  let analyticsCache: { data: any; expiresAt: number } | null = null;
+  const ANALYTICS_CACHE_TTL = 5 * 60 * 1000;
+
   // GET /api/admin/analytics — admin only
   app.get("/api/admin/analytics", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const [summary, byDay, topPages, topCountries, topCities, byHour, devices, referrers, quizByDay] = await Promise.all([
+      const now = Date.now();
+      if (analyticsCache && analyticsCache.expiresAt > now) {
+        res.setHeader("X-Analytics-Cache", "HIT");
+        return res.json(analyticsCache.data);
+      }
+
+      const [
+        summary, byDay, topPages, topCountries, topCities,
+        byHour, devices, referrers, quizByDay,
+        platformStats, usersByRole, topBooks, quizPassRate, topUsers, berzaStats
+      ] = await Promise.all([
         storage.getAnalyticsSummary(),
         storage.getPageViewsByDay(30),
         storage.getTopPages(15),
@@ -3951,8 +3965,23 @@ Odgovori ISKLJUČIVO u JSON formatu:
         storage.getDeviceBreakdown(),
         storage.getTopReferrers(10),
         storage.getQuizCompletionsByDay(30),
+        storage.getPlatformStats(),
+        storage.getUsersByRole(),
+        storage.getTopBooks(10),
+        storage.getQuizPassRate(),
+        storage.getTopUsers(10),
+        storage.getBerzaStats(),
       ]);
-      res.json({ summary, byDay, topPages, topCountries, topCities, byHour, devices, referrers, quizByDay });
+
+      const data = {
+        summary, byDay, topPages, topCountries, topCities,
+        byHour, devices, referrers, quizByDay,
+        platformStats, usersByRole, topBooks, quizPassRate, topUsers, berzaStats,
+      };
+
+      analyticsCache = { data, expiresAt: now + ANALYTICS_CACHE_TTL };
+      res.setHeader("X-Analytics-Cache", "MISS");
+      res.json(data);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

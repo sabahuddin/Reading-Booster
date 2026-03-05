@@ -70,6 +70,22 @@ async function runManualMigrations() {
         visited_at TIMESTAMP NOT NULL DEFAULT NOW()
       )`
     },
+    {
+      name: "index_page_views_visited_at",
+      sql: `CREATE INDEX IF NOT EXISTS idx_page_views_visited_at ON page_views(visited_at)`
+    },
+    {
+      name: "index_page_views_ip_hash",
+      sql: `CREATE INDEX IF NOT EXISTS idx_page_views_ip_hash ON page_views(ip_hash)`
+    },
+    {
+      name: "index_page_views_country",
+      sql: `CREATE INDEX IF NOT EXISTS idx_page_views_country ON page_views(country)`
+    },
+    {
+      name: "index_quiz_results_completed_at",
+      sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_completed_at ON quiz_results(completed_at)`
+    },
   ];
 
   for (const m of migrations) {

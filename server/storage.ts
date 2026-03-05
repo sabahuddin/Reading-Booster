@@ -201,6 +201,12 @@ export interface IStorage {
   getDeviceBreakdown(): Promise<{ device: string; views: number }[]>;
   getTopReferrers(limit: number): Promise<{ referrer: string; views: number }[]>;
   getQuizCompletionsByDay(days: number): Promise<{ date: string; completions: number }[]>;
+  getPlatformStats(): Promise<{ totalUsers: number; totalBooks: number; totalQuizzes: number; totalQuestions: number; totalResults: number; totalPoints: number }>;
+  getUsersByRole(): Promise<{ role: string; count: number }[]>;
+  getTopBooks(limit: number): Promise<{ title: string; author: string; ageGroup: string; completions: number }[]>;
+  getQuizPassRate(): Promise<{ passed: number; failed: number; avgScore: number; avgCorrect: number }>;
+  getTopUsers(limit: number): Promise<{ username: string; fullName: string; points: number; role: string; ageGroup: string }[]>;
+  getBerzaStats(): Promise<{ total: number; active: number; prodajem: number; poklanjam: number; razmjenjujem: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1093,6 +1099,115 @@ export class DatabaseStorage implements IStorage {
       date: r.date,
       completions: Number(r.completions),
     }));
+  }
+
+  async getPlatformStats(): Promise<{ totalUsers: number; totalBooks: number; totalQuizzes: number; totalQuestions: number; totalResults: number; totalPoints: number }> {
+    const [users, books, quizzes, questions, results, pts] = await Promise.all([
+      db.execute(sql`SELECT COUNT(*) as c FROM users`),
+      db.execute(sql`SELECT COUNT(*) as c FROM books`),
+      db.execute(sql`SELECT COUNT(*) as c FROM quizzes`),
+      db.execute(sql`SELECT COUNT(*) as c FROM questions`),
+      db.execute(sql`SELECT COUNT(*) as c FROM quiz_results`),
+      db.execute(sql`SELECT COALESCE(SUM(points),0) as c FROM users`),
+    ]);
+    return {
+      totalUsers: Number((users.rows[0] as any).c),
+      totalBooks: Number((books.rows[0] as any).c),
+      totalQuizzes: Number((quizzes.rows[0] as any).c),
+      totalQuestions: Number((questions.rows[0] as any).c),
+      totalResults: Number((results.rows[0] as any).c),
+      totalPoints: Number((pts.rows[0] as any).c),
+    };
+  }
+
+  async getUsersByRole(): Promise<{ role: string; count: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT role, COUNT(*) as count
+      FROM users
+      GROUP BY role
+      ORDER BY count DESC
+    `);
+    const roleLabels: Record<string, string> = {
+      admin: "Admin", teacher: "Učitelj", parent: "Roditelj",
+      student: "Učenik", reader: "Čitalac", school: "Škola", school_admin: "Školski admin",
+    };
+    return (rows.rows as any[]).map(r => ({
+      role: roleLabels[r.role] || r.role,
+      count: Number(r.count),
+    }));
+  }
+
+  async getTopBooks(limit: number): Promise<{ title: string; author: string; ageGroup: string; completions: number }[]> {
+    const rows = await db.execute(sql`
+      SELECT b.title, b.author, b.age_group as "ageGroup", COUNT(qr.id) as completions
+      FROM books b
+      JOIN quizzes q ON q.book_id = b.id
+      JOIN quiz_results qr ON qr.quiz_id = q.id
+      GROUP BY b.id, b.title, b.author, b.age_group
+      ORDER BY completions DESC
+      LIMIT ${limit}
+    `);
+    return (rows.rows as any[]).map(r => ({
+      title: r.title,
+      author: r.author,
+      ageGroup: r.ageGroup,
+      completions: Number(r.completions),
+    }));
+  }
+
+  async getQuizPassRate(): Promise<{ passed: number; failed: number; avgScore: number; avgCorrect: number }> {
+    const rows = await db.execute(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE score > 0) as passed,
+        COUNT(*) FILTER (WHERE score = 0) as failed,
+        COALESCE(AVG(score), 0) as avg_score,
+        COALESCE(AVG(correct_answers::float / NULLIF(total_questions, 0) * 100), 0) as avg_correct_pct
+      FROM quiz_results
+    `);
+    const r = rows.rows[0] as any;
+    return {
+      passed: Number(r.passed),
+      failed: Number(r.failed),
+      avgScore: Math.round(Number(r.avg_score) * 10) / 10,
+      avgCorrect: Math.round(Number(r.avg_correct_pct) * 10) / 10,
+    };
+  }
+
+  async getTopUsers(limit: number): Promise<{ username: string; fullName: string; points: number; role: string; ageGroup: string }[]> {
+    const rows = await db.execute(sql`
+      SELECT username, full_name as "fullName", points, role, age_group as "ageGroup"
+      FROM users
+      WHERE points > 0
+      ORDER BY points DESC
+      LIMIT ${limit}
+    `);
+    return (rows.rows as any[]).map(r => ({
+      username: r.username,
+      fullName: r.fullName,
+      points: Number(r.points),
+      role: r.role,
+      ageGroup: r.ageGroup,
+    }));
+  }
+
+  async getBerzaStats(): Promise<{ total: number; active: number; prodajem: number; poklanjam: number; razmjenjujem: number }> {
+    const rows = await db.execute(sql`
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE active = true) as active,
+        COUNT(*) FILTER (WHERE listing_type = 'prodajem') as prodajem,
+        COUNT(*) FILTER (WHERE listing_type = 'poklanjam') as poklanjam,
+        COUNT(*) FILTER (WHERE listing_type = 'razmjenjujem') as razmjenjujem
+      FROM book_listings
+    `);
+    const r = rows.rows[0] as any;
+    return {
+      total: Number(r.total),
+      active: Number(r.active),
+      prodajem: Number(r.prodajem),
+      poklanjam: Number(r.poklanjam),
+      razmjenjujem: Number(r.razmjenjujem),
+    };
   }
 }
 
