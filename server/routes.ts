@@ -772,9 +772,10 @@ Odgovori ISKLJUČIVO u JSON formatu:
       }
 
       // 2. Delete in order: results → questions → quizzes
-      await db.execute(sql`DELETE FROM quiz_results WHERE quiz_id::text = ANY(${ids})`);
-      await db.execute(sql`DELETE FROM questions WHERE quiz_id::text = ANY(${ids})`);
-      await db.execute(sql`DELETE FROM quizzes WHERE id::text = ANY(${ids})`);
+      const idList = sql.join(ids.map(id => sql`${id}`), sql`, `);
+      await db.execute(sql`DELETE FROM quiz_results WHERE quiz_id::text IN (${idList})`);
+      await db.execute(sql`DELETE FROM questions WHERE quiz_id::text IN (${idList})`);
+      await db.execute(sql`DELETE FROM quizzes WHERE id::text IN (${idList})`);
 
       // 3. Also clean up orphans with 0 questions (quiz was there with questions already removed separately)
       await db.execute(sql`
@@ -1078,6 +1079,29 @@ Odgovori ISKLJUČIVO u JSON formatu:
         } catch {}
       }
       return res.json({ message: `Obrisano ${deleted} knjiga`, deleted });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/quizzes/bulk-delete", requireAdmin, async (req, res) => {
+    try {
+      const { quizIds } = req.body;
+      if (!Array.isArray(quizIds) || quizIds.length === 0) {
+        return res.status(400).json({ message: "quizIds niz je obavezan" });
+      }
+      let deleted = 0;
+      for (const quizId of quizIds) {
+        try {
+          const id = String(quizId);
+          // Delete dependent records first, then the quiz
+          await storage.deleteQuizResultsByQuiz(id);
+          await storage.deleteQuestionsByQuizId(id);
+          await storage.deleteQuiz(id);
+          deleted++;
+        } catch {}
+      }
+      return res.json({ message: `Obrisano ${deleted} kvizova`, deleted });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

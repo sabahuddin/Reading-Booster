@@ -92,11 +92,13 @@ export interface IStorage {
   getQuestionsByQuizId(quizId: string): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
   deleteQuestion(id: string): Promise<void>;
+  deleteQuestionsByQuizId(quizId: string): Promise<void>;
   updateQuestion(id: string, data: Partial<InsertQuestion>): Promise<Question | undefined>;
 
   getQuizResultsByUserId(userId: string): Promise<QuizResult[]>;
   getQuizResultsCountByUserId(userId: string): Promise<number>;
   deleteQuizResultsByUserId(userId: string): Promise<void>;
+  deleteQuizResultsByQuiz(quizId: string): Promise<void>;
   deleteQuizResultByUserAndQuiz(userId: string, quizId: string): Promise<void>;
   createQuizResult(result: InsertQuizResult): Promise<QuizResult>;
   getQuizResultByUserAndQuiz(userId: string, quizId: string): Promise<QuizResult | undefined>;
@@ -340,6 +342,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(questions).where(eq(questions.id, id));
   }
 
+  async deleteQuestionsByQuizId(quizId: string): Promise<void> {
+    await db.delete(questions).where(eq(questions.quizId, quizId));
+  }
+
   async updateQuestion(id: string, data: Partial<InsertQuestion>): Promise<Question | undefined> {
     const [updated] = await db.update(questions).set(data).where(eq(questions.id, id)).returning();
     return updated;
@@ -351,6 +357,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuizResultsByUserId(userId: string): Promise<void> {
     await db.delete(quizResults).where(eq(quizResults.userId, userId));
+  }
+
+  async deleteQuizResultsByQuiz(quizId: string): Promise<void> {
+    await db.delete(quizResults).where(eq(quizResults.quizId, quizId));
   }
 
   async getQuizResultsCountByUserId(userId: string): Promise<number> {

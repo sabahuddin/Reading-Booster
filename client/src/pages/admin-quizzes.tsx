@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -320,6 +321,8 @@ export default function AdminQuizzes() {
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
   const [cleanupPreview, setCleanupPreview] = useState<{ id: string; title: string; age_group: string; question_count: number; minimum_required: number }[]>([]);
   const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [selectedQuizIds, setSelectedQuizIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<QuizWithCount[]>({
     queryKey: ["/api/quizzes"],
@@ -560,6 +563,45 @@ export default function AdminQuizzes() {
     },
   });
 
+  function toggleQuizSelection(quizId: string) {
+    setSelectedQuizIds(prev => {
+      const next = new Set(prev);
+      if (next.has(quizId)) next.delete(quizId); else next.add(quizId);
+      return next;
+    });
+  }
+
+  function toggleSelectAllOnPage() {
+    const pageIds = paginatedQuizzes.map(q => q.id);
+    const allSelected = pageIds.every(id => selectedQuizIds.has(id));
+    setSelectedQuizIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        pageIds.forEach(id => next.delete(id));
+      } else {
+        pageIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await apiRequest("POST", "/api/admin/quizzes/bulk-delete", { quizIds: ids });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "Kvizovi obrisani", description: data.message });
+      setSelectedQuizIds(new Set());
+      setBulkDeleteConfirm(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Greška", description: error.message, variant: "destructive" });
+    },
+  });
+
   async function openCleanupDialog() {
     setCleanupLoading(true);
     try {
@@ -661,6 +703,24 @@ export default function AdminQuizzes() {
           />
         </div>
 
+        {selectedQuizIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <span className="text-sm font-medium">{selectedQuizIds.size} {selectedQuizIds.size === 1 ? "kviz označen" : "kviza označeno"}</span>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedQuizIds(new Set())} data-testid="button-clear-quiz-selection">
+              Poništi
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => setBulkDeleteConfirm(true)}
+              data-testid="button-bulk-delete-quizzes"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Obriši označene
+            </Button>
+          </div>
+        )}
+
         <Card>
           <CardContent className="p-4">
             {quizzesLoading ? (
@@ -670,6 +730,11 @@ export default function AdminQuizzes() {
             ) : paginatedQuizzes.length > 0 ? (
               <div className="space-y-0">
                 <div className="flex items-center gap-3 px-4 py-2 border-b text-sm text-muted-foreground">
+                  <Checkbox
+                    checked={paginatedQuizzes.length > 0 && paginatedQuizzes.every(q => selectedQuizIds.has(q.id))}
+                    onCheckedChange={toggleSelectAllOnPage}
+                    data-testid="checkbox-select-all-quizzes"
+                  />
                   <div className="flex-1">
                     <button
                       type="button"
@@ -697,8 +762,15 @@ export default function AdminQuizzes() {
                 </div>
                 <Accordion type="multiple">
                   {paginatedQuizzes.map((quiz) => (
-                    <AccordionItem key={quiz.id} value={quiz.id} className="relative">
+                    <AccordionItem key={quiz.id} value={quiz.id} className={`relative ${selectedQuizIds.has(quiz.id) ? "bg-destructive/5" : ""}`}>
                       <div className="flex items-center">
+                        <div className="pl-4 pr-2 flex items-center" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedQuizIds.has(quiz.id)}
+                            onCheckedChange={() => toggleQuizSelection(quiz.id)}
+                            data-testid={`checkbox-quiz-${quiz.id}`}
+                          />
+                        </div>
                         <AccordionTrigger className="gap-2 flex-1" data-testid={`accordion-quiz-${quiz.id}`}>
                           <div className="flex items-center gap-3 text-left flex-1">
                             <span className="font-medium flex-1">
@@ -1054,6 +1126,29 @@ export default function AdminQuizzes() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Bulk delete selected quizzes */}
+        <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => !open && setBulkDeleteConfirm(false)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Obriši {selectedQuizIds.size} {selectedQuizIds.size === 1 ? "kviz" : "kviza"}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ova radnja je nepovratna. Označeni kvizovi biće trajno obrisani zajedno sa svim pitanjima i rezultatima.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-bulk-delete-quizzes">Odustani</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => bulkDeleteMutation.mutate(Array.from(selectedQuizIds))}
+                disabled={bulkDeleteMutation.isPending}
+                className="bg-destructive hover:bg-destructive/90"
+                data-testid="button-confirm-bulk-delete-quizzes"
+              >
+                {bulkDeleteMutation.isPending ? "Brišem..." : `Obriši ${selectedQuizIds.size} kvizova`}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Cleanup under-minimum quizzes dialog */}
         <AlertDialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
