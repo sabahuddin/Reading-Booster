@@ -717,6 +717,80 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // GET preview — shows quizzes that would be deleted
+  app.get("/api/admin/cleanup-quizzes-preview", requireAdmin, async (_req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+      const rows = await db.execute(sql`
+        SELECT q.id, q.title, b.age_group, qc.cnt AS question_count,
+          CASE b.age_group
+            WHEN 'R1' THEN 15 WHEN 'R4' THEN 25
+            WHEN 'R7' THEN 30 WHEN 'O'  THEN 30 WHEN 'A'  THEN 30
+            ELSE 30
+          END AS minimum_required
+        FROM quizzes q
+        JOIN books b ON q.book_id = b.id
+        JOIN (SELECT quiz_id, COUNT(*) AS cnt FROM questions GROUP BY quiz_id) qc
+          ON qc.quiz_id = q.id::text
+        WHERE qc.cnt < CASE b.age_group
+            WHEN 'R1' THEN 15 WHEN 'R4' THEN 25
+            WHEN 'R7' THEN 30 WHEN 'O'  THEN 30 WHEN 'A'  THEN 30
+            ELSE 30
+          END
+        ORDER BY b.age_group, qc.cnt ASC
+      `);
+      return res.json({ quizzes: rows.rows, total: rows.rows.length });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST — actually delete under-minimum quizzes
+  app.post("/api/admin/cleanup-quizzes", requireAdmin, async (_req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+
+      // 1. Collect IDs of quizzes below standard
+      const preview = await db.execute(sql`
+        SELECT q.id::text AS id
+        FROM quizzes q
+        JOIN books b ON q.book_id = b.id
+        JOIN (SELECT quiz_id, COUNT(*) AS cnt FROM questions GROUP BY quiz_id) qc
+          ON qc.quiz_id = q.id::text
+        WHERE qc.cnt < CASE b.age_group
+            WHEN 'R1' THEN 15 WHEN 'R4' THEN 25
+            WHEN 'R7' THEN 30 WHEN 'O'  THEN 30 WHEN 'A'  THEN 30
+            ELSE 30
+          END
+      `);
+      const ids: string[] = preview.rows.map((r: any) => r.id);
+
+      if (ids.length === 0) {
+        return res.json({ deleted: 0, message: "Nema kvizova za brisanje." });
+      }
+
+      // 2. Delete in order: results → questions → quizzes
+      await db.execute(sql`DELETE FROM quiz_results WHERE quiz_id::text = ANY(${ids})`);
+      await db.execute(sql`DELETE FROM questions WHERE quiz_id::text = ANY(${ids})`);
+      await db.execute(sql`DELETE FROM quizzes WHERE id::text = ANY(${ids})`);
+
+      // 3. Also clean up orphans with 0 questions (quiz was there with questions already removed separately)
+      await db.execute(sql`
+        DELETE FROM quizzes WHERE id IN (
+          SELECT q.id FROM quizzes q
+          LEFT JOIN questions qu ON qu.quiz_id = q.id::text
+          GROUP BY q.id HAVING COUNT(qu.id) = 0
+        )
+      `);
+
+      return res.json({ deleted: ids.length, message: `Obrisano ${ids.length} kvizova ispod standarda.` });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/upload/book", requireAdmin, uploadBookFile.single("book"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "Datoteka nije poslana" });

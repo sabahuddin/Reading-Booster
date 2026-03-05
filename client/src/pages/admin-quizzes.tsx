@@ -33,7 +33,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Sparkles } from "lucide-react";
+import { Plus, Trash2, Pencil, FileQuestion, Download, Upload, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, Sparkles, ShieldAlert } from "lucide-react";
 
 const quizFormSchema = z.object({
   bookId: z.string().min(1, "Knjiga je obavezna"),
@@ -317,6 +317,9 @@ export default function AdminQuizzes() {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiBookId, setAiBookId] = useState("");
   const [aiBookSearch, setAiBookSearch] = useState("");
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
+  const [cleanupPreview, setCleanupPreview] = useState<{ id: string; title: string; age_group: string; question_count: number; minimum_required: number }[]>([]);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<QuizWithCount[]>({
     queryKey: ["/api/quizzes"],
@@ -540,6 +543,37 @@ export default function AdminQuizzes() {
     },
   });
 
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/cleanup-quizzes");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "Čišćenje završeno", description: data.message });
+      setCleanupDialogOpen(false);
+      setCleanupPreview([]);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Greška", description: error.message, variant: "destructive" });
+    },
+  });
+
+  async function openCleanupDialog() {
+    setCleanupLoading(true);
+    try {
+      const res = await fetch("/api/admin/cleanup-quizzes-preview", { credentials: "include" });
+      const data = await res.json();
+      setCleanupPreview(data.quizzes || []);
+      setCleanupDialogOpen(true);
+    } catch {
+      toast({ title: "Greška", description: "Nije moguće dohvatiti pregled.", variant: "destructive" });
+    } finally {
+      setCleanupLoading(false);
+    }
+  }
+
   const handleBulkGenerate = () => {
     const ids = booksWithoutQuiz.slice(0, 5).map(b => b.id); // Limit to 5 at a time to avoid timeout
     if (ids.length === 0) {
@@ -599,6 +633,15 @@ export default function AdminQuizzes() {
             >
               <Sparkles className="mr-2 h-4 w-4" />
               AI Generiraj kviz
+            </Button>
+            <Button
+              onClick={openCleanupDialog}
+              variant="destructive"
+              disabled={cleanupLoading}
+              data-testid="button-cleanup-quizzes"
+            >
+              <ShieldAlert className="mr-2 h-4 w-4" />
+              {cleanupLoading ? "Učitavam..." : "Počisti ispod standarda"}
             </Button>
             <Button onClick={() => { resetWizard(); setQuizDialogOpen(true); }} data-testid="button-add-quiz">
               <Plus className="mr-2 h-4 w-4" />
@@ -1011,6 +1054,72 @@ export default function AdminQuizzes() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Cleanup under-minimum quizzes dialog */}
+        <AlertDialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
+          <AlertDialogContent className="max-w-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                <ShieldAlert className="h-5 w-5" />
+                Brisanje kvizova ispod standarda
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>
+                    Standard minimuma pitanja u bazi: <strong>R1 → 15, R4 → 25, R7/O/A → 30</strong>.
+                    Sljedeći kvizovi imaju premalo pitanja i biće trajno obrisani zajedno sa svim pitanjima i rezultatima:
+                  </p>
+                  {cleanupPreview.length === 0 ? (
+                    <p className="text-green-600 font-medium">Svi kvizovi ispunjavaju standard. Nema ništa za brisati.</p>
+                  ) : (
+                    <div className="max-h-72 overflow-y-auto border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted sticky top-0">
+                          <tr>
+                            <th className="text-left px-3 py-2">Kviz</th>
+                            <th className="text-center px-3 py-2">Grupa</th>
+                            <th className="text-center px-3 py-2">Ima pitanja</th>
+                            <th className="text-center px-3 py-2">Treba min.</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {cleanupPreview.map((q) => (
+                            <tr key={q.id} className="hover:bg-muted/50">
+                              <td className="px-3 py-2">{q.title}</td>
+                              <td className="px-3 py-2 text-center">
+                                <span className="font-mono font-medium">{q.age_group}</span>
+                              </td>
+                              <td className="px-3 py-2 text-center text-red-600 font-medium">{q.question_count}</td>
+                              <td className="px-3 py-2 text-center text-muted-foreground">{q.minimum_required}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {cleanupPreview.length > 0 && (
+                    <p className="text-sm font-semibold text-destructive">
+                      Ukupno za brisanje: {cleanupPreview.length} kvizova. Ova akcija je nepovratna.
+                    </p>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-cleanup">Odustani</AlertDialogCancel>
+              {cleanupPreview.length > 0 && (
+                <AlertDialogAction
+                  onClick={() => cleanupMutation.mutate()}
+                  disabled={cleanupMutation.isPending}
+                  className="bg-destructive hover:bg-destructive/90"
+                  data-testid="button-confirm-cleanup"
+                >
+                  {cleanupMutation.isPending ? "Brišem..." : `Obriši ${cleanupPreview.length} kvizova`}
+                </AlertDialogAction>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
