@@ -55,6 +55,21 @@ async function runManualMigrations() {
       name: "add_duel_wins_to_users",
       sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS duel_wins INTEGER NOT NULL DEFAULT 0`
     },
+    {
+      name: "create_page_views",
+      sql: `CREATE TABLE IF NOT EXISTS page_views (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        path TEXT NOT NULL,
+        country TEXT,
+        country_code TEXT,
+        city TEXT,
+        ip_hash TEXT,
+        user_agent TEXT,
+        referrer TEXT,
+        user_id VARCHAR,
+        visited_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`
+    },
   ];
 
   for (const m of migrations) {
