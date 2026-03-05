@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BookOpen } from "lucide-react";
 
 const AGE_GROUP_STYLES: Record<string, { gradientFrom: string; gradientTo: string; accentBg: string }> = {
@@ -44,17 +45,7 @@ interface BookCoverProps {
   className?: string;
 }
 
-export function BookCover({ title, author, ageGroup, coverImage, className = "" }: BookCoverProps) {
-  if (coverImage && !isPlaceholderImage(coverImage)) {
-    return (
-      <img
-        src={coverImage}
-        alt={title}
-        className={`h-full w-full object-cover rounded-md ${className}`}
-      />
-    );
-  }
-
+function GradientFallback({ title, author, ageGroup, className }: { title: string; author: string; ageGroup?: string | null; className: string }) {
   const colors = AGE_GROUP_STYLES[ageGroup || "R1"] || AGE_GROUP_STYLES.R1;
   const hash = hashString(title + author);
   const patternIndex = hash % PATTERNS.length;
@@ -104,4 +95,21 @@ export function BookCover({ title, author, ageGroup, coverImage, className = "" 
       />
     </div>
   );
+}
+
+export function BookCover({ title, author, ageGroup, coverImage, className = "" }: BookCoverProps) {
+  const [imgError, setImgError] = useState(false);
+
+  if (coverImage && !isPlaceholderImage(coverImage) && !imgError) {
+    return (
+      <img
+        src={coverImage}
+        alt={title}
+        className={`h-full w-full object-cover rounded-md ${className}`}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return <GradientFallback title={title} author={author} ageGroup={ageGroup} className={className} />;
 }
