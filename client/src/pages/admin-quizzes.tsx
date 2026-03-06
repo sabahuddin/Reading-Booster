@@ -313,8 +313,8 @@ export default function AdminQuizzes() {
   const [isImporting, setIsImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState<"title" | "book" | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortField, setSortField] = useState<"title" | "book" | "createdAt" | null>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiBookId, setAiBookId] = useState("");
   const [aiBookSearch, setAiBookSearch] = useState("");
@@ -489,14 +489,20 @@ export default function AdminQuizzes() {
     return bookMap.get(bookId) ?? "Nepoznata knjiga";
   }
 
-  function toggleSort(field: "title" | "book") {
+  function toggleSort(field: "title" | "book" | "createdAt") {
     if (sortField === field) {
       setSortDir(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDir("asc");
+      setSortDir(field === "createdAt" ? "desc" : "asc");
     }
     setCurrentPage(1);
+  }
+
+  function fmtDate(d: string | Date | null | undefined): string {
+    if (!d) return "—";
+    const dt = new Date(d);
+    return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
   }
 
   const filteredQuizzes = useMemo(() => {
@@ -513,6 +519,11 @@ export default function AdminQuizzes() {
     }
     if (sortField) {
       result = [...result].sort((a, b) => {
+        if (sortField === "createdAt") {
+          const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return sortDir === "asc" ? tA - tB : tB - tA;
+        }
         const valA = sortField === "book" ? (bookMap.get(a.bookId) ?? "").toLowerCase() : a.title.toLowerCase();
         const valB = sortField === "book" ? (bookMap.get(b.bookId) ?? "").toLowerCase() : b.title.toLowerCase();
         return sortDir === "asc" ? valA.localeCompare(valB, "hr") : valB.localeCompare(valA, "hr");
@@ -758,6 +769,17 @@ export default function AdminQuizzes() {
                     </button>
                   </div>
                   <div className="w-24 text-center">Pitanja</div>
+                  <div className="w-28">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("createdAt")}
+                      data-testid="button-sort-quiz-created"
+                    >
+                      Dodano
+                      {sortField === "createdAt" ? (sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+                    </button>
+                  </div>
                   <div className="w-10"></div>
                 </div>
                 <Accordion type="multiple">
@@ -782,6 +804,9 @@ export default function AdminQuizzes() {
                               <HelpCircle className="h-3 w-3 mr-1" />
                               {quiz.questionCount ?? "?"} pitanja
                             </Badge>
+                            <span className="w-28 text-xs text-muted-foreground text-left" data-testid={`text-quiz-created-${quiz.id}`}>
+                              {fmtDate(quiz.createdAt)}
+                            </span>
                           </div>
                         </AccordionTrigger>
                         <div

@@ -93,8 +93,8 @@ export default function AdminBooks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [booksPerPage, setBooksPerPage] = useState(20);
-  const [sortField, setSortField] = useState<"title" | "author" | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortField, setSortField] = useState<"title" | "author" | "createdAt" | null>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [filterNoCover, setFilterNoCover] = useState(false);
   const [filterNoQuiz, setFilterNoQuiz] = useState(false);
   const [filterGenreId, setFilterGenreId] = useState<string>("");
@@ -129,14 +129,20 @@ export default function AdminBooks() {
     return map;
   }, [quizzes]);
 
-  function toggleSort(field: "title" | "author") {
+  function toggleSort(field: "title" | "author" | "createdAt") {
     if (sortField === field) {
       setSortDir(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDir("asc");
+      setSortDir(field === "createdAt" ? "desc" : "asc");
     }
     setCurrentPage(1);
+  }
+
+  function fmtDate(d: string | Date | null | undefined): string {
+    if (!d) return "—";
+    const dt = new Date(d);
+    return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
   }
 
   function isMissingCover(b: BookWithGenres) {
@@ -181,8 +187,13 @@ export default function AdminBooks() {
     }
     if (sortField) {
       result = [...result].sort((a, b) => {
-        const valA = a[sortField].toLowerCase();
-        const valB = b[sortField].toLowerCase();
+        if (sortField === "createdAt") {
+          const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return sortDir === "asc" ? tA - tB : tB - tA;
+        }
+        const valA = (a[sortField] as string).toLowerCase();
+        const valB = (b[sortField] as string).toLowerCase();
         return sortDir === "asc" ? valA.localeCompare(valB, "hr") : valB.localeCompare(valA, "hr");
       });
     }
@@ -1030,6 +1041,17 @@ export default function AdminBooks() {
                     <TableHead>Težina</TableHead>
                     <TableHead className="text-center">Korica</TableHead>
                     <TableHead className="text-center">Kviz</TableHead>
+                    <TableHead>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                        onClick={() => toggleSort("createdAt")}
+                        data-testid="button-sort-created"
+                      >
+                        Dodano
+                        {sortField === "createdAt" ? (sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+                      </button>
+                    </TableHead>
                     <TableHead>Akcije</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1076,6 +1098,9 @@ export default function AdminBooks() {
                           ) : (
                             <span className="text-xs text-muted-foreground/50">—</span>
                           )}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap" data-testid={`text-created-${book.id}`}>
+                          {fmtDate(book.createdAt)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
