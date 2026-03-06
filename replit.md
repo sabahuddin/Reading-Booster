@@ -185,8 +185,8 @@ Ne definirano.
 - **Subscription system:** TRENUTNO ONEMOGUĆEN — svi korisnici imaju neograničen pristup kvizovima. `canTakeQuiz` uvijek `true`.
 - **Quiz hook ordering:** `questionsToUse` useMemo MORA biti definiran PRIJE svih useCallback koji ga koriste (production minifikacija uzrokuje TDZ grešku).
 - **Duel:** prikazuje `username`, NE `fullName`
-- **Dev DB stanje (mart 2026):** 614 knjiga, 38 kvizova (svi ≥ minimumu), 1184 pitanja
-- **seed-data.json stanje:** 716 knjiga, 0 kvizova, 0 pitanja (kratki kvizovi trajno uklonjeni)
+- **Dev DB stanje (mart 2026):** 644 knjiga, 37 kvizova (svi ≥ minimumu), 1154 pitanja
+- **seed-data.json stanje:** 746 knjiga, 0 kvizova, 0 pitanja (kratki kvizovi trajno uklonjeni)
 - **PRODUKCIJA: pokrenuti** `./scripts/delete-short-quizzes.sh` da se obrišu kvizovi ispod standarda (isto kao dev)
 - **Kviz standard (min pitanja u bazi):** R1=15, R4=25, R7/O/A=30. Kviz bez dovoljno pitanja se ne smije prikazivati korisniku.
 
