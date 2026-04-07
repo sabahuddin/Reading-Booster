@@ -22,7 +22,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription,
 } from "@/components/ui/form";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -44,10 +44,11 @@ const editUserSchema = z.object({
   password: z.string().optional().refine((val) => !val || val.length >= 6, {
     message: "Lozinka mora imati barem 6 znakova",
   }),
-  role: z.enum(["student", "teacher", "parent", "admin"]),
+  role: z.enum(["student", "teacher", "parent", "admin", "school_admin", "reader"]),
   schoolName: z.string().optional(),
   className: z.string().optional(),
   parentId: z.string().optional(),
+  maxStudentAccounts: z.coerce.number().int().min(0).optional(),
   subscriptionType: z.enum(["free", "standard", "full"]).optional(),
   subscriptionExpiresAt: z.string().optional(),
 });
@@ -57,10 +58,11 @@ const createUserSchema = z.object({
   password: z.string().min(6, "Lozinka mora imati barem 6 znakova"),
   fullName: z.string().min(1, "Ime je obavezno"),
   email: z.string().email("Neispravan email"),
-  role: z.enum(["student", "teacher", "parent", "admin"]),
+  role: z.enum(["student", "teacher", "parent", "admin", "school_admin", "reader"]),
   schoolName: z.string().optional(),
   className: z.string().optional(),
   parentId: z.string().optional(),
+  maxStudentAccounts: z.coerce.number().int().min(0).optional(),
 });
 
 type EditUserValues = z.infer<typeof editUserSchema>;
@@ -68,9 +70,21 @@ type CreateUserValues = z.infer<typeof createUserSchema>;
 
 const roleLabels: Record<string, string> = {
   student: "Učenik",
-  teacher: "Učitelj",
+  teacher: "Učitelj/Nastavnik",
   parent: "Roditelj",
   admin: "Administrator",
+  school_admin: "Školski administrator",
+  reader: "Čitalac",
+  school: "Škola",
+};
+
+const roleBadgeVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  admin: "default",
+  school_admin: "default",
+  teacher: "secondary",
+  parent: "secondary",
+  reader: "outline",
+  student: "outline",
 };
 
 export default function AdminUsers() {
@@ -91,7 +105,8 @@ export default function AdminUsers() {
     return users.filter((u) => {
       const matchesSearch = searchQuery === "" ||
         u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.username.toLowerCase().includes(searchQuery.toLowerCase());
+        u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesRole = roleFilter === "all" || u.role === roleFilter;
       return matchesSearch && matchesRole;
     });
@@ -99,13 +114,24 @@ export default function AdminUsers() {
 
   const editForm = useForm<EditUserValues>({
     resolver: zodResolver(editUserSchema),
-    defaultValues: { fullName: "", email: "", password: "", role: "student", schoolName: "", className: "", parentId: "" },
+    defaultValues: {
+      fullName: "", email: "", password: "", role: "student",
+      schoolName: "", className: "", parentId: "",
+      maxStudentAccounts: 0,
+    },
   });
 
   const createForm = useForm<CreateUserValues>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { username: "", password: "", fullName: "", email: "", role: "student", schoolName: "", className: "", parentId: "" },
+    defaultValues: {
+      username: "", password: "", fullName: "", email: "", role: "student",
+      schoolName: "", className: "", parentId: "",
+      maxStudentAccounts: 0,
+    },
   });
+
+  const watchedEditRole = editForm.watch("role");
+  const watchedCreateRole = createForm.watch("role");
 
   const updateMutation = useMutation({
     mutationFn: async (data: EditUserValues) => {
@@ -168,14 +194,93 @@ export default function AdminUsers() {
       fullName: user.fullName,
       email: user.email,
       password: "",
-      role: user.role as "student" | "teacher" | "parent" | "admin",
+      role: user.role as EditUserValues["role"],
       schoolName: user.schoolName ?? "",
       className: user.className ?? "",
       parentId: user.parentId ?? "",
+      maxStudentAccounts: user.maxStudentAccounts ?? 0,
       subscriptionType: (user.subscriptionType as "free" | "standard" | "full") ?? "free",
       subscriptionExpiresAt: user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).toISOString().split("T")[0] : "",
     });
     setEditDialogOpen(true);
+  }
+
+  const roleOptions = [
+    { value: "student", label: "Učenik" },
+    { value: "teacher", label: "Učitelj/Nastavnik" },
+    { value: "parent", label: "Roditelj" },
+    { value: "admin", label: "Administrator" },
+    { value: "school_admin", label: "Školski administrator" },
+    { value: "reader", label: "Čitalac" },
+  ];
+
+  function RoleFields({ role, control, prefix }: { role: string; control: any; prefix: "edit" | "create" }) {
+    return (
+      <>
+        {/* School name — for teacher, school_admin */}
+        {(role === "teacher" || role === "school_admin") && (
+          <FormField control={control} name="schoolName" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Naziv škole</FormLabel>
+              <FormControl><Input {...field} data-testid={`input-${prefix}-schoolName`} placeholder="Npr. OŠ Mehmed Akif" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {/* Class — for teacher and student */}
+        {(role === "teacher" || role === "student") && (
+          <FormField control={control} name="className" render={({ field }) => (
+            <FormItem>
+              <FormLabel>{role === "teacher" ? "Razred(i) koje predaje" : "Razred"}</FormLabel>
+              <FormControl><Input {...field} data-testid={`input-${prefix}-className`} placeholder={role === "teacher" ? "Npr. 5a, 6b" : "Npr. 4a"} /></FormControl>
+              <FormDescription className="text-xs">
+                {role === "teacher" ? "Unesite razrede odvojene zarezom" : "Razred u koji učenik ide"}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {/* License count (maxStudentAccounts) — for teacher and school_admin */}
+        {(role === "teacher" || role === "school_admin") && (
+          <FormField control={control} name="maxStudentAccounts" render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {role === "teacher" ? "Broj licenci (učenika)" : "Maks. broj učenika u školi"}
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={0}
+                  max={500}
+                  {...field}
+                  data-testid={`input-${prefix}-maxStudents`}
+                  placeholder="Npr. 30"
+                />
+              </FormControl>
+              <FormDescription className="text-xs">
+                {role === "teacher"
+                  ? "Koliko učeničkih računa učitelj može kreirati"
+                  : "Ukupan broj učenika za ovu školu"}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+
+        {/* Parent ID — only for students */}
+        {role === "student" && (
+          <FormField control={control} name="parentId" render={({ field }) => (
+            <FormItem>
+              <FormLabel>ID roditelja (opcionalno)</FormLabel>
+              <FormControl><Input {...field} data-testid={`input-${prefix}-parentId`} placeholder="UUID roditelja" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
+      </>
+    );
   }
 
   return (
@@ -196,7 +301,7 @@ export default function AdminUsers() {
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Pretraži po imenu ili korisničkom imenu..."
+              placeholder="Pretraži po imenu, korisničkom imenu ili emailu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -204,17 +309,24 @@ export default function AdminUsers() {
             />
           </div>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-[180px]" data-testid="select-role-filter">
+            <SelectTrigger className="w-[220px]" data-testid="select-role-filter">
               <SelectValue placeholder="Filtriraj po ulozi" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Sve uloge</SelectItem>
               <SelectItem value="student">Učenik</SelectItem>
-              <SelectItem value="teacher">Učitelj</SelectItem>
+              <SelectItem value="teacher">Učitelj/Nastavnik</SelectItem>
               <SelectItem value="parent">Roditelj</SelectItem>
+              <SelectItem value="reader">Čitalac</SelectItem>
+              <SelectItem value="school_admin">Školski administrator</SelectItem>
               <SelectItem value="admin">Administrator</SelectItem>
             </SelectContent>
           </Select>
+          {roleFilter !== "all" && (
+            <div className="text-sm text-muted-foreground">
+              {filteredUsers.length} korisnik(a)
+            </div>
+          )}
         </div>
 
         <Card>
@@ -231,9 +343,9 @@ export default function AdminUsers() {
                     <TableHead>Korisničko ime</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Uloga</TableHead>
-                    <TableHead>Škola</TableHead>
-                    <TableHead>Razred</TableHead>
+                    <TableHead>Škola / Razred</TableHead>
                     <TableHead>Bodovi</TableHead>
+                    <TableHead>Licence</TableHead>
                     <TableHead>Pretplata</TableHead>
                     <TableHead>Akcije</TableHead>
                   </TableRow>
@@ -243,14 +355,25 @@ export default function AdminUsers() {
                     filteredUsers.map((user) => (
                       <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                         <TableCell className="font-medium">{user.fullName}</TableCell>
-                        <TableCell>{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
+                        <TableCell className="text-muted-foreground">{user.username}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{user.email}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{roleLabels[user.role] ?? user.role}</Badge>
+                          <Badge variant={roleBadgeVariant[user.role] ?? "outline"}>
+                            {roleLabels[user.role] ?? user.role}
+                          </Badge>
                         </TableCell>
-                        <TableCell>{user.schoolName ?? "-"}</TableCell>
-                        <TableCell>{user.className ?? "-"}</TableCell>
+                        <TableCell className="text-sm">
+                          {user.schoolName && <div className="font-medium">{user.schoolName}</div>}
+                          {user.className && <div className="text-muted-foreground">{user.className}</div>}
+                          {!user.schoolName && !user.className && <span className="text-muted-foreground">-</span>}
+                        </TableCell>
                         <TableCell>{user.points}</TableCell>
+                        <TableCell>
+                          {(user.role === "teacher" || user.role === "school_admin") && user.maxStudentAccounts != null
+                            ? <span className="text-sm font-medium">{user.maxStudentAccounts}</span>
+                            : <span className="text-muted-foreground">-</span>
+                          }
+                        </TableCell>
                         <TableCell>
                           <Badge variant={user.subscriptionType === "free" ? "outline" : user.subscriptionType === "full" ? "default" : "secondary"}>
                             {subscriptionLabels[user.subscriptionType] ?? "Besplatni"}
@@ -271,7 +394,9 @@ export default function AdminUsers() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                        {searchQuery || roleFilter !== "all" ? "Nema rezultata za zadani filter." : "Nema korisnika."}
+                        {searchQuery || roleFilter !== "all"
+                          ? `Nema korisnika za odabrani filter${roleFilter !== "all" ? ` (${roleLabels[roleFilter] ?? roleFilter})` : ""}.`
+                          : "Nema korisnika."}
                       </TableCell>
                     </TableRow>
                   )}
@@ -281,6 +406,7 @@ export default function AdminUsers() {
           </CardContent>
         </Card>
 
+        {/* Edit Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -320,36 +446,17 @@ export default function AdminUsers() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="student">Učenik</SelectItem>
-                        <SelectItem value="teacher">Učitelj</SelectItem>
-                        <SelectItem value="parent">Roditelj</SelectItem>
-                        <SelectItem value="admin">Administrator</SelectItem>
+                        {roleOptions.map((r) => (
+                          <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={editForm.control} name="schoolName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Škola</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-edit-schoolName" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={editForm.control} name="className" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Razred</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-edit-className" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={editForm.control} name="parentId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ID roditelja</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-edit-parentId" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+
+                <RoleFields role={watchedEditRole} control={editForm.control} prefix="edit" />
+
                 <div className="border-t pt-4 mt-2">
                   <p className="text-sm font-medium mb-3">Pretplata</p>
                   <div className="grid grid-cols-2 gap-4">
@@ -364,8 +471,8 @@ export default function AdminUsers() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="free">Besplatni</SelectItem>
-                            <SelectItem value="standard">Standard (10 KM/god)</SelectItem>
-                            <SelectItem value="full">Full (20 KM/god)</SelectItem>
+                            <SelectItem value="standard">Standard</SelectItem>
+                            <SelectItem value="full">Full</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -390,6 +497,7 @@ export default function AdminUsers() {
           </DialogContent>
         </Dialog>
 
+        {/* Create Dialog */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -398,20 +506,40 @@ export default function AdminUsers() {
             </DialogHeader>
             <Form {...createForm}>
               <form onSubmit={createForm.handleSubmit((v) => createMutation.mutate(v))} className="space-y-4">
-                <FormField control={createForm.control} name="username" render={({ field }) => (
+                <FormField control={createForm.control} name="role" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Korisničko ime</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-create-username" /></FormControl>
+                    <FormLabel>Uloga</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-create-role">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {roleOptions.map((r) => (
+                          <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={createForm.control} name="password" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lozinka</FormLabel>
-                    <FormControl><Input type="password" {...field} data-testid="input-create-password" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={createForm.control} name="username" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Korisničko ime</FormLabel>
+                      <FormControl><Input {...field} data-testid="input-create-username" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={createForm.control} name="password" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lozinka</FormLabel>
+                      <FormControl><Input type="password" {...field} data-testid="input-create-password" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
                 <FormField control={createForm.control} name="fullName" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Ime i prezime</FormLabel>
@@ -426,46 +554,9 @@ export default function AdminUsers() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={createForm.control} name="role" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Uloga</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-create-role">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="student">Učenik</SelectItem>
-                        <SelectItem value="teacher">Učitelj</SelectItem>
-                        <SelectItem value="parent">Roditelj</SelectItem>
-                        <SelectItem value="admin">Administrator</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={createForm.control} name="schoolName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Škola</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-create-schoolName" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={createForm.control} name="className" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Razred</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-create-className" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={createForm.control} name="parentId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ID roditelja</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-create-parentId" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+
+                <RoleFields role={watchedCreateRole} control={createForm.control} prefix="create" />
+
                 <DialogFooter>
                   <Button type="submit" disabled={createMutation.isPending} data-testid="button-submit-create-user">
                     {createMutation.isPending ? "Spremanje..." : "Dodaj korisnika"}
