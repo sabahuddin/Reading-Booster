@@ -3544,6 +3544,51 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  app.put("/api/school-admin/update-teacher/:teacherId", requireSchoolAdmin, async (req, res) => {
+    try {
+      const admin = await storage.getUser(req.session.userId!);
+      if (!admin) return res.status(403).json({ message: "Pristup odbijen" });
+
+      const teacher = await storage.getUser(req.params.teacherId as string);
+      if (!teacher || teacher.createdBySchoolAdminId !== req.session.userId) {
+        return res.status(404).json({ message: "Učitelj nije pronađen" });
+      }
+
+      const { fullName, className, maxStudentAccounts } = req.body;
+      const updateData: any = {};
+      if (fullName) updateData.fullName = fullName;
+      if (className !== undefined) updateData.className = className || null;
+      if (maxStudentAccounts !== undefined) {
+        const limit = Math.min(Number(maxStudentAccounts) || 0, admin.maxStudentAccounts || 200);
+        updateData.maxStudentAccounts = limit;
+      }
+
+      const updated = await storage.updateUser(req.params.teacherId as string, updateData);
+      if (!updated) return res.status(404).json({ message: "Učitelj nije pronađen" });
+      const { password: _, ...withoutPassword } = updated;
+      res.json(withoutPassword);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/school-admin/students", requireSchoolAdmin, async (req, res) => {
+    try {
+      const teachers = await storage.getTeachersBySchoolAdminId(req.session.userId!);
+      const allStudents: any[] = [];
+      for (const teacher of teachers) {
+        const students = await storage.getStudentsByTeacherId(teacher.id);
+        for (const s of students) {
+          const { password: _, ...sw } = s;
+          allStudents.push({ ...sw, teacherName: teacher.fullName, teacherId: teacher.id });
+        }
+      }
+      res.json(allStudents);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/school-admin/delete-teacher/:teacherId", requireSchoolAdmin, async (req, res) => {
     try {
       const teacher = await storage.getUser(req.params.teacherId as string);
