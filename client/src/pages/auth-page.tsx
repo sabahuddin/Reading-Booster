@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -308,6 +308,11 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      <div className="flex justify-end">
+                        <Link href="/zaboravljena-lozinka" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
+                          Zaboravili ste lozinku?
+                        </Link>
+                      </div>
                       <Button
                         type="submit"
                         className="w-full"

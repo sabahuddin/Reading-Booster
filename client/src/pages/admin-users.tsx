@@ -28,7 +28,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Users, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Search, Download, UserX } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type UserWithoutPassword = Omit<User, "password">;
 
@@ -95,6 +96,8 @@ export default function AdminUsers() {
   const [deleteUser, setDeleteUser] = useState<UserWithoutPassword | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false);
 
   const { data: users, isLoading } = useQuery<UserWithoutPassword[]>({
     queryKey: ["/api/admin/users"],
@@ -189,6 +192,42 @@ export default function AdminUsers() {
       toast({ title: "Greška", description: error.message, variant: "destructive" });
     },
   });
+
+  const bulkDeactivateMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await apiRequest("POST", "/api/admin/users/bulk-deactivate", { userIds: ids });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: `Deaktivirano ${selectedUsers.size} korisnika` });
+      setSelectedUsers(new Set());
+      setBulkDeactivateOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Greška", description: error.message, variant: "destructive" });
+    },
+  });
+
+  function handleExportCSV() {
+    window.open("/api/admin/users/export-csv", "_blank");
+  }
+
+  function toggleSelectUser(id: string) {
+    setSelectedUsers(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedUsers.size === filteredUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(filteredUsers.map(u => u.id)));
+    }
+  }
 
   function openEdit(user: UserWithoutPassword) {
     setEditingUser(user);
@@ -293,10 +332,22 @@ export default function AdminUsers() {
             <Users className="h-6 w-6" />
             <h1 className="text-2xl font-bold" data-testid="text-users-title">Upravljanje korisnicima</h1>
           </div>
-          <Button onClick={() => { createForm.reset(); setCreateDialogOpen(true); }} data-testid="button-add-user">
-            <Plus className="mr-2 h-4 w-4" />
-            Dodaj korisnika
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            {selectedUsers.size > 0 && (
+              <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10" onClick={() => setBulkDeactivateOpen(true)} data-testid="button-bulk-deactivate">
+                <UserX className="mr-2 h-4 w-4" />
+                Deaktiviraj ({selectedUsers.size})
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
+              <Download className="mr-2 h-4 w-4" />
+              Izvoz CSV
+            </Button>
+            <Button onClick={() => { createForm.reset(); setCreateDialogOpen(true); }} data-testid="button-add-user">
+              <Plus className="mr-2 h-4 w-4" />
+              Dodaj korisnika
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -341,6 +392,13 @@ export default function AdminUsers() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={filteredUsers.length > 0 && selectedUsers.size === filteredUsers.length}
+                        onCheckedChange={toggleSelectAll}
+                        data-testid="checkbox-select-all"
+                      />
+                    </TableHead>
                     <TableHead>Ime i prezime</TableHead>
                     <TableHead>Korisničko ime</TableHead>
                     <TableHead>Email</TableHead>
@@ -355,7 +413,14 @@ export default function AdminUsers() {
                 <TableBody>
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                      <TableRow key={user.id} data-testid={`row-user-${user.id}`} className={selectedUsers.has(user.id) ? "bg-muted/50" : ""}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUsers.has(user.id)}
+                            onCheckedChange={() => toggleSelectUser(user.id)}
+                            data-testid={`checkbox-user-${user.id}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{user.fullName}</TableCell>
                         <TableCell className="text-muted-foreground">{user.username}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{user.email}</TableCell>
@@ -568,6 +633,27 @@ export default function AdminUsers() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={bulkDeactivateOpen} onOpenChange={setBulkDeactivateOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deaktiviraj korisnike</AlertDialogTitle>
+              <AlertDialogDescription>
+                Da li ste sigurni da želite deaktivirati {selectedUsers.size} odabranih korisnika? Oni se neće moći prijaviti.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Odustani</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => bulkDeactivateMutation.mutate(Array.from(selectedUsers))}
+                className="bg-destructive hover:bg-destructive/80"
+                data-testid="button-confirm-bulk-deactivate"
+              >
+                {bulkDeactivateMutation.isPending ? "Deaktiviranje..." : "Deaktiviraj"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
           <AlertDialogContent>

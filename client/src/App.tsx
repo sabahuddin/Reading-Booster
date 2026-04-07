@@ -56,6 +56,10 @@ import SchoolDashboard from "@/pages/school-dashboard";
 import SchoolAdminDashboard from "@/pages/school-admin-dashboard";
 import BookListingsPage from "@/pages/book-listings";
 import PrintPage from "@/pages/print-page";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
+import BookmarksPage from "@/pages/bookmarks-page";
+import CertificatesPage from "@/pages/certificates-page";
 import { usePageTracking } from "@/hooks/use-page-tracking";
 
 function Router() {
@@ -97,6 +101,11 @@ function Router() {
       <Route path="/skola" component={SchoolAdminDashboard} />
       <Route path="/skola/ucitelji" component={SchoolAdminDashboard} />
       <Route path="/print" component={PrintPage} />
+      <Route path="/zaboravljena-lozinka" component={ForgotPasswordPage} />
+      <Route path="/reset-lozinke" component={ResetPasswordPage} />
+      <Route path="/bookmarks" component={BookmarksPage} />
+      <Route path="/ucenik/sertifikati" component={CertificatesPage} />
+      <Route path="/citanje/sertifikati" component={CertificatesPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/knjige" component={AdminBooks} />
       <Route path="/admin/zanrovi" component={AdminGenres} />

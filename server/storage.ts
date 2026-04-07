@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, isNull, or, ne, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, isNull, or, ne, sql, inArray, lt } from "drizzle-orm";
 import { db } from "./db";
 import {
   users,
@@ -21,6 +21,9 @@ import {
   deletedItems,
   parentChildRequests,
   pageViews,
+  notifications,
+  bookmarks,
+  passwordResetTokens,
   type PageView,
   type User,
   type InsertUser,
@@ -209,6 +212,36 @@ export interface IStorage {
   getQuizPassRate(): Promise<{ passed: number; failed: number; avgScore: number; avgCorrect: number }>;
   getTopUsers(limit: number): Promise<{ username: string; fullName: string; points: number; role: string; ageGroup: string }[]>;
   getBerzaStats(): Promise<{ total: number; active: number; prodajem: number; poklanjam: number; razmjenjujem: number }>;
+
+  // Notifications
+  createNotification(data: { userId: string; type: string; title: string; message: string; data?: string }): Promise<any>;
+  getNotificationsByUserId(userId: string): Promise<any[]>;
+  markNotificationRead(id: string): Promise<void>;
+  markAllNotificationsRead(userId: string): Promise<void>;
+  deleteNotification(id: string): Promise<void>;
+
+  // Bookmarks
+  getBookmarksByUserId(userId: string): Promise<any[]>;
+  getBookmark(userId: string, bookId: string): Promise<any | undefined>;
+  createBookmark(userId: string, bookId: string): Promise<any>;
+  deleteBookmark(userId: string, bookId: string): Promise<void>;
+
+  // Password reset tokens
+  createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<any>;
+  getPasswordResetToken(token: string): Promise<any | undefined>;
+  markPasswordResetTokenUsed(id: string): Promise<void>;
+  deleteExpiredPasswordResetTokens(): Promise<void>;
+
+  // Streak
+  updateUserStreak(userId: string, weekKey: string): Promise<{ streakCount: number; isNew: boolean }>;
+
+  // Bulk admin operations
+  bulkDeactivateUsers(userIds: string[]): Promise<void>;
+  getUsersExportData(): Promise<any[]>;
+
+  // Book listings moderation
+  adminDeleteBookListing(id: string): Promise<void>;
+  expireOldBookListings(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1218,6 +1251,143 @@ export class DatabaseStorage implements IStorage {
       poklanjam: Number(r.poklanjam),
       razmjenjujem: Number(r.razmjenjujem),
     };
+  }
+
+  // ─── NOTIFICATIONS ─────────────────────────────────────────────────────────
+
+  async createNotification(data: { userId: string; type: string; title: string; message: string; data?: string }): Promise<any> {
+    const [n] = await db.insert(notifications).values({
+      userId: data.userId,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      data: data.data,
+    }).returning();
+    return n;
+  }
+
+  async getNotificationsByUserId(userId: string): Promise<any[]> {
+    return db.select().from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(50);
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, id));
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<void> {
+    await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.id, id));
+  }
+
+  // ─── BOOKMARKS ─────────────────────────────────────────────────────────────
+
+  async getBookmarksByUserId(userId: string): Promise<any[]> {
+    const rows = await db.execute(sql`
+      SELECT bm.id, bm.user_id as "userId", bm.book_id as "bookId", bm.created_at as "createdAt",
+             b.title, b.author, b.cover_image as "coverImage", b.age_group as "ageGroup"
+      FROM bookmarks bm
+      JOIN books b ON b.id = bm.book_id
+      WHERE bm.user_id = ${userId}
+      ORDER BY bm.created_at DESC
+    `);
+    return rows.rows as any[];
+  }
+
+  async getBookmark(userId: string, bookId: string): Promise<any | undefined> {
+    const [bm] = await db.select().from(bookmarks)
+      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.bookId, bookId)));
+    return bm;
+  }
+
+  async createBookmark(userId: string, bookId: string): Promise<any> {
+    const [bm] = await db.insert(bookmarks).values({ userId, bookId }).returning();
+    return bm;
+  }
+
+  async deleteBookmark(userId: string, bookId: string): Promise<void> {
+    await db.delete(bookmarks)
+      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.bookId, bookId)));
+  }
+
+  // ─── PASSWORD RESET TOKENS ──────────────────────────────────────────────────
+
+  async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<any> {
+    const [t] = await db.insert(passwordResetTokens).values({ userId, token, expiresAt }).returning();
+    return t;
+  }
+
+  async getPasswordResetToken(token: string): Promise<any | undefined> {
+    const [t] = await db.select().from(passwordResetTokens)
+      .where(and(eq(passwordResetTokens.token, token), eq(passwordResetTokens.used, false)));
+    return t;
+  }
+
+  async markPasswordResetTokenUsed(id: string): Promise<void> {
+    await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, id));
+  }
+
+  async deleteExpiredPasswordResetTokens(): Promise<void> {
+    await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, new Date()));
+  }
+
+  // ─── STREAK ────────────────────────────────────────────────────────────────
+
+  async updateUserStreak(userId: string, weekKey: string): Promise<{ streakCount: number; isNew: boolean }> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) return { streakCount: 0, isNew: false };
+
+    if (user.lastStreakWeek === weekKey) {
+      return { streakCount: user.weeklyStreakCount || 0, isNew: false };
+    }
+
+    const newCount = (user.weeklyStreakCount || 0) + 1;
+    await db.update(users).set({
+      weeklyStreakCount: newCount,
+      lastStreakWeek: weekKey,
+    }).where(eq(users.id, userId));
+
+    return { streakCount: newCount, isNew: true };
+  }
+
+  // ─── BULK ADMIN ────────────────────────────────────────────────────────────
+
+  async bulkDeactivateUsers(userIds: string[]): Promise<void> {
+    if (userIds.length === 0) return;
+    await db.update(users).set({ isActive: false }).where(inArray(users.id, userIds));
+  }
+
+  async getUsersExportData(): Promise<any[]> {
+    const rows = await db.execute(sql`
+      SELECT
+        username, email, full_name as "fullName", role, school_name as "schoolName",
+        class_name as "className", age_group as "ageGroup", points,
+        is_active as "isActive", approved, weekly_streak_count as "weeklyStreakCount",
+        duel_wins as "duelWins", created_at as "createdAt"
+      FROM users
+      ORDER BY points DESC
+    `);
+    return rows.rows as any[];
+  }
+
+  // ─── BERZA MODERATION ──────────────────────────────────────────────────────
+
+  async adminDeleteBookListing(id: string): Promise<void> {
+    await db.delete(bookListings).where(eq(bookListings.id, id));
+  }
+
+  async expireOldBookListings(): Promise<void> {
+    await db.update(bookListings)
+      .set({ active: false })
+      .where(and(
+        eq(bookListings.active, true),
+        lt(bookListings.expiresAt, new Date())
+      ));
   }
 }
 

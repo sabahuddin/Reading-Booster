@@ -50,6 +50,7 @@ import {
   Tags,
   KeyRound,
   BarChart2,
+  Bookmark,
 } from "lucide-react";
 import { UserBadgeDisplay } from "@/components/user-badge";
 
@@ -66,6 +67,8 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Početna", url: "/ucenik", icon: Home },
     { title: "Biblioteka", url: "/ucenik/biblioteka", icon: BookOpen },
     { title: "Moji rezultati", url: "/ucenik/rezultati", icon: Trophy },
+    { title: "Sertifikati", url: "/ucenik/sertifikati", icon: Award },
+    { title: "Oznake", url: "/bookmarks", icon: Bookmark },
   ],
   teacher: [
     { title: "Početna", url: "/ucitelj", icon: Home },
@@ -80,6 +83,8 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Početna", url: "/citanje", icon: Home },
     { title: "Biblioteka", url: "/citanje/biblioteka", icon: BookOpen },
     { title: "Moji rezultati", url: "/citanje/rezultati", icon: Trophy },
+    { title: "Sertifikati", url: "/citanje/sertifikati", icon: Award },
+    { title: "Oznake", url: "/bookmarks", icon: Bookmark },
   ],
   school: [
     { title: "Početna", url: "/skola", icon: SchoolIcon },

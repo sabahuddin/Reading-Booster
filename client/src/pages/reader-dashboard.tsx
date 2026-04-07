@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Baby, Medal } from "lucide-react";
+import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Baby, Medal, Printer } from "lucide-react";
 import { UserBadgeDisplay, AllBadges } from "@/components/user-badge";
 import DuelSection from "@/components/duel-section";
 import type { User, QuizResult, Challenge } from "@shared/schema";
@@ -91,6 +91,10 @@ export default function ReaderDashboard() {
     enabled: hasFamilyLink,
   });
 
+  const { data: streakData } = useQuery<{ weeklyStreakCount: number; lastStreakWeek: string | null }>({
+    queryKey: ["/api/me/streak"],
+  });
+
   const totalQuizzes = results?.length ?? 0;
   const totalPoints = user?.points ?? 0;
   const avgScore = totalQuizzes > 0
@@ -106,13 +110,24 @@ export default function ReaderDashboard() {
   return (
     <DashboardLayout role="reader">
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-welcome">
-            Dobrodošli, {user?.fullName || "Čitaoče"}!
-          </h1>
-          <p className="text-muted-foreground">
-            Nastavi čitati i osvajaj bodove.
-          </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-welcome">
+              Dobrodošli, {user?.fullName || "Čitaoče"}!
+            </h1>
+            <p className="text-muted-foreground">
+              Nastavi čitati i osvajaj bodove.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/print?tip=citanje", "_blank")}
+            data-testid="button-print-reader"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Printaj izvještaj
+          </Button>
         </div>
 
         {isFree && subscription && (
@@ -192,6 +207,24 @@ export default function ReaderDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {streakData && streakData.weeklyStreakCount > 0 && (
+          <Card className="border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-full">
+                  <Flame className="h-6 w-6 text-orange-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg" data-testid="text-streak-count">
+                    {streakData.weeklyStreakCount} {streakData.weeklyStreakCount === 1 ? "sedmica" : streakData.weeklyStreakCount < 5 ? "sedmice" : "sedmica"} zaredom 🔥
+                  </p>
+                  <p className="text-sm text-muted-foreground">Nastavi čitati i osvajati seriju!</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {rankData?.globalRank && (
           <Card>

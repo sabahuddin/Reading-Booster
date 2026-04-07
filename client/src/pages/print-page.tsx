@@ -385,7 +385,7 @@ export default function PrintPage() {
   if (reportType === "razred" && (user.role === "teacher" || user.role === "admin")) {
     return <TeacherReport />;
   }
-  if (reportType === "ucenik") {
+  if (reportType === "ucenik" || reportType === "citanje") {
     return <StudentReport />;
   }
 

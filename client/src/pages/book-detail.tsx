@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,11 +11,14 @@ import {
   ArrowLeft,
   FileText,
   Globe,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
 import { SocialShare } from "@/components/social-share";
 import { BookRating } from "@/components/book-rating";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { useAuth } from "@/hooks/use-auth";
+import { apiRequest } from "@/lib/queryClient";
 import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 import { AgeGroupBadge } from "@/components/age-group-badge";
@@ -29,6 +32,7 @@ export default function BookDetail() {
   const basePath = isReader ? "/citanje" : "/ucenik";
   const dashboardRole = isReader ? "reader" : "student" as const;
   const { isAuthenticated } = useAuth();
+  const qc = useQueryClient();
   const [, studentParams] = useRoute("/ucenik/knjiga/:id");
   const [, readerParams] = useRoute("/citanje/knjiga/:id");
   const bookId = studentParams?.id || readerParams?.id;
@@ -45,6 +49,20 @@ export default function BookDetail() {
 
   const { data: myResults } = useQuery<QuizResult[]>({
     queryKey: ["/api/quiz-results/my"],
+  });
+
+  const { data: allBookmarks = [] } = useQuery<any[]>({
+    queryKey: ["/api/bookmarks"],
+    enabled: isAuthenticated,
+  });
+
+  const isBookmarked = bookId ? allBookmarks.some((bm: any) => bm.bookId === bookId) : false;
+
+  const toggleBookmark = useMutation({
+    mutationFn: () => isBookmarked
+      ? apiRequest("DELETE", `/api/bookmarks/${bookId}`)
+      : apiRequest("POST", `/api/bookmarks/${bookId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/bookmarks"] }),
   });
 
   const takenQuizIds = new Set(myResults?.map((r) => r.quizId) ?? []);
@@ -116,7 +134,25 @@ export default function BookDetail() {
                   Knjigu potražite u školskoj ili gradskoj biblioteci.
                 </p>
                 <BookRating bookId={book.id} isAuthenticated={isAuthenticated} />
-                <SocialShare title={`${book.title} - ${book.author}`} url={`https://citanje.ba/knjiga/${book.id}`} compact />
+                <div className="flex items-center gap-3">
+                  {isAuthenticated && (
+                    <Button
+                      variant={isBookmarked ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleBookmark.mutate()}
+                      disabled={toggleBookmark.isPending}
+                      className="gap-2"
+                      data-testid="button-toggle-bookmark"
+                    >
+                      {isBookmarked ? (
+                        <><BookmarkCheck className="h-4 w-4" /> Označena</>
+                      ) : (
+                        <><Bookmark className="h-4 w-4" /> Označi</>
+                      )}
+                    </Button>
+                  )}
+                  <SocialShare title={`${book.title} - ${book.author}`} url={`https://citanje.ba/knjiga/${book.id}`} compact />
+                </div>
               </div>
             </div>
 

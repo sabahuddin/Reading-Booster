@@ -6,13 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Search, FileText } from "lucide-react";
+import { BookOpen, Search, FileText, Sparkles } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import type { Book, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 import { AgeGroupBadge } from "@/components/age-group-badge";
+import { useAuth } from "@/hooks/use-auth";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -25,6 +26,7 @@ export default function Library() {
   const [search, setSearch] = useState("");
   const [filterGenre, setFilterGenre] = useState("");
   const [filterAge, setFilterAge] = useState("");
+  const { isAuthenticated } = useAuth();
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -32,6 +34,11 @@ export default function Library() {
 
   const { data: genres } = useQuery<Genre[]>({
     queryKey: ["/api/genres"],
+  });
+
+  const { data: recommended } = useQuery<Book[]>({
+    queryKey: ["/api/books/recommended"],
+    enabled: isAuthenticated,
   });
 
   const filtered = books?.filter((b) => {
@@ -51,6 +58,34 @@ export default function Library() {
           <h1 className="text-2xl font-bold" data-testid="text-library-title">Biblioteka</h1>
           <p className="text-muted-foreground">Odaberi knjigu i počni čitati.</p>
         </div>
+
+        {isAuthenticated && recommended && recommended.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold" data-testid="text-recommended-title">Preporučeno za tebe</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {recommended.slice(0, 5).map((book) => (
+                <Link key={book.id} href={`${basePath}/knjiga/${book.id}`} data-testid={`link-recommended-${book.id}`}>
+                  <Card className="hover-elevate h-full">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                        <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-sm line-clamp-2">{book.title}</h3>
+                        <p className="text-xs text-muted-foreground">{book.author}</p>
+                      </div>
+                      <AgeGroupBadge ageGroup={book.ageGroup} />
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+            <hr className="border-border" />
+          </div>
+        )}
 
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">

@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Baby, Star, Trophy, Users, BookOpen, UserPlus, Clock, CheckCircle2, Copy, Sparkles } from "lucide-react";
+import { Baby, Star, Trophy, Users, BookOpen, UserPlus, Clock, CheckCircle2, Copy, Sparkles, Printer } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
 type ChildUser = Omit<User, "password">;
@@ -249,13 +249,24 @@ export default function ParentDashboard() {
   return (
     <DashboardLayout role="parent">
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-welcome">
-            Dobrodošli, {user?.fullName || "Roditelju"}!
-          </h1>
-          <p className="text-muted-foreground">
-            Upravljajte porodičnim profilima i pratite napredak djece.
-          </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-welcome">
+              Dobrodošli, {user?.fullName || "Roditelju"}!
+            </h1>
+            <p className="text-muted-foreground">
+              Upravljajte porodičnim profilima i pratite napredak djece.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            data-testid="button-print-parent"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Printaj izvještaj
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

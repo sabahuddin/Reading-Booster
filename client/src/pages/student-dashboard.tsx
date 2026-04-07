@@ -43,6 +43,10 @@ export default function StudentDashboard() {
     queryKey: ["/api/user/rank"],
   });
 
+  const { data: streakData } = useQuery<{ weeklyStreakCount: number; lastStreakWeek: string | null }>({
+    queryKey: ["/api/me/streak"],
+  });
+
   const totalQuizzes = results?.length ?? 0;
   const totalPoints = user?.points ?? 0;
   const avgScore = totalQuizzes > 0
@@ -127,6 +131,24 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {streakData && streakData.weeklyStreakCount > 0 && (
+          <Card className="border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-full">
+                  <Flame className="h-6 w-6 text-orange-500" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg" data-testid="text-streak-count">
+                    {streakData.weeklyStreakCount} {streakData.weeklyStreakCount === 1 ? "sedmica" : streakData.weeklyStreakCount < 5 ? "sedmice" : "sedmica"} zaredom 🔥
+                  </p>
+                  <p className="text-sm text-muted-foreground">Nastavi čitati i osvajati seriju!</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {rankData && (
           <Card>

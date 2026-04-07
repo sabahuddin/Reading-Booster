@@ -103,6 +103,20 @@ const uploadCSV = multer({ storage: csvStorage, limits: { fileSize: 10 * 1024 * 
   else cb(new Error("Samo CSV datoteke su dozvoljene"));
 }});
 
+const berzaImageDir = path.join(uploadsDir, "berza");
+fs.mkdirSync(berzaImageDir, { recursive: true });
+const berzaImageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, berzaImageDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`);
+  },
+});
+const uploadBerzaImage = multer({ storage: berzaImageStorage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) cb(null, true);
+  else cb(new Error("Samo slike su dozvoljene"));
+}});
+
 function parseCSV(content: string): Record<string, string>[] {
   const lines = content.replace(/^\uFEFF/, "").split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
@@ -1406,6 +1420,30 @@ Odgovori ISKLJUČIVO u JSON formatu:
         const updatedUser = await storage.getUser(userId);
         if (updatedUser) {
           await storage.updateUserPoints(userId, updatedUser.points + score);
+
+          // Update weekly streak
+          const now = new Date();
+          const weekKey = `${now.getFullYear()}-W${String(Math.ceil((now.getDate() - now.getDay() + 1) / 7)).padStart(2, "0")}`;
+          const { streakCount, isNew } = await storage.updateUserStreak(userId, weekKey);
+
+          // Create quiz pass notification
+          const book = quiz ? await storage.getBook(quiz.bookId) : null;
+          await storage.createNotification({
+            userId,
+            type: "quiz_pass",
+            title: "Kviz položen! 🎉",
+            message: `Čestitamo! Položio/la si kviz${book ? ` za knjgu "${book.title}"` : ""}. Dobio/la si ${score} bodova.`,
+          });
+
+          // Streak milestone notification
+          if (isNew && streakCount > 0 && streakCount % 4 === 0) {
+            await storage.createNotification({
+              userId,
+              type: "streak",
+              title: `Serija od ${streakCount} sedmica! 🔥`,
+              message: `Odlično! Rijesi/la kviz ${streakCount} sedmicu zaredom. Nastavi ovim tempom!`,
+            });
+          }
         }
         if (quiz) {
           await storage.incrementTimesRead(quiz.bookId);
@@ -4136,7 +4174,228 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
-  // Analytics cache — 5 minute TTL, reduces DB load significantly
+  // ─── NOTIFICATIONS ─────────────────────────────────────────────────────────
+
+  app.get("/api/notifications", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const notifs = await storage.getNotificationsByUserId(req.session.userId!);
+      res.json(notifs);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.patch("/api/notifications/:id/read", requireAuth, async (req: Request, res: Response) => {
+    try {
+      await storage.markNotificationRead(req.params.id);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/notifications/read-all", requireAuth, async (req: Request, res: Response) => {
+    try {
+      await storage.markAllNotificationsRead(req.session.userId!);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/notifications/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteNotification(req.params.id);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── BOOKMARKS ─────────────────────────────────────────────────────────────
+
+  app.get("/api/bookmarks", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const bms = await storage.getBookmarksByUserId(req.session.userId!);
+      res.json(bms);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/bookmarks/:bookId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const { bookId } = req.params;
+      const existing = await storage.getBookmark(userId, bookId);
+      if (existing) return res.json(existing);
+      const bm = await storage.createBookmark(userId, bookId);
+      res.status(201).json(bm);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/bookmarks/:bookId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteBookmark(req.session.userId!, req.params.bookId);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── PASSWORD RESET ────────────────────────────────────────────────────────
+  // No email service configured — token returned to user in response for admin use
+
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { usernameOrEmail } = req.body;
+      if (!usernameOrEmail) return res.status(400).json({ message: "Unesite korisničko ime ili e-mail" });
+
+      const user = await storage.getUserByEmail(usernameOrEmail) || await storage.getUserByUsername(usernameOrEmail);
+      if (!user) {
+        // Always return success to prevent user enumeration
+        return res.json({ message: "Ako račun postoji, primićete token za reset lozinke." });
+      }
+
+      // Generate a random token
+      const { randomBytes } = await import("crypto");
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
+
+      await storage.deleteExpiredPasswordResetTokens();
+      await storage.createPasswordResetToken(user.id, token, expiresAt);
+
+      // Since no email service, return token directly (admin can show to user)
+      return res.json({
+        message: "Token za reset lozinke je kreiran.",
+        token,
+        note: "Kopirajte token i koristite ga na stranici /reset-lozinke"
+      });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = req.body;
+      if (!token || !newPassword) return res.status(400).json({ message: "Token i nova lozinka su obavezni" });
+      if (newPassword.length < 8) return res.status(400).json({ message: "Lozinka mora imati najmanje 8 znakova" });
+      if (!/[A-Z]/.test(newPassword)) return res.status(400).json({ message: "Lozinka mora sadržati veliko slovo" });
+      if (!/[0-9]/.test(newPassword)) return res.status(400).json({ message: "Lozinka mora sadržati broj" });
+
+      const resetToken = await storage.getPasswordResetToken(token);
+      if (!resetToken) return res.status(400).json({ message: "Nevažeći ili istekli token" });
+      if (new Date(resetToken.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Token je istekao. Zatražite novi." });
+      }
+
+      const { scrypt, randomBytes } = await import("crypto");
+      const { promisify } = await import("util");
+      const scryptAsync = promisify(scrypt);
+      const salt = randomBytes(16).toString("hex");
+      const derivedKey = (await scryptAsync(newPassword, salt, 64)) as Buffer;
+      const hashedPassword = `${derivedKey.toString("hex")}.${salt}`;
+
+      await storage.updateUser(resetToken.userId, { password: hashedPassword });
+      await storage.markPasswordResetTokenUsed(resetToken.id);
+
+      res.json({ message: "Lozinka je uspješno promijenjena. Možete se prijaviti." });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── ADMIN: BULK DEACTIVATE + CSV EXPORT ────────────────────────────────────
+
+  app.post("/api/admin/users/bulk-deactivate", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { userIds } = req.body;
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ message: "Lista korisnika je prazna" });
+      }
+      await storage.bulkDeactivateUsers(userIds);
+      res.json({ message: `Deaktivirano ${userIds.length} korisnika.` });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/admin/users/export-csv", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getUsersExportData();
+      const headers = ["username", "email", "fullName", "role", "schoolName", "className", "ageGroup", "points", "isActive", "approved", "weeklyStreakCount", "duelWins", "createdAt"];
+      const csvRows = [headers.join(",")];
+      for (const u of users) {
+        const row = headers.map(h => {
+          const val = u[h] ?? "";
+          const str = String(val).replace(/"/g, '""');
+          return str.includes(",") || str.includes('"') || str.includes("\n") ? `"${str}"` : str;
+        });
+        csvRows.push(row.join(","));
+      }
+      const csv = csvRows.join("\n");
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=citanje-korisnici.csv");
+      res.send("\uFEFF" + csv); // BOM za Excel
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── BERZA: ADMIN MODERATION ────────────────────────────────────────────────
+
+  app.delete("/api/admin/book-listings/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.adminDeleteBookListing(req.params.id);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── BOOK LISTING: IMAGE UPLOAD ─────────────────────────────────────────────
+
+  app.post("/api/book-listings/:id/image", requireAuth, uploadBerzaImage.single("image"), async (req: Request, res: Response) => {
+    try {
+      const listing = await storage.getAllBookListings().then(ls => ls.find(l => l.id === req.params.id));
+      if (!listing) return res.status(404).json({ message: "Oglas nije pronađen" });
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(401).json({ message: "Nije autentificiran" });
+      if (listing.userId !== userId && user.role !== "admin") {
+        return res.status(403).json({ message: "Nije dozvoljeno" });
+      }
+      if (!req.file) return res.status(400).json({ message: "Nema slike" });
+      const imageUrl = `/uploads/berza/${req.file.filename}`;
+      await storage.updateBookListing(req.params.id, { imageUrl } as any);
+      res.json({ imageUrl });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── RECOMMENDATIONS ────────────────────────────────────────────────────────
+
+  app.get("/api/books/recommended", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "Korisnik nije pronađen" });
+
+      const results = await storage.getQuizResultsByUserId(userId);
+      const readBookIds = new Set<string>();
+
+      for (const r of results) {
+        const quiz = await storage.getQuiz(r.quizId);
+        if (quiz) readBookIds.add(quiz.bookId);
+      }
+
+      const allBooks = await storage.getAllBooks();
+      const ageGroups = ["R1", "R4", "R7", "O", "A"];
+      const userGroupIdx = ageGroups.indexOf(user.ageGroup || "R1");
+      const allowedGroups = ageGroups.slice(Math.max(0, userGroupIdx), userGroupIdx + 2);
+
+      const eligible = allBooks.filter(b =>
+        !readBookIds.has(b.id) &&
+        (user.role === "admin" || user.role === "teacher" || user.role === "parent" || allowedGroups.includes(b.ageGroup || ""))
+      );
+
+      // Randomize and take 8
+      const shuffled = eligible.sort(() => Math.random() - 0.5).slice(0, 8);
+      res.json(shuffled);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── USER STREAK ────────────────────────────────────────────────────────────
+
+  app.get("/api/me/streak", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) return res.status(404).json({ message: "Korisnik nije pronađen" });
+      res.json({
+        weeklyStreakCount: user.weeklyStreakCount || 0,
+        lastStreakWeek: user.lastStreakWeek || null,
+      });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
   let analyticsCache: { data: any; expiresAt: number } | null = null;
   const ANALYTICS_CACHE_TTL = 5 * 60 * 1000;
 

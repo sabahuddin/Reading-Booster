@@ -86,6 +86,58 @@ async function runManualMigrations() {
       name: "index_quiz_results_completed_at",
       sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_completed_at ON quiz_results(completed_at)`
     },
+    // ── new features 2026-04 ──────────────────────────────────────────────
+    {
+      name: "add_user_streak_active_fields",
+      sql: `ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true,
+        ADD COLUMN IF NOT EXISTS weekly_streak_count INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS last_streak_week TEXT`
+    },
+    {
+      name: "add_book_listing_image_expiry",
+      sql: `ALTER TABLE book_listings
+        ADD COLUMN IF NOT EXISTS image_url TEXT,
+        ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP`
+    },
+    {
+      name: "create_notifications",
+      sql: `CREATE TABLE IF NOT EXISTS notifications (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        data TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`
+    },
+    {
+      name: "index_notifications_user_id",
+      sql: `CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`
+    },
+    {
+      name: "create_bookmarks",
+      sql: `CREATE TABLE IF NOT EXISTS bookmarks (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL,
+        book_id VARCHAR NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id, book_id)
+      )`
+    },
+    {
+      name: "create_password_reset_tokens",
+      sql: `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        expires_at TIMESTAMP NOT NULL,
+        used BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`
+    },
   ];
 
   for (const m of migrations) {

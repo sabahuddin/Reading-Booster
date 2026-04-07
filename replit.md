@@ -177,6 +177,61 @@ Ne definirano.
 - Admin-managed blog postovi s ključnim riječima
 - Javni prikaz, filtriranje, komentari i sistem ocjenjivanja
 
+### Notifikacije
+- Bell ikona u navbar-u s brojem nepročitanih
+- Notifikacije za: položen kviz, sedmični streak, preporuke
+- API: `GET /api/notifications/my`, `POST /api/notifications/:id/read`, `POST /api/notifications/read-all`
+
+### Oznake (Bookmarks)
+- Korisnici mogu označiti knjige (toggle)
+- Stranica `/bookmarks` prikazuje sve označene knjige
+- API: `POST /api/bookmarks/toggle`, `GET /api/bookmarks`
+- Dugme na stranici knjige (knjiga/book-detail.tsx)
+- Link u sidebar navigaciji za učenike i čitaoce
+
+### Sertifikati
+- Stranica `/ucenik/sertifikati` i `/citanje/sertifikati`
+- Prikazuje lijepe kartice za svaki položen kviz
+- Includirano u sidebar navigaciju za učenike i čitaoce
+
+### Zaboravljena lozinka
+- Stranica `/zaboravljena-lozinka` — korisnik unosi username/email
+- Backend kreira token, vraca ga direktno u API odgovoru (bez e-mail servisa, za admin upotrebu)
+- Stranica `/reset-lozinke?token=XXX` — novi password sa validacijom
+
+### Sedmična serija (Weekly Streak)
+- Automatski tracking pri rješavanju kviza — format: `${year}-W${weekNum}`
+- Prikazano kao banner kartica na student/reader dashboardima kad je streak > 0
+- API: `GET /api/me/streak`
+- Notifikacija svakih 4 sedmice (milestone)
+
+### Preporuke knjiga
+- Sekcija "Preporučeno za tebe" na vrhu biblioteke (iznad filtera)
+- API: `GET /api/books/recommended`
+- Prikazuje 5 knjiga koje user još nije čitao, iz iste starosne grupe
+
+### PWA (Progressive Web App)
+- `client/public/manifest.json` kreiran s ikonama i temom
+- `index.html` ima manifest link i apple/mobile meta tagove
+- Theme color: #FF861C
+
+### Berza knjiga — Slike i Admin Moderacija
+- Korisnici mogu uploadati sliku knjige prilikom kreiranja oglasa
+- Slike se čuvaju u `/uploads/berza/` direktoriju
+- Admin može obrisati bilo koji oglas (ShieldX dugme) via `DELETE /api/admin/book-listings/:id`
+- Slike se prikazuju na vrhu listing kartice ako postoje
+
+### Print dugmad
+- Student dashboard: "Printaj izvještaj" → `/print?tip=ucenik`
+- Reader dashboard: "Printaj izvještaj" → `/print?tip=citanje`
+- Parent dashboard: "Printaj izvještaj" → window.print()
+
+### Admin — Korisnici bulk operacije
+- Checkbox za odabir svih/pojedinih korisnika
+- "Deaktiviraj" dugme s AlertDialog potvrdom
+- CSV Export — `GET /api/admin/users/export-csv`
+- Deaktivacija: `POST /api/admin/users/bulk-deactivate`
+
 ## Critical Implementation Notes
 - **NIKAD ne brisati produkcijske podatke**. Seed loader je samo-additive.
 - **Produkcija:** admin/admin123 | URL: citanje.ba | ~1996 knjiga

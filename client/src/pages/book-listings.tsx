@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,6 +48,8 @@ import {
   User,
   Calendar,
   Filter,
+  ImageIcon,
+  ShieldX,
 } from "lucide-react";
 import type { BookListing } from "@shared/schema";
 
@@ -77,6 +79,17 @@ export default function BookListingsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
   const [filterCity, setFilterCity] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
 
   const form = useForm<ListingFormValues>({
     resolver: zodResolver(listingFormSchema),
@@ -97,6 +110,14 @@ export default function BookListingsPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: ListingFormValues) => {
+      if (imageFile) {
+        const fd = new FormData();
+        Object.entries(data).forEach(([k, v]) => { if (v !== undefined && v !== "") fd.append(k, v as string); });
+        fd.append("image", imageFile);
+        const res = await fetch("/api/book-listings", { method: "POST", body: fd, credentials: "include" });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.message || "Greška"); }
+        return res.json();
+      }
       const res = await apiRequest("POST", "/api/book-listings", data);
       return res.json();
     },
@@ -104,6 +125,8 @@ export default function BookListingsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/book-listings"] });
       setDialogOpen(false);
       form.reset();
+      setImageFile(null);
+      setImagePreview(null);
       toast({ title: "Oglas uspješno objavljen!" });
     },
     onError: (error: Error) => {
@@ -118,6 +141,16 @@ export default function BookListingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/book-listings"] });
       toast({ title: "Oglas obrisan." });
+    },
+  });
+
+  const adminDeleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/admin/book-listings/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/book-listings"] });
+      toast({ title: "Oglas obrisan (admin)." });
     },
   });
 
@@ -259,6 +292,30 @@ export default function BookListingsPage() {
                             </FormItem>
                           )}
                         />
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Slika knjige (opcionalno)</p>
+                          <div
+                            className="border-2 border-dashed rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => fileInputRef.current?.click()}
+                            data-testid="upload-berza-image"
+                          >
+                            {imagePreview ? (
+                              <img src={imagePreview} alt="Pregled" className="mx-auto max-h-32 rounded-md object-cover" />
+                            ) : (
+                              <div className="flex flex-col items-center gap-1 text-muted-foreground py-2">
+                                <ImageIcon className="h-6 w-6" />
+                                <span className="text-xs">Klikni za upload slike</span>
+                              </div>
+                            )}
+                          </div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageChange}
+                          />
+                        </div>
                         <Button
                           type="submit"
                           className="w-full"
@@ -320,6 +377,16 @@ export default function BookListingsPage() {
                   const isOwner = user?.id === listing.userId;
                   return (
                     <Card key={listing.id} data-testid={`listing-${listing.id}`}>
+                      {listing.imageUrl && (
+                        <div className="overflow-hidden rounded-t-lg">
+                          <img
+                            src={listing.imageUrl}
+                            alt={listing.bookTitle}
+                            className="w-full h-40 object-cover"
+                            data-testid={`img-listing-${listing.id}`}
+                          />
+                        </div>
+                      )}
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -365,17 +432,32 @@ export default function BookListingsPage() {
                             <Phone className="h-4 w-4" />
                             {listing.phone}
                           </a>
-                          {isOwner && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => deleteMutation.mutate(listing.id)}
-                              disabled={deleteMutation.isPending}
-                              data-testid={`delete-listing-${listing.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <div className="flex gap-2">
+                            {isOwner && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => deleteMutation.mutate(listing.id)}
+                                disabled={deleteMutation.isPending}
+                                data-testid={`delete-listing-${listing.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {user?.role === "admin" && !isOwner && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive border-destructive/30"
+                                onClick={() => adminDeleteMutation.mutate(listing.id)}
+                                disabled={adminDeleteMutation.isPending}
+                                data-testid={`admin-delete-listing-${listing.id}`}
+                                title="Admin: Ukloni oglas"
+                              >
+                                <ShieldX className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
