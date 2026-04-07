@@ -304,3 +304,51 @@ mark.highlight-green {
 mark.highlight-orange {
   background-color: rgba(254, 215, 170, 0.7);
 }
+
+/* ── PRINT STYLES ─────────────────────────────────────────────────────────── */
+@page {
+  size: A4 portrait;
+  margin: 15mm;
+}
+
+@media print {
+  /* Hide sidebar, header, navbar, buttons, and non-content elements */
+  aside,
+  [data-sidebar],
+  [data-sidebar="sidebar"],
+  nav,
+  header,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  /* Make the main content fill the full page width */
+  body,
+  #root,
+  .flex.min-h-screen.w-full {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* The main content column should take full width */
+  .flex.flex-col.flex-1.min-w-0 {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Prevent page breaks inside table rows */
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Print background colors for visual reports */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

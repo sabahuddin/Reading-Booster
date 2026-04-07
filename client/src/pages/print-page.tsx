@@ -362,6 +362,80 @@ function StudentReport() {
   );
 }
 
+// ─── PARENT REPORT ───────────────────────────────────────────────────────────
+function ParentReport() {
+  const { user } = useAuth();
+  const { data: familyMembers = [] } = useQuery<any[]>({ queryKey: ["/api/parent/family-members"] });
+  const { data: children = [] } = useQuery<any[]>({ queryKey: ["/api/parent/children"] });
+
+  const allChildren = [...familyMembers, ...children];
+  const ready = user !== null && (familyMembers !== undefined || children !== undefined);
+
+  useEffect(() => {
+    if (ready) {
+      setTimeout(() => window.print(), 800);
+    }
+  }, [ready]);
+
+  if (!user) {
+    return <div style={{ padding: 40, fontFamily: "sans-serif" }}>Učitavanje...</div>;
+  }
+
+  const today = fmtDate(new Date());
+
+  return (
+    <div style={{ fontFamily: "Georgia, serif", padding: "20mm", maxWidth: "210mm", margin: "0 auto", fontSize: 12 }}>
+      <div style={{ textAlign: "center", borderBottom: "2px solid #333", paddingBottom: 12, marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, margin: 0, color: "#FF861C" }}>Čitanje.ba</h1>
+        <h2 style={{ fontSize: 16, margin: "4px 0 0", fontWeight: "normal" }}>Roditeljski izvještaj — {user.fullName}</h2>
+        <p style={{ margin: "4px 0 0", fontSize: 11, color: "#666" }}>Datum: {today}</p>
+      </div>
+
+      {allChildren.length === 0 ? (
+        <p style={{ color: "#888", fontStyle: "italic" }}>Nema dodanih djece.</p>
+      ) : (
+        allChildren.map((child: any) => {
+          const badge = getBadge(child.points || 0);
+          return (
+            <div key={child.id} style={{ marginBottom: 24, border: "1px solid #ddd", borderRadius: 8, padding: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: "bold" }}>{child.fullName}</div>
+                  <div style={{ fontSize: 12, color: "#555" }}>@{child.username}</div>
+                  {child.className && <div style={{ fontSize: 12 }}>Razred: <strong>{child.className}</strong></div>}
+                  {child.ageGroup && <div style={{ fontSize: 12 }}>Starosna grupa: <strong>{child.ageGroup}</strong></div>}
+                  {child.schoolName && <div style={{ fontSize: 12 }}>Škola: <strong>{child.schoolName}</strong></div>}
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 28, fontWeight: "bold", color: "#FF861C" }}>{child.points || 0}</div>
+                  <div style={{ fontSize: 11, color: "#555" }}>bodova</div>
+                  <div style={{ marginTop: 4, fontSize: 12 }}>{badge.icon} {badge.label}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                {[
+                  { label: "Kvizova", value: child.quizzesTaken || 0 },
+                  { label: "Ukupno bodova", value: child.points || 0 },
+                  { label: "Bedž", value: `${badge.icon} ${badge.label}` },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ flex: 1, border: "1px solid #eee", borderRadius: 6, padding: "6px 10px", textAlign: "center" }}>
+                    <div style={{ fontSize: 16, fontWeight: "bold", color: "#FF861C" }}>{value}</div>
+                    <div style={{ fontSize: 10, color: "#555" }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })
+      )}
+
+      <div style={{ marginTop: 20, borderTop: "1px solid #ccc", paddingTop: 8, fontSize: 10, color: "#888", textAlign: "center" }}>
+        Čitanje.ba — Roditeljski izvještaj generisan {today}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN ROUTER ─────────────────────────────────────────────────────────────
 export default function PrintPage() {
   const { user, isAuthenticated } = useAuth();
@@ -376,6 +450,7 @@ export default function PrintPage() {
   const reportType = type || (
     user.role === "school_admin" ? "skola" :
     user.role === "teacher" ? "razred" :
+    user.role === "parent" ? "roditelj" :
     "ucenik"
   );
 
@@ -384,6 +459,9 @@ export default function PrintPage() {
   }
   if (reportType === "razred" && (user.role === "teacher" || user.role === "admin")) {
     return <TeacherReport />;
+  }
+  if (reportType === "roditelj" && user.role === "parent") {
+    return <ParentReport />;
   }
   if (reportType === "ucenik" || reportType === "citanje") {
     return <StudentReport />;

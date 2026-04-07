@@ -261,7 +261,7 @@ export default function ParentDashboard() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.print()}
+            onClick={() => window.open("/print?tip=roditelj", "_blank")}
             data-testid="button-print-parent"
           >
             <Printer className="h-4 w-4 mr-2" />
