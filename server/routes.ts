@@ -2103,9 +2103,20 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
   app.put("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
-      const updateData = { ...req.body };
+      const updateData: Record<string, any> = { ...req.body };
       if (updateData.password) {
         updateData.password = await hashPassword(updateData.password);
+      }
+      // Clean up fields that can't be empty strings in DB
+      if (updateData.subscriptionExpiresAt === "" || updateData.subscriptionExpiresAt === null) {
+        delete updateData.subscriptionExpiresAt;
+      }
+      if (updateData.schoolName === "") delete updateData.schoolName;
+      if (updateData.className === "") delete updateData.className;
+      if (updateData.parentId === "") delete updateData.parentId;
+      // Convert subscriptionExpiresAt string date to Date object if provided
+      if (updateData.subscriptionExpiresAt && typeof updateData.subscriptionExpiresAt === "string") {
+        updateData.subscriptionExpiresAt = new Date(updateData.subscriptionExpiresAt);
       }
       const user = await storage.updateUser(req.params.id as string, updateData);
       if (!user) {

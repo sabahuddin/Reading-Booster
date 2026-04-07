@@ -140,6 +140,8 @@ export default function AdminUsers() {
       if (!payload.schoolName) delete payload.schoolName;
       if (!payload.className) delete payload.className;
       if (!payload.parentId) delete payload.parentId;
+      if (!payload.subscriptionExpiresAt) delete payload.subscriptionExpiresAt;
+      if (payload.maxStudentAccounts === undefined || payload.maxStudentAccounts === "") delete payload.maxStudentAccounts;
       await apiRequest("PUT", `/api/admin/users/${editingUser!.id}`, payload);
     },
     onSuccess: () => {
