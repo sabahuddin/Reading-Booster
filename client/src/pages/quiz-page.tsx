@@ -19,6 +19,7 @@ import {
   Lock,
   Crown,
   Timer,
+  CalendarX,
 } from "lucide-react";
 import type { Quiz, Question, QuizResult, Book } from "@shared/schema";
 import { DifficultyIcon } from "@/components/difficulty-icon";
@@ -192,19 +193,31 @@ export default function QuizPage() {
   ];
 
   if (eligibility && !eligibility.canTake) {
+    const icon = eligibility.reason === "cooldown" ? (
+      <Timer className="mx-auto h-12 w-12 text-orange-400" />
+    ) : eligibility.reason === "daily_limit" ? (
+      <CalendarX className="mx-auto h-12 w-12 text-red-500" />
+    ) : (
+      <Trophy className="mx-auto h-12 w-12 text-green-500" />
+    );
+    const title = eligibility.reason === "passed"
+      ? "Kviz već položen"
+      : eligibility.reason === "daily_limit"
+      ? "Dnevni limit dostignut"
+      : "Pričekajte malo";
+
     return (
       <DashboardLayout role={dashboardRole}>
         <div className="max-w-xl mx-auto space-y-6 text-center">
           <div className="space-y-4">
-            {eligibility.reason === "cooldown" ? (
-              <Timer className="mx-auto h-12 w-12 text-orange-400" />
-            ) : (
-              <Trophy className="mx-auto h-12 w-12 text-green-500" />
-            )}
-            <h1 className="text-2xl font-bold">
-              {eligibility.reason === "passed" ? "Kviz već položen" : "Pričekajte malo"}
-            </h1>
+            {icon}
+            <h1 className="text-2xl font-bold">{title}</h1>
             <p className="text-muted-foreground">{eligibility.message}</p>
+            {eligibility.reason === "daily_limit" && (
+              <p className="text-sm text-muted-foreground">
+                Danas ste već riješili 2 kviza. Dođite sutra i nastavite čitati!
+              </p>
+            )}
           </div>
           <Button variant="outline" asChild>
             <Link href={`${basePath}/biblioteka`}>Natrag u biblioteku</Link>

@@ -1278,6 +1278,21 @@ Odgovori ISKLJUČIVO u JSON formatu:
     try {
       const userId = req.session.userId!;
       const quizId = req.params.id as string;
+
+      // Dnevni limit: max 2 kviza dnevno (ne važi za admina i učitelje)
+      const currentUser = await storage.getUser(userId);
+      if (currentUser && currentUser.role !== "admin" && currentUser.role !== "teacher" && currentUser.role !== "school_admin") {
+        const todayCount = await storage.getQuizResultsTodayCountByUserId(userId);
+        if (todayCount >= 2) {
+          return res.json({
+            canTake: false,
+            reason: "daily_limit",
+            message: "Dnevni limit: možete riješiti najviše 2 kviza dnevno. Sutra možete nastaviti!",
+            todayCount,
+          });
+        }
+      }
+
       const existingResult = await storage.getQuizResultByUserAndQuiz(userId, quizId);
 
       if (!existingResult) {
@@ -1405,6 +1420,18 @@ Odgovori ISKLJUČIVO u JSON formatu:
         }
       }
       */
+
+      // Dnevni limit: max 2 kviza dnevno (ne važi za admina i učitelje)
+      const currentUserForLimit = await storage.getUser(userId);
+      if (currentUserForLimit && currentUserForLimit.role !== "admin" && currentUserForLimit.role !== "teacher" && currentUserForLimit.role !== "school_admin") {
+        const todayCount = await storage.getQuizResultsTodayCountByUserId(userId);
+        if (todayCount >= 2) {
+          return res.status(429).json({
+            message: "Dnevni limit: možete riješiti najviše 2 kviza dnevno. Sutra možete nastaviti!",
+            reason: "daily_limit",
+          });
+        }
+      }
 
       const existingResult = await storage.getQuizResultByUserAndQuiz(userId, quizId);
       if (existingResult) {

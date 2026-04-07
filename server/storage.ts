@@ -100,6 +100,7 @@ export interface IStorage {
 
   getQuizResultsByUserId(userId: string): Promise<QuizResult[]>;
   getQuizResultsCountByUserId(userId: string): Promise<number>;
+  getQuizResultsTodayCountByUserId(userId: string): Promise<number>;
   deleteQuizResultsByUserId(userId: string): Promise<void>;
   deleteQuizResultsByQuiz(quizId: string): Promise<void>;
   deleteQuizResultByUserAndQuiz(userId: string, quizId: string): Promise<void>;
@@ -398,6 +399,15 @@ export class DatabaseStorage implements IStorage {
 
   async getQuizResultsCountByUserId(userId: string): Promise<number> {
     const results = await db.select().from(quizResults).where(eq(quizResults.userId, userId));
+    return results.length;
+  }
+
+  async getQuizResultsTodayCountByUserId(userId: string): Promise<number> {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const results = await db.select().from(quizResults).where(
+      and(eq(quizResults.userId, userId), gte(quizResults.completedAt, todayStart))
+    );
     return results.length;
   }
 
@@ -791,8 +801,11 @@ export class DatabaseStorage implements IStorage {
   async getBookGenres(bookId: string): Promise<Genre[]> {
     const bgs = await db.select().from(bookGenres).where(eq(bookGenres.bookId, bookId));
     if (bgs.length === 0) return [];
+    const seenGenreIds = new Set<string>();
     const genreList: Genre[] = [];
     for (const bg of bgs) {
+      if (seenGenreIds.has(bg.genreId)) continue;
+      seenGenreIds.add(bg.genreId);
       const [g] = await db.select().from(genres).where(eq(genres.id, bg.genreId));
       if (g) genreList.push(g);
     }
