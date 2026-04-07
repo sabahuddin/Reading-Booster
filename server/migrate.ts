@@ -138,6 +138,14 @@ async function runManualMigrations() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       )`
     },
+    {
+      name: "deduplicate_book_genres",
+      sql: `DELETE FROM book_genres WHERE id NOT IN (SELECT MIN(id) FROM book_genres GROUP BY book_id, genre_id)`
+    },
+    {
+      name: "unique_book_genres_book_genre",
+      sql: `ALTER TABLE book_genres ADD CONSTRAINT book_genres_book_id_genre_id_unique UNIQUE (book_id, genre_id)`
+    },
   ];
 
   for (const m of migrations) {
@@ -159,48 +167,34 @@ async function runManualMigrations() {
 async function syncBookGenresFromLegacy() {
   try {
     const legacyToSlug: Record<string, string> = {
-      "lektira": "lektira",
-      "klasik": "klasici",
-      "klasici": "klasici",
-      "avantura_fantasy": "avantura_fantasy",
-      "avantura i fantazija": "avantura_fantasy",
-      "fantazija": "avantura_fantasy",
-      "humor": "humor",
+      "lektira": "lektira", "lektire": "lektira",
+      "klasik": "klasici", "klasici": "klasici",
+      "avantura_fantasy": "avantura_fantasy", "avantura i fantazija": "avantura_fantasy",
+      "fantazija": "avantura_fantasy", "horor": "avantura_fantasy", "SF": "avantura_fantasy",
+      "humor": "humor", "zabavna": "humor",
       "roman": "roman",
-      "beletristika": "beletristika",
-      "bajke_basne": "bajke_basne",
-      "basne": "bajke_basne",
+      "beletristika": "beletristika", "autobiografija": "beletristika",
+      "memoari": "beletristika", "dnevnk": "beletristika",
+      "književnost": "beletristika", "psihologija": "beletristika", "umjetnost": "beletristika",
+      "bajke_basne": "bajke_basne", "basne": "bajke_basne", "bajke": "bajke_basne", "bajka": "bajke_basne",
       "zanimljiva_nauka": "zanimljiva_nauka",
-      "poezija": "poezija",
+      "poezija": "poezija", "poezija_za_djecu": "poezija",
       "islam": "islam",
-      "drama": "klasici",
-      "priče": "price_i_pjesme",
-      "priče i pjesme": "price_i_pjesme",
-      "price_i_pjesme": "price_i_pjesme",
+      "drama": "drama",
+      "priče": "price_i_pjesme", "priče i pjesme": "price_i_pjesme", "price_i_pjesme": "price_i_pjesme",
       "mitologija": "mitologija",
-      "detektivski roman": "detektivski_roman",
-      "detektivski_roman": "detektivski_roman",
-      "roman za djecu": "djeciji_roman",
-      "djeciji_roman": "djeciji_roman",
-      "pustolovni roman": "pustolovni_roman",
-      "pustolovni_roman": "pustolovni_roman",
-      "epika": "klasici",
-      "istorijski": "historijski_roman",
-      "historijski_roman": "historijski_roman",
-      "pripovijetke": "pripovjetke",
-      "pripovjetke": "pripovjetke",
-      "publicistika": "beletristika",
-      "autobiografija": "beletristika",
-      "pisma": "klasici",
-      "esej": "klasici",
-      "eseji": "klasici",
-      "SF": "avantura_fantasy",
-      "zabavna": "humor",
-      "memoari": "beletristika",
-      "krimi": "detektivski_roman",
-      "dnevnk": "beletristika",
-      "slikovnica": "slikovnica",
-      "zbirka_prica": "zbirka_prica",
+      "detektivski roman": "detektivski_roman", "detektivski_roman": "detektivski_roman",
+      "krimi": "detektivski_roman", "krimić": "detektivski_roman",
+      "roman za djecu": "djeciji_roman", "djeciji_roman": "djeciji_roman", "tinejdzerski": "djeciji_roman",
+      "pustolovni roman": "pustolovni_roman", "pustolovni_roman": "pustolovni_roman",
+      "epika": "klasici", "pisma": "klasici", "esej": "klasici", "eseji": "klasici",
+      "istorijski": "historijski_roman", "historijski_roman": "historijski_roman",
+      "pripovijetke": "pripovjetke", "pripovjetke": "pripovjetke", "novela": "pripovjetke",
+      "publicistika": "publicistika",
+      "slikovnica": "slikovnica", "zbirka_prica": "zbirka_prica",
+      "avantura": "avantura",
+      "hronika": "hronika", "putopisi": "hronika",
+      "savremena_knjizevnost": "savremena_knjizevnost", "savremena književnost": "savremena_knjizevnost",
     };
 
     const dupResult = await db.execute(sql`

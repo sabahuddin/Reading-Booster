@@ -197,9 +197,16 @@ export async function loadSeedData(): Promise<boolean> {
       }
     }
 
+    // Load existing (book_id, genre_id) pairs to avoid duplicates
+    const existingBgPairs = new Set(
+      (await client.query("SELECT book_id || '::' || genre_id as pair FROM book_genres")).rows.map((r: any) => r.pair)
+    );
     for (const bg of data.bookGenres) {
+      const pair = `${bg.book_id || bg.bookId}::${bg.genre_id || bg.genreId}`;
+      if (existingBgPairs.has(pair)) { skipped++; continue; }
       try {
         await upsertRow(client, "book_genres", bg, bgCols);
+        existingBgPairs.add(pair);
         inserted.bookGenres++;
       } catch (e: any) {
         skipped++;
