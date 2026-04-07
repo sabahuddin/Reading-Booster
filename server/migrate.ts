@@ -139,6 +139,17 @@ async function runManualMigrations() {
       )`
     },
     {
+      name: "add_teacher_quiz_edit_columns",
+      sql: `ALTER TABLE quizzes
+        ADD COLUMN IF NOT EXISTS teacher_edit_status text NOT NULL DEFAULT 'none',
+        ADD COLUMN IF NOT EXISTS teacher_editor_id varchar,
+        ADD COLUMN IF NOT EXISTS approved_teacher_name text`
+    },
+    {
+      name: "add_questions_added_by_teacher",
+      sql: `ALTER TABLE questions ADD COLUMN IF NOT EXISTS added_by_teacher boolean NOT NULL DEFAULT false`
+    },
+    {
       name: "deduplicate_book_genres",
       sql: `DELETE FROM book_genres WHERE id NOT IN (SELECT MIN(id) FROM book_genres GROUP BY book_id, genre_id)`
     },

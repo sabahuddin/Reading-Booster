@@ -167,6 +167,12 @@ export default function BookDetail() {
                     <Brain className="h-5 w-5" />
                     Kviz za ovu knjigu
                   </h3>
+                  {quiz.approvedTeacherName && (
+                    <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2 flex items-center gap-2" data-testid="text-quiz-approved-teacher">
+                      <Brain className="h-4 w-4 shrink-0" />
+                      Kviz odobrio/la: <span className="font-semibold">{quiz.approvedTeacherName}</span>
+                    </p>
+                  )}
                   {takenQuizIds.has(quiz.id) ? (
                     <div className="space-y-2">
                       <p className="text-muted-foreground">Već si riješio/la kviz za ovu knjigu.</p>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,17 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CheckCircle2, XCircle, School, UserCheck, Clock, Users, GraduationCap } from "lucide-react";
+import {
+  CheckCircle2,
+  XCircle,
+  UserCheck,
+  Clock,
+  Users,
+  GraduationCap,
+  BookOpen,
+  Brain,
+} from "lucide-react";
+import type { Quiz } from "@shared/schema";
 
 interface PendingUser {
   id: string;
@@ -30,6 +41,8 @@ interface PendingUser {
   className: string | null;
   approved: boolean;
 }
+
+type PendingQuizEdit = Quiz & { bookTitle?: string; teacherName?: string };
 
 const roleLabels: Record<string, string> = {
   ucitelj: "Učitelj",
@@ -52,6 +65,10 @@ export default function AdminApprovals() {
 
   const { data: pendingList, isLoading } = useQuery<PendingUser[]>({
     queryKey: ["/api/admin/pending-teachers"],
+  });
+
+  const { data: pendingQuizEdits, isLoading: quizEditsLoading } = useQuery<PendingQuizEdit[]>({
+    queryKey: ["/api/admin/pending-quiz-edits"],
   });
 
   const approveMutation = useMutation({
@@ -79,6 +96,30 @@ export default function AdminApprovals() {
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
 
+  const approveQuizEditMutation = useMutation({
+    mutationFn: async (quizId: string) => {
+      const res = await apiRequest("POST", `/api/admin/quiz-edits/${quizId}/approve`, {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-quiz-edits"] });
+      toast({ title: "Kviz odobren", description: data.message });
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
+  const rejectQuizEditMutation = useMutation({
+    mutationFn: async (quizId: string) => {
+      const res = await apiRequest("POST", `/api/admin/quiz-edits/${quizId}/reject`, {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-quiz-edits"] });
+      toast({ title: "Izmjene odbijene", description: data.message });
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
   function openApproveDialog(user: PendingUser) {
     setApproveDialog(user);
     if (user.role === "school_admin") {
@@ -89,84 +130,190 @@ export default function AdminApprovals() {
     }
   }
 
+  const pendingUsersCount = pendingList?.length ?? 0;
+  const pendingQuizCount = pendingQuizEdits?.length ?? 0;
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-admin-approvals-title">Zahtjevi za odobrenje</h1>
-          <p className="text-muted-foreground">Odobrite ili odbijte zahtjeve institucija za registraciju</p>
+          <p className="text-muted-foreground">Odobrite ili odbijte zahtjeve institucija i izmjene kvizova</p>
         </div>
 
-        {isLoading ? (
-          <div className="space-y-4">{[1, 2].map(i => <Skeleton key={i} className="h-32" />)}</div>
-        ) : pendingList && pendingList.length > 0 ? (
-          <div className="space-y-4">
-            {pendingList.map(user => (
-              <Card key={user.id}>
-                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Clock className="h-5 w-5 text-amber-500" />
-                      <CardTitle className="text-base" data-testid={`text-pending-name-${user.id}`}>{user.fullName}</CardTitle>
-                      <Badge variant="outline">Na čekanju</Badge>
-                      {user.role === "school_admin" && (
-                        <Badge className="bg-blue-100 text-blue-800">Školski admin</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => openApproveDialog(user)}
-                      data-testid={`button-approve-${user.id}`}
-                    >
-                      <CheckCircle2 className="mr-1 h-4 w-4" />
-                      Odobri
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => rejectMutation.mutate(user.id)}
-                      data-testid={`button-reject-${user.id}`}
-                    >
-                      <XCircle className="mr-1 h-4 w-4" />
-                      Odbij
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Tip institucije:</span>
-                      <p className="font-medium">{user.institutionType ? typeLabels[user.institutionType] || user.institutionType : "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Uloga:</span>
-                      <p className="font-medium">{user.role === "school_admin" ? "Školski administrator" : (user.institutionRole ? roleLabels[user.institutionRole] || user.institutionRole : "-")}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Institucija:</span>
-                      <p className="font-medium">{user.schoolName || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Korisničko ime:</span>
-                      <p className="font-medium">{user.username}</p>
-                    </div>
-                  </div>
+        <Tabs defaultValue="users">
+          <TabsList>
+            <TabsTrigger value="users" data-testid="tab-user-approvals">
+              Korisnici
+              {pendingUsersCount > 0 && (
+                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-amber-500 text-white">
+                  {pendingUsersCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="quiz-edits" data-testid="tab-quiz-approvals">
+              Kviz izmjene
+              {pendingQuizCount > 0 && (
+                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-amber-500 text-white">
+                  {pendingQuizCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ===== KORISNICI ===== */}
+          <TabsContent value="users" className="mt-4">
+            {isLoading ? (
+              <div className="space-y-4">{[1, 2].map(i => <Skeleton key={i} className="h-32" />)}</div>
+            ) : pendingList && pendingList.length > 0 ? (
+              <div className="space-y-4">
+                {pendingList.map(user => (
+                  <Card key={user.id}>
+                    <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Clock className="h-5 w-5 text-amber-500" />
+                          <CardTitle className="text-base" data-testid={`text-pending-name-${user.id}`}>{user.fullName}</CardTitle>
+                          <Badge variant="outline">Na čekanju</Badge>
+                          {user.role === "school_admin" && (
+                            <Badge className="bg-blue-100 text-blue-800">Školski admin</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => openApproveDialog(user)}
+                          data-testid={`button-approve-${user.id}`}
+                        >
+                          <CheckCircle2 className="mr-1 h-4 w-4" />
+                          Odobri
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => rejectMutation.mutate(user.id)}
+                          data-testid={`button-reject-${user.id}`}
+                        >
+                          <XCircle className="mr-1 h-4 w-4" />
+                          Odbij
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Tip institucije:</span>
+                          <p className="font-medium">{user.institutionType ? typeLabels[user.institutionType] || user.institutionType : "-"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Uloga:</span>
+                          <p className="font-medium">{user.role === "school_admin" ? "Školski administrator" : (user.institutionRole ? roleLabels[user.institutionRole] || user.institutionRole : "-")}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Institucija:</span>
+                          <p className="font-medium">{user.schoolName || "-"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Korisničko ime:</span>
+                          <p className="font-medium">{user.username}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <UserCheck className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Nema zahtjeva na čekanju</p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <UserCheck className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Nema zahtjeva na čekanju</p>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </TabsContent>
 
+          {/* ===== KVIZ IZMJENE ===== */}
+          <TabsContent value="quiz-edits" className="mt-4">
+            {quizEditsLoading ? (
+              <div className="space-y-4">{[1, 2].map(i => <Skeleton key={i} className="h-28" />)}</div>
+            ) : pendingQuizEdits && pendingQuizEdits.length > 0 ? (
+              <div className="space-y-4">
+                {pendingQuizEdits.map((quiz) => (
+                  <Card key={quiz.id}>
+                    <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Brain className="h-5 w-5 text-amber-500" />
+                          <CardTitle className="text-base" data-testid={`text-quiz-edit-title-${quiz.id}`}>
+                            {quiz.bookTitle || "Nepoznata knjiga"}
+                          </CardTitle>
+                          <Badge className="bg-amber-100 text-amber-800">Na čekanju</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          Kviz ID: {quiz.id}
+                        </p>
+                        {quiz.teacherName && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Učitelj/ica: <span className="font-medium">{quiz.teacherName}</span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approveQuizEditMutation.mutate(quiz.id)}
+                          disabled={approveQuizEditMutation.isPending}
+                          data-testid={`button-approve-quiz-${quiz.id}`}
+                        >
+                          <CheckCircle2 className="mr-1 h-4 w-4" />
+                          Odobri
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => rejectQuizEditMutation.mutate(quiz.id)}
+                          disabled={rejectQuizEditMutation.isPending}
+                          data-testid={`button-reject-quiz-${quiz.id}`}
+                        >
+                          <XCircle className="mr-1 h-4 w-4" />
+                          Odbij
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Starosna skupina:</span>
+                          <p className="font-medium">{quiz.ageGroup || "-"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Status kviza:</span>
+                          <p className="font-medium">{quiz.teacherEditStatus}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Nakon odobravanja:</span>
+                          <p className="font-medium text-green-700">Prikazuje "Kviz odobrio: {quiz.teacherName}"</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Brain className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Nema kviz izmjena na čekanju</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Dialog za odobrenje korisnika */}
         <Dialog open={!!approveDialog} onOpenChange={() => setApproveDialog(null)}>
           <DialogContent>
             <DialogHeader>

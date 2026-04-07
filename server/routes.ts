@@ -3169,6 +3169,138 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // ==================== TEACHER QUIZ EDITING ====================
+
+  app.get("/api/teacher/quizzes/:id/edit-info", requireTeacher, async (req, res) => {
+    try {
+      const quiz = await storage.getQuiz(req.params.id as string);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+      const teacherAddedCount = await storage.getTeacherAddedQuestionsCount(quiz.id);
+      return res.json({
+        quizId: quiz.id,
+        teacherEditStatus: quiz.teacherEditStatus || "none",
+        teacherEditorId: quiz.teacherEditorId,
+        approvedTeacherName: quiz.approvedTeacherName,
+        teacherAddedQuestionsCount: teacherAddedCount,
+        canEdit: (quiz.teacherEditStatus === "none" || quiz.teacherEditStatus === null) && teacherAddedCount === 0,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/teacher/quizzes/:id/submit-questions", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const quizId = req.params.id as string;
+      const { questions: newQuestions } = req.body;
+
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+
+      // Kviz koji je već odobren ili u čekanju ne može se mijenjati
+      if (quiz.teacherEditStatus === "approved") {
+        return res.status(400).json({ message: "Ovaj kviz je već odobren i ne može se mijenjati." });
+      }
+      if (quiz.teacherEditStatus === "pending") {
+        return res.status(400).json({ message: "Vaše izmjene čekaju odobrenje. Pričekajte da admin pregleda." });
+      }
+
+      if (!Array.isArray(newQuestions) || newQuestions.length === 0) {
+        return res.status(400).json({ message: "Morate unijeti najmanje 1 pitanje." });
+      }
+      if (newQuestions.length > 5) {
+        return res.status(400).json({ message: "Možete dodati najviše 5 pitanja." });
+      }
+
+      // Validacija svakog pitanja
+      for (const q of newQuestions) {
+        if (!q.questionText?.trim()) return res.status(400).json({ message: "Tekst pitanja je obavezan." });
+        if (!q.optionA?.trim() || !q.optionB?.trim() || !q.optionC?.trim() || !q.optionD?.trim()) {
+          return res.status(400).json({ message: "Sva 4 odgovora su obavezna." });
+        }
+        if (!["a", "b", "c", "d"].includes(q.correctAnswer)) {
+          return res.status(400).json({ message: "Tačan odgovor mora biti a, b, c ili d." });
+        }
+      }
+
+      // Dodaj pitanja s oznakom addedByTeacher
+      const teacher = await storage.getUser(teacherId);
+      for (const q of newQuestions) {
+        await storage.createQuestion({
+          quizId,
+          questionText: q.questionText.trim(),
+          optionA: q.optionA.trim(),
+          optionB: q.optionB.trim(),
+          optionC: q.optionC.trim(),
+          optionD: q.optionD.trim(),
+          correctAnswer: q.correctAnswer,
+          points: 1,
+          addedByTeacher: true,
+        });
+      }
+
+      // Postavi status na "pending"
+      await storage.updateQuizTeacherStatus(quizId, "pending", teacherId);
+
+      return res.json({
+        message: `${newQuestions.length} pitanje(a) uspješno dodano. Čeka odobrenje admina.`,
+        teacherName: teacher?.fullName,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== ADMIN QUIZ EDIT APPROVALS ====================
+
+  app.get("/api/admin/pending-quiz-edits", requireAdmin, async (_req, res) => {
+    try {
+      const pending = await storage.getPendingTeacherQuizEdits();
+      return res.json(pending);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/quiz-edits/:id/approve", requireAdmin, async (req, res) => {
+    try {
+      const quizId = req.params.id as string;
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+      if (quiz.teacherEditStatus !== "pending") {
+        return res.status(400).json({ message: "Kviz nema izmjene za odobrenje." });
+      }
+
+      const teacher = quiz.teacherEditorId ? await storage.getUser(quiz.teacherEditorId) : null;
+      const teacherName = teacher?.fullName || "Nepoznat učitelj";
+
+      await storage.updateQuizTeacherStatus(quizId, "approved", quiz.teacherEditorId || undefined, teacherName);
+      return res.json({ message: `Kviz odobren. Prikazuje se: "Kviz odobrio: ${teacherName}"` });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/quiz-edits/:id/reject", requireAdmin, async (req, res) => {
+    try {
+      const quizId = req.params.id as string;
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+      if (quiz.teacherEditStatus !== "pending") {
+        return res.status(400).json({ message: "Kviz nema izmjene za odbijanje." });
+      }
+
+      // Obriši teacher-dodana pitanja i resetuj status
+      await storage.deleteTeacherAddedQuestions(quizId);
+      await storage.updateQuizTeacherStatus(quizId, "none");
+
+      return res.json({ message: "Izmjene odbijene. Teacher-dodana pitanja su obrisana." });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/class-challenges/:className", requireAuth, async (req, res) => {
     try {
       const className = req.params.className as string;

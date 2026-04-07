@@ -96,6 +96,10 @@ export const quizzes = pgTable("quizzes", {
   title: text("title").notNull(),
   quizAuthor: text("quiz_author"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Učiteljske izmjene i odobrenje
+  teacherEditStatus: text("teacher_edit_status").notNull().default("none"), // "none" | "pending" | "approved"
+  teacherEditorId: varchar("teacher_editor_id"),
+  approvedTeacherName: text("approved_teacher_name"),
 });
 
 export const insertQuizSchema = createInsertSchema(quizzes).omit({
@@ -115,6 +119,7 @@ export const questions = pgTable("questions", {
   optionD: text("option_d").notNull(),
   correctAnswer: text("correct_answer", { enum: ["a", "b", "c", "d"] }).notNull(),
   points: integer("points").notNull().default(1),
+  addedByTeacher: boolean("added_by_teacher").notNull().default(false),
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({

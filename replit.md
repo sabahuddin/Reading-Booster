@@ -194,6 +194,16 @@ Ne definirano.
 - Prikazuje lijepe kartice za svaki položen kviz
 - Includirano u sidebar navigaciju za učenike i čitaoce
 
+### Nastavnička izmjena kvizova (Teacher Quiz Editing)
+- Nastavnici mogu dodati 1–5 novih pitanja na postojeći kviz
+- Pitanja su označena kao `added_by_teacher: true`
+- Kviz prelazi u status `"pending"` — čeka odobrenje admina
+- Admin na `/admin/odobrenja` (tab "Kviz izmjene") odobrava ili odbija
+- **Odobreno:** kviz postaje `"approved"`, prikazuje se "Kviz odobrio/la: [Ime nastavnika]" na stranici knjige
+- **Odbijeno:** teacher-dodana pitanja se brišu, kviz se vraća na `"none"`
+- DB kolone: `teacher_edit_status`, `teacher_editor_id`, `approved_teacher_name` na `quizzes`; `added_by_teacher` na `questions`
+- API: `GET/POST /api/teacher/quizzes/:id/edit-info|submit-questions`; `GET /api/admin/pending-quiz-edits`; `POST /api/admin/quiz-edits/:id/approve|reject`
+
 ### Zaboravljena lozinka
 - Stranica `/zaboravljena-lozinka` — korisnik unosi username/email
 - Backend kreira token, vraca ga direktno u API odgovoru (bez e-mail servisa, za admin upotrebu)

@@ -91,6 +91,10 @@ export interface IStorage {
   createQuiz(quiz: InsertQuiz): Promise<Quiz>;
   deleteQuiz(id: string): Promise<void>;
   getAllQuizzes(): Promise<Quiz[]>;
+  updateQuizTeacherStatus(quizId: string, status: "none" | "pending" | "approved", teacherEditorId?: string, approvedTeacherName?: string): Promise<void>;
+  getPendingTeacherQuizEdits(): Promise<Array<Quiz & { bookTitle?: string; teacherName?: string }>>;
+  getTeacherAddedQuestionsCount(quizId: string): Promise<number>;
+  deleteTeacherAddedQuestions(quizId: string): Promise<void>;
 
   getQuestionsByQuizId(quizId: string): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
@@ -361,6 +365,46 @@ export class DatabaseStorage implements IStorage {
 
   async getAllQuizzes(): Promise<Quiz[]> {
     return db.select().from(quizzes);
+  }
+
+  async updateQuizTeacherStatus(quizId: string, status: "none" | "pending" | "approved", teacherEditorId?: string, approvedTeacherName?: string): Promise<void> {
+    if (status === "none") {
+      await db.update(quizzes).set({
+        teacherEditStatus: "none",
+        teacherEditorId: null,
+        approvedTeacherName: null,
+      }).where(eq(quizzes.id, quizId));
+    } else {
+      await db.update(quizzes).set({
+        teacherEditStatus: status,
+        ...(teacherEditorId !== undefined ? { teacherEditorId } : {}),
+        ...(approvedTeacherName !== undefined ? { approvedTeacherName } : {}),
+      }).where(eq(quizzes.id, quizId));
+    }
+  }
+
+  async getPendingTeacherQuizEdits(): Promise<Array<Quiz & { bookTitle?: string; teacherName?: string }>> {
+    const pendingQuizzes = await db.select().from(quizzes).where(eq(quizzes.teacherEditStatus, "pending"));
+    const result = [];
+    for (const q of pendingQuizzes) {
+      const book = q.bookId ? await this.getBook(q.bookId) : undefined;
+      const teacher = q.teacherEditorId ? await this.getUser(q.teacherEditorId) : undefined;
+      result.push({ ...q, bookTitle: book?.title, teacherName: teacher?.fullName });
+    }
+    return result;
+  }
+
+  async getTeacherAddedQuestionsCount(quizId: string): Promise<number> {
+    const qs = await db.select().from(questions).where(
+      and(eq(questions.quizId, quizId), eq(questions.addedByTeacher, true))
+    );
+    return qs.length;
+  }
+
+  async deleteTeacherAddedQuestions(quizId: string): Promise<void> {
+    await db.delete(questions).where(
+      and(eq(questions.quizId, quizId), eq(questions.addedByTeacher, true))
+    );
   }
 
   async getQuestionsByQuizId(quizId: string): Promise<Question[]> {
