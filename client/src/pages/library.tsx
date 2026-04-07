@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Search, FileText, Sparkles } from "lucide-react";
+import { BookOpen, Search, FileText, Sparkles, Bookmark, BookmarkCheck } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -14,9 +14,9 @@ import type { Book, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 import { AgeGroupBadge } from "@/components/age-group-badge";
 import { useAuth } from "@/hooks/use-auth";
+import { apiRequest } from "@/lib/queryClient";
 
 type BookWithGenres = Book & { genres?: Genre[] };
-
 
 export default function Library() {
   const [location] = useLocation();
@@ -27,6 +27,7 @@ export default function Library() {
   const [filterGenre, setFilterGenre] = useState("");
   const [filterAge, setFilterAge] = useState("");
   const { isAuthenticated } = useAuth();
+  const qc = useQueryClient();
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -39,6 +40,21 @@ export default function Library() {
   const { data: recommended } = useQuery<Book[]>({
     queryKey: ["/api/books/recommended"],
     enabled: isAuthenticated,
+  });
+
+  const { data: bookmarks = [] } = useQuery<any[]>({
+    queryKey: ["/api/bookmarks"],
+    enabled: isAuthenticated,
+  });
+
+  const bookmarkedIds = new Set((bookmarks as any[]).map((bm: any) => bm.bookId));
+
+  const toggleBookmark = useMutation({
+    mutationFn: (bookId: string) =>
+      bookmarkedIds.has(bookId)
+        ? apiRequest("DELETE", `/api/bookmarks/${bookId}`)
+        : apiRequest("POST", `/api/bookmarks/${bookId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/bookmarks"] }),
   });
 
   const filtered = books?.filter((b) => {
@@ -70,8 +86,18 @@ export default function Library() {
                 <Link key={book.id} href={`${basePath}/knjiga/${book.id}`} data-testid={`link-recommended-${book.id}`}>
                   <Card className="hover-elevate h-full">
                     <CardContent className="p-3 space-y-2">
-                      <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                      <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden relative">
                         <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
+                        <button
+                          data-testid={`button-bookmark-rec-${book.id}`}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBookmark.mutate(book.id); }}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+                          title={bookmarkedIds.has(book.id) ? "Ukloni iz omiljenih" : "Dodaj u omiljene"}
+                        >
+                          {bookmarkedIds.has(book.id)
+                            ? <BookmarkCheck className="h-4 w-4 text-primary" />
+                            : <Bookmark className="h-4 w-4" />}
+                        </button>
                       </div>
                       <div>
                         <h3 className="font-semibold text-sm line-clamp-2">{book.title}</h3>
@@ -161,6 +187,16 @@ export default function Library() {
                           PDF
                         </span>
                       )}
+                      <button
+                        data-testid={`button-bookmark-${book.id}`}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBookmark.mutate(book.id); }}
+                        className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+                        title={bookmarkedIds.has(book.id) ? "Ukloni iz omiljenih" : "Dodaj u omiljene"}
+                      >
+                        {bookmarkedIds.has(book.id)
+                          ? <BookmarkCheck className="h-4 w-4 text-primary" />
+                          : <Bookmark className="h-4 w-4" />}
+                      </button>
                     </div>
                     <div>
                       <h3 className="font-semibold line-clamp-2" data-testid={`text-book-title-${book.id}`}>
