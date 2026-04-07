@@ -562,7 +562,7 @@ Sitemap: https://citanje.ba/sitemap.xml
 
   app.post("/api/admin/generate-quiz", requireAdmin, async (req, res) => {
     try {
-      const { bookId } = req.body;
+      const { bookId, numQuestions } = req.body;
       if (!bookId) return res.status(400).json({ message: "bookId je obavezan" });
 
       const book = await storage.getBook(bookId);
@@ -592,7 +592,12 @@ Sitemap: https://citanje.ba/sitemap.xml
       };
       const ageDesc = ageLabels[book.ageGroup || "R4"] || "djeca";
 
-      const prompt = `Generiraj kviz sa 20 pitanja o knjizi "${book.title}" autora ${book.author}.
+      const ageQuestionCount: Record<string, number> = {
+        R1: 20, R4: 25, R7: 30, O: 30, A: 30,
+      };
+      const questionCount = numQuestions || ageQuestionCount[book.ageGroup || "R4"] || 20;
+
+      const prompt = `Generiraj kviz sa ${questionCount} pitanja o knjizi "${book.title}" autora ${book.author}.
 Opis knjige: ${book.description || "Nema opisa."}
 Ciljana publika: ${ageDesc}
 Žanr: ${book.genre || "opći"}
@@ -678,6 +683,71 @@ Odgovori ISKLJUČIVO u JSON formatu:
     } catch (error: any) {
       console.error("AI quiz generation error:", error);
       return res.status(500).json({ message: error.message || "Greška pri generisanju kviza" });
+    }
+  });
+
+  app.post("/api/admin/quizzes/:id/generate-more-questions", requireAdmin, async (req, res) => {
+    try {
+      const quizId = req.params.id;
+      const { targetCount } = req.body;
+
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+
+      const book = await storage.getBook(quiz.bookId!);
+      if (!book) return res.status(404).json({ message: "Knjiga nije pronađena" });
+
+      const existingQuestions = await storage.getQuestionsByQuizId(quizId);
+      const ageQuestionCount: Record<string, number> = { R1: 20, R4: 25, R7: 30, O: 30, A: 30 };
+      const needed = (targetCount || ageQuestionCount[book.ageGroup || "R4"] || 30) - existingQuestions.length;
+
+      if (needed <= 0) return res.json({ message: "Kviz već ima dovoljan broj pitanja", added: 0 });
+
+      const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+      if (!apiKey) return res.status(503).json({ message: "AI generiranje nije dostupno" });
+
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI({ apiKey, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined });
+
+      const existingSummary = existingQuestions.slice(0, 10).map(q => `- ${q.questionText}`).join("\n");
+      const prompt = `Generiraj još ${needed} NOVIH i RAZLIČITIH pitanja o knjizi "${book.title}" autora ${book.author}.
+Već postoje sljedeća pitanja (nemoj ih ponavljati):
+${existingSummary}
+
+Svako pitanje mora imati 4 opcije odgovora i tačan odgovor (a/b/c/d).
+Pitanja trebaju biti na bosanskom/hrvatskom jeziku i testirati razumijevanje sadržaja.
+
+Odgovori ISKLJUČIVO u JSON formatu:
+{"questions":[{"questionText":"?","optionA":"","optionB":"","optionC":"","optionD":"","correctAnswer":"a","points":1}]}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 6000,
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) return res.status(500).json({ message: "AI nije generisao odgovor" });
+
+      let parsed: any;
+      try { parsed = JSON.parse(content); } catch { return res.status(500).json({ message: "AI odgovor nije validan JSON" }); }
+
+      if (!parsed.questions || !Array.isArray(parsed.questions)) return res.status(500).json({ message: "AI nije generisao pitanja" });
+
+      let added = 0;
+      for (const q of parsed.questions) {
+        try {
+          if (!q.questionText || !q.optionA || !q.optionB || !q.optionC || !q.optionD || !["a","b","c","d"].includes(q.correctAnswer)) continue;
+          await storage.createQuestion({ quizId, questionText: q.questionText, optionA: q.optionA, optionB: q.optionB, optionC: q.optionC, optionD: q.optionD, correctAnswer: q.correctAnswer, points: q.points || 1 });
+          added++;
+        } catch (e) { console.error("Error creating question:", e); }
+      }
+
+      return res.json({ message: `Dodano ${added} novih pitanja`, added, total: existingQuestions.length + added });
+    } catch (error: any) {
+      console.error("Generate more questions error:", error);
+      return res.status(500).json({ message: error.message || "Greška" });
     }
   });
 
