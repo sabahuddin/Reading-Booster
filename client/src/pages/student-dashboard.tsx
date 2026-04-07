@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Medal, Users, School } from "lucide-react";
+import { Star, BookOpen, Trophy, Target, TrendingUp, Award, Flame, Sparkles, Medal, Users, School, Printer } from "lucide-react";
 import { UserBadgeDisplay, AllBadges } from "@/components/user-badge";
 import DuelSection from "@/components/duel-section";
 import type { QuizResult, Challenge } from "@shared/schema";
@@ -57,13 +57,24 @@ export default function StudentDashboard() {
   return (
     <DashboardLayout role="student">
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-welcome">
-            Dobrodošli, {user?.fullName || "Čitaoče"}!
-          </h1>
-          <p className="text-muted-foreground">
-            Nastavi čitati i osvajaj bodove.
-          </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-welcome">
+              Dobrodošli, {user?.fullName || "Čitaoče"}!
+            </h1>
+            <p className="text-muted-foreground">
+              Nastavi čitati i osvajaj bodove.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/print?tip=ucenik", "_blank")}
+            data-testid="button-print-student"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Printaj izvještaj
+          </Button>
         </div>
 
 

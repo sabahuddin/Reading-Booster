@@ -55,6 +55,7 @@ import { CookieBanner } from "@/components/cookie-banner";
 import SchoolDashboard from "@/pages/school-dashboard";
 import SchoolAdminDashboard from "@/pages/school-admin-dashboard";
 import BookListingsPage from "@/pages/book-listings";
+import PrintPage from "@/pages/print-page";
 import { usePageTracking } from "@/hooks/use-page-tracking";
 
 function Router() {
@@ -95,6 +96,7 @@ function Router() {
       <Route path="/roditelj/djeca" component={ParentChildren} />
       <Route path="/skola" component={SchoolAdminDashboard} />
       <Route path="/skola/ucitelji" component={SchoolAdminDashboard} />
+      <Route path="/print" component={PrintPage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/knjige" component={AdminBooks} />
       <Route path="/admin/zanrovi" component={AdminGenres} />

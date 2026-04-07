@@ -20,7 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { Users, UserPlus, Trash2, GraduationCap, BookOpen, BarChart3, Copy, Pencil, RefreshCw, Search } from "lucide-react";
+import { Users, UserPlus, Trash2, GraduationCap, BookOpen, BarChart3, Copy, Pencil, RefreshCw, Search, Printer } from "lucide-react";
 
 interface Teacher {
   id: string;
@@ -197,11 +197,22 @@ export default function SchoolAdminDashboard() {
   return (
     <DashboardLayout role="school_admin">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-school-admin-title">
-            {stats?.schoolName || user?.schoolName || "Škola"} — Upravljanje
-          </h1>
-          <p className="text-muted-foreground">Upravljajte učiteljima i pratite napredak škole</p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold" data-testid="text-school-admin-title">
+              {stats?.schoolName || user?.schoolName || "Škola"} — Upravljanje
+            </h1>
+            <p className="text-muted-foreground">Upravljajte učiteljima i pratite napredak škole</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/print?tip=skola", "_blank")}
+            data-testid="button-print-school"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Printaj izvještaj
+          </Button>
         </div>
 
         {/* Stat cards */}

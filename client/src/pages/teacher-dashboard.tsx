@@ -42,6 +42,7 @@ import {
   XCircle,
   BarChart3,
   PieChart as PieChartIcon,
+  Printer,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -243,8 +244,17 @@ export default function TeacherDashboard() {
     <DashboardLayout role="teacher">
       <div className="space-y-6">
         <Card data-testid="card-class-overview">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle>Pregled razreda</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open("/print?tip=razred", "_blank")}
+              data-testid="button-print-class"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Printaj izvještaj
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

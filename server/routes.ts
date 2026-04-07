@@ -4028,17 +4028,61 @@ Odgovori ISKLJUČIVO u JSON formatu:
   // In-memory cache for IP geolocation (avoid rate limits)
   const geoCache = new Map<string, { country: string; countryCode: string; city: string }>();
 
+  function isPrivateIp(ip: string): boolean {
+    if (!ip) return true;
+    if (ip === '::1' || ip === '127.0.0.1' || ip === 'localhost') return true;
+    if (ip.startsWith('10.')) return true;
+    if (ip.startsWith('192.168.')) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return true;
+    if (ip.startsWith('fc') || ip.startsWith('fd') || ip.startsWith('fe80')) return true;
+    return false;
+  }
+
+  function extractRealIp(req: Request): string {
+    // Try X-Forwarded-For — pick the first non-private IP
+    const xForwardedFor = req.headers['x-forwarded-for'] as string;
+    if (xForwardedFor) {
+      const ips = xForwardedFor.split(',').map(s => s.trim());
+      for (const ip of ips) {
+        if (!isPrivateIp(ip)) return ip;
+      }
+    }
+    // Try X-Real-IP (Nginx)
+    const xRealIp = req.headers['x-real-ip'] as string;
+    if (xRealIp && !isPrivateIp(xRealIp)) return xRealIp;
+    // Fallback to req.ip (may be private in Docker)
+    return req.ip || '';
+  }
+
   async function getGeoForIp(ip: string): Promise<{ country: string; countryCode: string; city: string } | null> {
-    if (!ip || ip === '::1' || ip === '127.0.0.1') return null;
+    if (!ip || isPrivateIp(ip)) return null;
     if (geoCache.has(ip)) return geoCache.get(ip)!;
     try {
-      const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,countryCode,city`, { signal: AbortSignal.timeout(3000) });
-      if (!res.ok) return null;
-      const data = await res.json() as any;
-      if (data.status === 'success') {
-        const geo = { country: data.country || '', countryCode: data.countryCode || '', city: data.city || '' };
-        geoCache.set(ip, geo);
-        return geo;
+      // Primary: ipapi.co (free, HTTPS, 1000/day)
+      const res = await fetch(`https://ipapi.co/${ip}/json/`, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const data = await res.json() as any;
+        if (data.country_name && !data.error) {
+          const geo = {
+            country: data.country_name || '',
+            countryCode: data.country_code || '',
+            city: data.city || '',
+          };
+          geoCache.set(ip, geo);
+          return geo;
+        }
+      }
+    } catch {}
+    try {
+      // Fallback: ip-api.com (HTTP, 45 req/min)
+      const res2 = await fetch(`http://ip-api.com/json/${ip}?fields=country,countryCode,city`, { signal: AbortSignal.timeout(3000) });
+      if (res2.ok) {
+        const data = await res2.json() as any;
+        if (data.status === 'success') {
+          const geo = { country: data.country || '', countryCode: data.countryCode || '', city: data.city || '' };
+          geoCache.set(ip, geo);
+          return geo;
+        }
       }
     } catch {}
     return null;
@@ -4055,7 +4099,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.json({ ok: true });
       }
 
-      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || '';
+      const ip = extractRealIp(req);
       const { createHash } = await import('crypto');
       const ipHash = ip ? createHash('sha256').update(ip + process.env.SESSION_SECRET).digest('hex').slice(0, 16) : undefined;
       const userAgent = req.headers['user-agent'] || '';
