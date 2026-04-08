@@ -15,6 +15,7 @@ import { BookCover } from "@/components/book-cover";
 import { AgeGroupBadge } from "@/components/age-group-badge";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -28,6 +29,7 @@ export default function Library() {
   const [filterAge, setFilterAge] = useState("");
   const { isAuthenticated } = useAuth();
   const qc = useQueryClient();
+  const { toast } = useToast();
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -54,7 +56,15 @@ export default function Library() {
       bookmarkedIds.has(bookId)
         ? apiRequest("DELETE", `/api/bookmarks/${bookId}`)
         : apiRequest("POST", `/api/bookmarks/${bookId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/bookmarks"] }),
+    onSuccess: (_data, bookId) => {
+      qc.invalidateQueries({ queryKey: ["/api/bookmarks"] });
+      const wasBookmarked = bookmarkedIds.has(bookId);
+      toast({
+        title: wasBookmarked ? "Uklonjeno iz oznaka" : "Knjiga označena",
+        description: wasBookmarked ? "Knjiga je uklonjena iz tvojih oznaka." : "Knjiga je dodana u tvoje oznake.",
+      });
+    },
+    onError: () => toast({ title: "Greška", description: "Nije moguće označiti knjigu. Pokušaj ponovo.", variant: "destructive" }),
   });
 
   const filtered = books?.filter((b) => {
@@ -89,6 +99,7 @@ export default function Library() {
                       <div className="aspect-[2/3] w-full rounded-md bg-muted flex items-center justify-center overflow-hidden relative">
                         <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
                         <button
+                          type="button"
                           data-testid={`button-bookmark-rec-${book.id}`}
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBookmark.mutate(book.id); }}
                           className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
@@ -188,6 +199,7 @@ export default function Library() {
                         </span>
                       )}
                       <button
+                        type="button"
                         data-testid={`button-bookmark-${book.id}`}
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBookmark.mutate(book.id); }}
                         className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"

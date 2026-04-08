@@ -19,6 +19,7 @@ import { BookRating } from "@/components/book-rating";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Book, Quiz, QuizResult, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 import { AgeGroupBadge } from "@/components/age-group-badge";
@@ -33,6 +34,7 @@ export default function BookDetail() {
   const dashboardRole = isReader ? "reader" : "student" as const;
   const { isAuthenticated } = useAuth();
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [, studentParams] = useRoute("/ucenik/knjiga/:id");
   const [, readerParams] = useRoute("/citanje/knjiga/:id");
   const bookId = studentParams?.id || readerParams?.id;
@@ -62,7 +64,14 @@ export default function BookDetail() {
     mutationFn: () => isBookmarked
       ? apiRequest("DELETE", `/api/bookmarks/${bookId}`)
       : apiRequest("POST", `/api/bookmarks/${bookId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/bookmarks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/bookmarks"] });
+      toast({
+        title: isBookmarked ? "Uklonjeno iz oznaka" : "Knjiga označena",
+        description: isBookmarked ? "Knjiga je uklonjena iz tvojih oznaka." : "Knjiga je dodana u tvoje oznake.",
+      });
+    },
+    onError: () => toast({ title: "Greška", description: "Nije moguće označiti knjigu. Pokušaj ponovo.", variant: "destructive" }),
   });
 
   const takenQuizIds = new Set(myResults?.map((r) => r.quizId) ?? []);
