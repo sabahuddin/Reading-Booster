@@ -43,10 +43,10 @@ export default function CertificatesPage() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-certs-title">
               <Award className="text-primary h-7 w-7" />
-              Moji sertifikati
+              Moji certifikati
             </h1>
             <p className="text-muted-foreground mt-1">
-              Svaki položeni kviz donosi ti sertifikat o pročitanoj knjizi.
+              Svaki položeni kviz donosi ti certifikat o pročitanoj knjizi.
             </p>
           </div>
           {passed.length > 0 && (
@@ -57,6 +57,48 @@ export default function CertificatesPage() {
           )}
         </div>
 
+        {/* PRIMJER CERTIFIKATA — za pregled izgleda */}
+        <div className="mb-2">
+          <p className="text-xs text-amber-600 font-medium mb-3 flex items-center gap-1">
+            <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+            Primjer certifikata (placeholder)
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card className="border-2 border-primary/30 bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-orange-950/20 dark:via-background dark:to-amber-950/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 opacity-5">
+                <Award className="w-full h-full text-primary" />
+              </div>
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <Badge className="bg-primary/10 text-primary border-primary/30" variant="outline">
+                    Položeno ✓
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Certifikat o čitanju</p>
+                  <h3 className="font-bold text-base leading-tight">Mali princ</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">Haris Beganović</p>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                    <span className="font-semibold">45 bodova</span>
+                  </div>
+                  <span className="text-muted-foreground">90% tačnosti</span>
+                </div>
+                <div className="text-xs text-muted-foreground border-t pt-3 flex justify-between">
+                  <span>Datum: 08.04.2026.</span>
+                  <span>9/10 tačnih</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <hr className="border-dashed mb-2" />
+
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
@@ -64,9 +106,9 @@ export default function CertificatesPage() {
         ) : passed.length === 0 ? (
           <div className="text-center py-20">
             <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Još nemaš sertifikata</p>
+            <p className="text-lg font-medium">Još nemaš certifikata</p>
             <p className="text-muted-foreground mt-1">
-              Pročitaj knjigu i položi kviz da dobiješ prvi sertifikat!
+              Pročitaj knjigu i položi kviz da dobiješ prvi certifikat!
             </p>
           </div>
         ) : (
@@ -94,7 +136,7 @@ export default function CertificatesPage() {
                     </div>
 
                     <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Sertifikat o čitanju</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Certifikat o čitanju</p>
                       <h3 className="font-bold text-base leading-tight line-clamp-2" data-testid={`cert-title-${result.id}`}>
                         {result.bookTitle ?? "Knjiga"}
                       </h3>

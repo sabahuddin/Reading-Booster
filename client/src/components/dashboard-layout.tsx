@@ -67,7 +67,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Početna", url: "/ucenik", icon: Home },
     { title: "Biblioteka", url: "/ucenik/biblioteka", icon: BookOpen },
     { title: "Moji rezultati", url: "/ucenik/rezultati", icon: Trophy },
-    { title: "Sertifikati", url: "/ucenik/sertifikati", icon: Award },
+    { title: "Certifikati", url: "/ucenik/sertifikati", icon: Award },
     { title: "Oznake", url: "/bookmarks", icon: Bookmark },
   ],
   teacher: [
@@ -83,7 +83,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Početna", url: "/citanje", icon: Home },
     { title: "Biblioteka", url: "/citanje/biblioteka", icon: BookOpen },
     { title: "Moji rezultati", url: "/citanje/rezultati", icon: Trophy },
-    { title: "Sertifikati", url: "/citanje/sertifikati", icon: Award },
+    { title: "Certifikati", url: "/citanje/sertifikati", icon: Award },
     { title: "Oznake", url: "/bookmarks", icon: Bookmark },
   ],
   school: [
