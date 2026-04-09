@@ -3,6 +3,17 @@
 ## Overview
 "Čitanje.ba" je full-stack platforma dizajnirana za podsticanje čitanja i mjerenje čitalačke kompetencije na bosansko-hrvatskom govornom području. Inspirirana antolin.de modelom, omogućava korisnicima da čitaju knjige, rješavaju kvizove, sakupljaju bodove i prate napredak. Platforma cilja škole, biblioteke i porodice, s fokusom na fizičke knjige i integraciju s školskim bibliotekama. Podržava individualno, porodično i institucionalno korišćenje uz elemente gamifikacije: bodovi, značke, rang-liste i dvoboji.
 
+**Ključne karakteristike (april 2026):**
+- ~2.000 knjiga u biblioteci, 234 kviza, 6.186 pitanja
+- 6 korisničkih uloga: Admin, School Admin, Teacher, Parent, Reader, Student
+- Sistem starosnih grupa (R1/R4/R7/O/A) s različitim brojem bodova i pitanja
+- Gamifikacija: bodovi, značke (6 nivoa), rang-lista, dvoboji, sedmična serija
+- Certifikati za svaki položen kviz
+- Berza knjiga (prodaja/poklon/razmjena fizičkih knjiga)
+- Nastavnički urednik kvizova (s odobrenjem admina)
+- Blog, čitalački izazovi, partneri, PWA podrška
+- Analitika posjeta s geolokacijom i grafikonima
+
 ## User Preferences
 Ne definirano.
 
