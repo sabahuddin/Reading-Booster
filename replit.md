@@ -1,18 +1,18 @@
 # Čitanje.ba — Platforma za unapređenje čitanja
 
 ## Overview
-"Čitanje.ba" je full-stack platforma dizajnirana za podsticanje čitanja i mjerenje čitalačke kompetencije na bosansko-hrvatskom govornom području. Inspirirana antolin.de modelom, omogućava korisnicima da čitaju knjige, rješavaju kvizove, sakupljaju bodove i prate napredak. Platforma cilja škole, biblioteke i porodice, s fokusom na fizičke knjige i integraciju s školskim bibliotekama. Podržava individualno, porodično i institucionalno korišćenje uz elemente gamifikacije: bodovi, značke, rang-liste i dvoboji.
+"Čitanje.ba" is a full-stack platform designed to promote reading and measure reading comprehension in the Bosnian-Croatian speaking area. Inspired by the antolin.de model, it allows users to read books, solve quizzes, collect points, and track progress. The platform targets schools, libraries, and families, focusing on physical books and integration with school libraries. It supports individual, family, and institutional use with gamification elements like points, badges, leaderboards, and duels.
 
-**Ključne karakteristike (april 2026):**
-- ~2.000 knjiga u biblioteci, 234 kviza, 6.186 pitanja
-- 6 korisničkih uloga: Admin, School Admin, Teacher, Parent, Reader, Student
-- Sistem starosnih grupa (R1/R4/R7/O/A) s različitim brojem bodova i pitanja
-- Gamifikacija: bodovi, značke (6 nivoa), rang-lista, dvoboji, sedmična serija
-- Certifikati za svaki položen kviz
-- Berza knjiga (prodaja/poklon/razmjena fizičkih knjiga)
-- Nastavnički urednik kvizova (s odobrenjem admina)
-- Blog, čitalački izazovi, partneri, PWA podrška
-- Analitika posjeta s geolokacijom i grafikonima
+**Key Capabilities:**
+- A library of approximately 2,000 books and 234 quizzes with over 6,000 questions.
+- Six user roles: Admin, School Admin, Teacher, Parent, Reader, Student.
+- Age-group specific content and scoring (R1/R4/R7/O/A).
+- Gamification features: points, 6-level badges, leaderboards, duels, weekly streaks.
+- Certificates for completed quizzes.
+- A book exchange marketplace for physical books (sale/gift/swap).
+- Teacher-managed quiz editor (admin approval required).
+- Blog, reading challenges, partner showcases, and PWA support.
+- Visit analytics with geolocation and graphical reporting.
 
 ## User Preferences
 Ne definirano.
@@ -21,269 +21,58 @@ Ne definirano.
 
 ### Design
 - **Brand:** "Čitanje" / "Čitanje.ba"
-- **Primary Color:** #FF861C (topla naranča, prilagođena djeci)
-- **Accent Color:** HSL(28, 95%, 48%)
-- **Landing Page Overlay:** rgba(210,105,10,0.85)
-- **CTA Section:** hsl(28,95%,45%)
-- **Font:** Nunito / Comic Neue
-- **Logo:** Prominentno prikazano u navigaciji.
-- **Naslovnice knjiga:** Portretni format 2:3.
-- **Starosne grupe:** Svaka grupa (R1, R4, R7, O, A) ima posebnu boju za vizualnu razliku.
+- **Color Scheme:** Primary #FF861C (warm orange), accent HSL(28, 95%, 48%), landing page overlay rgba(210,105,10,0.85), CTA section hsl(28,95%,45%).
+- **Font:** Nunito / Comic Neue.
+- **Logo:** Prominently displayed in navigation.
+- **Book Covers:** Portrait format 2:3.
+- **Age Groups:** Each age group (R1, R4, R7, O, A) has a distinct color for visual differentiation.
 
 ### Technical Implementation
 - **Frontend:** React, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, wouter (routing), TanStack React Query v5 (state management).
 - **Backend:** Node.js, Express, express-session.
-- **Database:** PostgreSQL s Drizzle ORM.
-- **Autentifikacija:** Session-based s `connect-pg-simple`. Lozinke hashirane s `crypto scrypt`. Format: `hashHex.saltHex` (tačka kao separator).
-- **Sigurnost:** Rate limiting (100 req/15min za API, 5 login pokušaja/15min), XSS sanitizacija na svim `/api` rutama, validacija lozinke (min 8 znakova, veliko slovo, broj).
-- **API Prefix:** Sve backend rute imaju prefiks `/api`.
-- **Struktura projekta:** Jasno razdvojeni client, server i shared direktorij.
-- **Korisničke uloge:** Admin, School Admin, Teacher, Parent, Reader, Student — svaka s posebnim pristupom i funkcionalnostima.
+- **Database:** PostgreSQL with Drizzle ORM.
+- **Authentication:** Session-based with `connect-pg-simple`. Passwords are hashed using `crypto scrypt` in `hashHex.saltHex` format.
+- **Security:** Rate limiting (API: 100 req/15min; login: 5 attempts/15min), XSS sanitization on all `/api` routes, password validation (min 8 chars, uppercase, number).
+- **API Prefix:** All backend routes are prefixed with `/api`.
+- **Project Structure:** Clear separation of client, server, and shared directories.
+- **User Roles:** Admin, School Admin, Teacher, Parent, Reader, Student, each with specific access and functionalities.
 
-### User Roles & Access
-| Uloga | Opis | Posebnosti |
-|-------|------|------------|
-| Admin | Superadmin | Pun pristup svemu |
-| School Admin | Direktor škole | Odobrava nastavnike, pregled škole |
-| Teacher | Nastavnik | Kreira učenike, prati razred |
-| Parent | Roditelj | Kreira do 3 djece, prati napredak |
-| Reader (Čitalac) | Opći korisnik 18+ | Samostalna registracija |
-| Student | Učenik | Dobija karticu od učitelja |
+### Feature Specifications
+- **Library and Books:** Public library with filters, featured books, recommendations, detailed book pages. Admin CSV bulk import for books and cover uploads.
+- **Quizzes:** Interactive, timed quizzes (30s/question), auto-advance, auto-submit. Dynamic scoring based on book age group. AI generation of quizzes (OpenAI) and CSV bulk import of questions. Quizzes are randomized. Passing thresholds: R1 (40%), others (50%). Failed quizzes have a 48h cooldown.
+- **Book Rating:** User ratings (1-5 stars) with an upsert system.
+- **Social Sharing:** Sharing books on Facebook, Twitter/X, WhatsApp, Instagram, TikTok.
+- **Book Exchange Marketplace (`/razmjena`):** Platform for selling, donating, and exchanging physical books, with search, filtering, and user-managed listings, including image uploads and admin moderation.
+- **Duel System:** Users challenge opponents with similar scores in goal-based competitions, displaying usernames.
+- **Badges:** Automatic system based on total user points, displayed on profiles and leaderboards (levels: Početnik to Maestro).
+- **Leaderboard:** Public display of top readers, separated by "Kids" and "Adults," with weekly/monthly/yearly filters.
+- **Teacher Dashboard:** Class overview with student point charts and top genres. Student management (creation, deletion, class/name editing), bonus points, inactive students, weekly challenges, parent request approvals.
+- **Parent Dashboard:** Child progress overview, creation of up to 3 child accounts, management of child accounts created by parent (password changes, profile deletion).
+- **Student Profile:** Fields for name, surname, class, age group. Password managed by teacher or parent.
+- **Visit Analytics (`/admin/analitika`):** Automated tracking of page views with IP geolocated and hashed. Admin dashboard displays summary cards, views/quizzes solved charts, hourly activity, top countries, cities, pages, referrers, device types, and daily quiz completions.
+- **Partners & Challenges:** Admin CRUD for partners and reading challenges, displayed on the homepage.
+- **Registration:** Separate tabs for general and institutional registration, with `ageGroup` field for all users. Institutional registrations await admin approval.
+- **Blog:** Admin-managed blog posts with keywords, public display, filtering, comments, and rating system.
+- **Notifications:** In-app bell icon for unread notifications related to quizzes, streaks, and recommendations.
+- **Bookmarks:** Users can bookmark books, viewable on a dedicated `/bookmarks` page.
+- **Certificates:** Printable certificates for each passed quiz, accessible via student/reader dashboards.
+- **Classrooms:** Teachers create and manage classroom groups. Students are assigned to classes. School admins can view all classes and move students between them.
+- **Teacher Quiz Editing:** Teachers can add 1-5 questions to existing quizzes, which enter a "pending" status for admin approval/rejection. Approved quizzes display the teacher's name.
+- **Forgot Password:** Allows users to reset passwords via a token-based system (for admin use, no email service).
+- **Weekly Streak:** Automatic tracking of consecutive weeks with a solved quiz, displayed as a banner and generates milestone notifications.
+- **Book Recommendations:** "Recommended for you" section displaying 5 unread books from the user's age group.
+- **PWA (Progressive Web App):** Configured with manifest.json, icons, and theme colors for installability.
+- **Print Buttons:** Functionality to print reports from student, reader, and parent dashboards.
+- **Admin User Bulk Operations:** Checkbox for selecting users, bulk deactivate button, and CSV export.
 
-### Scoring System
-- Bodovi po tačnom odgovoru zavise od starosne skupine knjige:
-  - R1 (1.-3. razred): **2 boda/pitanju**
-  - R4 (4.-6. razred): **3 boda/pitanju**
-  - R7 (7.-9. razred): **5 bodova/pitanju**
-  - O (Omladina 15-18): **7 bodova/pitanju**
-  - A (Odrasli 18+): **10 bodova/pitanju**
-- Netačni odgovori **oduzimaju bodove za R4+** — formula: `max(0, tačni - netačni) × bodovi_po_pitanju`
-- **R1 djeca (6-9 god): BEZ oduzimanja bodova** — samo `tačni × bodovi_po_pitanju`
-- Minimalan score je uvijek 0
-- Bodovi se akumuliraju na profilu korisnika
-
-### Quiz Question Limits (po starosnoj skupini)
-| Grupa | Prikazuje | Pool (min. u bazi) |
-|-------|-----------|---------------------|
-| R1 | 10 pitanja | 15 ukupno |
-| R4 | 15 pitanja | 25 ukupno |
-| R7 | 20 pitanja | 30 ukupno |
-| O | 20 pitanja | 30 ukupno |
-| A | 20 pitanja | 30 ukupno |
-- Pitanja se **randomizuju** pri svakom pokušaju → različit set svaki put
-
-### Quiz Pass Thresholds
-- R1: **40%** tačnih za prolaz
-- R4, R7, O, A: **50%** tačnih za prolaz
-- **Pali kviz → 48h cooldown**, zatim novi pokušaj s novim random setom pitanja
-- **Položen kviz → ne može se ponavljati**
-- Pre-check eligibility: `/api/quizzes/:id/eligibility` vraća `canTake: true/false` s razlogom i preostalim vremenom
-
-### Book Filtering by Age Group (za učenike/čitaoce)
-| Starosna grupa korisnika | Vidi knjige |
-|--------------------------|-------------|
-| R1 | R1 + R4 |
-| R4 | R4 + R7 |
-| R7 | R7 + O |
-| O | O + A |
-| A | O + A |
-- Admini, učitelji, roditelji vide SVE knjige
-
-## Feature Specifications
-
-### Biblioteka i knjige
-- Javna biblioteka s filterima (žanr, starosna dob, težina čitanja)
-- Istaknute knjige, preporuke, detaljne stranice knjiga
-- CSV masovni uvoz knjiga (admin)
-- Naslovnice: upload putem admin panela
-
-### Kvizovi
-- Interaktivni kvizovi s timerom (30s/pitanje), auto-advance, auto-submit
-- Prikaz broja completiona i autora kviza
-- AI generisanje kvizova (OpenAI) — individualno i bulk
-- CSV masovni uvoz pitanja
-- Bodovi se određuju dinamički iz `book.ageGroup`, ne iz `question.points`
-
-### Ocjenjivanje knjiga
-- Korisnici ocjenjuju knjige (1-5 zvjezdica s BookOpen ikonicama)
-- Upsert sistem — jedan glas po korisniku po knjizi
-- Prikazano na stranici knjige, iznad socijalnog dijeljenja
-
-### Socijalno dijeljenje
-- Dijeljenje knjiga na: Facebook, Twitter/X, WhatsApp, Instagram, TikTok
-- LinkedIn i Telegram uklonjeni
-
-### Berza knjiga (`/razmjena`)
-- Javna platforma za prodaju, doniranje i razmjenu fizičkih knjiga
-- Filtriranje i pretraga
-- Korisnici upravljaju vlastitim oglasima
-
-### Duel sistem
-- Korisnici izazivaju protivnike sa sličnim bodovima
-- Takmičenje zasnovano na ciljevima, praćenje u realnom vremenu
-- Prikazuje **korisničko ime** (username), ne puno ime
-
-### Značke (Badges)
-- Automatski sistem baziran na ukupnim bodovima korisnika
-- Prikazano na profilu i listi rang-tablice
-- Nivoi: Početnik → Čitalac → Knjigoljubac → Znalac → Stručnjak → Maestro
-
-### Rang-lista (Leaderboard)
-- Javni prikaz top čitalaca
-- Odvojeno: "Djeca" i "Odrasli"
-- Filtri: sedmica / mjesec / godina
-
-### Učiteljski dashboard
-- Pregled razreda s grafikonima:
-  - Bar chart — **svi** učenici sortirani po bodovima (puna širina)
-  - Pie chart — top 10 žanrova + "Ostali žanrovi", legenda desno
-- Upravljanje učenicima: kreiranje, brisanje, **uređivanje razreda i imena**
-- Bonus bodovi, neaktivni učenici, sedmični izazov
-- Odobravanje roditeljskih zahtjeva za linkovanje
-
-### Roditeljski dashboard
-- Pregled napretka djece
-- Kreiranje do 3 dječija računa
-- **Upravljanje djecom koja je roditelj kreirao** (ne školski učenici):
-  - Promjena lozinke djeteta
-  - Brisanje profila djeteta (s potvrdom)
-  - Korisničko ime se ne može mijenjati
-
-### Profil učenika
-- Polja: ime i prezime, razred (className), starosna grupa
-- Razred unosi učiteljica ili roditelj
-- Lozinka: samo učiteljica ili roditelj mogu mijenjati (učenici dobivaju kartice)
-
-### Analitika posjeta (`/admin/analitika`)
-- Automatsko praćenje posjeta na svakom route changeu (hook `usePageTracking`)
-- IP geolokacija via ip-api.com (besplatno, bez API ključa, cachiran)
-- `page_views` tabela: path, country, countryCode, city, ipHash (SHA256), userAgent, referrer, userId, visitedAt
-- IP se hashira (SHA256 + SESSION_SECRET) — nikad ne čuvamo sirovi IP
-- Admin dashboard prikazuje:
-  - Summary kartice (danas, sedmica, mjesec, ukupno, jedinstveni, zemlje, stranice)
-  - Area chart pregledi + kvizovi riješeni (30 dana)
-  - Bar chart aktivnosti po satu dana (0–23h)
-  - Top 10 zemalja s flagovima i bar graphom
-  - Top 15 gradova s flagovima
-  - Top 10 najpopularnijih stranica
-  - Top 10 referrera (odakle dolaze posjetioci)
-  - Pie chart tipa uređaja (Desktop, Mobilni, Tablet)
-  - Bar chart kvizova riješenih po danu (30 dana)
-- Ruta: `GET /api/admin/analytics`, endpoint za log: `POST /api/analytics/pageview`
-
-### Partneri
-- Admin CRUD za partnere s upload loga
-- Prikazano na homepage-u
-
-### Izazovi (Challenges)
-- Admin CRUD za čitalačke izazove s nagradama
-- Prikazano na homepage-u
-
-### Registracija
-- Odvojeni tabovi: opća registracija i institucionalna
-- Institucije čekaju odobrenje admina
-- `ageGroup` polje za sve korisnike
-
-### Blog
-- Admin-managed blog postovi s ključnim riječima
-- Javni prikaz, filtriranje, komentari i sistem ocjenjivanja
-
-### Notifikacije
-- Bell ikona u navbar-u s brojem nepročitanih
-- Notifikacije za: položen kviz, sedmični streak, preporuke
-- API: `GET /api/notifications/my`, `POST /api/notifications/:id/read`, `POST /api/notifications/read-all`
-
-### Oznake (Bookmarks)
-- Korisnici mogu označiti knjige (toggle)
-- Stranica `/bookmarks` prikazuje sve označene knjige
-- API: `POST /api/bookmarks/toggle`, `GET /api/bookmarks`
-- Dugme na stranici knjige (knjiga/book-detail.tsx)
-- Link u sidebar navigaciji za učenike i čitaoce
-
-### Sertifikati
-- Stranica `/ucenik/sertifikati` i `/citanje/sertifikati`
-- Prikazuje lijepe kartice za svaki položen kviz
-- Includirano u sidebar navigaciju za učenike i čitaoce
-
-### Razredi (Classrooms)
-- Nastavnici kreiraju razredne grupe (`classrooms` tabela): naziv, opis
-- Učenici se dodjeljuju razredu pri kreiranju (`classroomId` na `users` tabeli)
-- Nastavnički panel → "Učenici" stranica: kartica "Razredi" s CRUD za grupe, prikaz učenika po razredu
-- Forma za kreiranje učenika: selector za razred i starosnu grupu (ageGroup)
-- School Admin: tab "Grupe" prikazuje sve razrede škole s brojem učenika i imenom nastavnika
-- School Admin: dugme "Premjesti" na svakom učeniku → premještanje između razreda (move-student)
-- API: `GET/POST /api/teacher/classrooms`, `PUT/DELETE /api/teacher/classrooms/:id`, `GET /api/teacher/classrooms/:id/students`
-- API: `GET /api/school-admin/classrooms`, `PUT /api/school-admin/move-student`
-- DB migracije: `create_classrooms_table`, `add_classroom_id_to_users`
-
-### Nastavnička izmjena kvizova (Teacher Quiz Editing)
-- Nastavnici mogu dodati 1–5 novih pitanja na postojeći kviz
-- Pitanja su označena kao `added_by_teacher: true`
-- Kviz prelazi u status `"pending"` — čeka odobrenje admina
-- Admin na `/admin/odobrenja` (tab "Kviz izmjene") odobrava ili odbija
-- **Odobreno:** kviz postaje `"approved"`, prikazuje se "Kviz odobrio/la: [Ime nastavnika]" na stranici knjige
-- **Odbijeno:** teacher-dodana pitanja se brišu, kviz se vraća na `"none"`
-- DB kolone: `teacher_edit_status`, `teacher_editor_id`, `approved_teacher_name` na `quizzes`; `added_by_teacher` na `questions`
-- API: `GET/POST /api/teacher/quizzes/:id/edit-info|submit-questions`; `GET /api/admin/pending-quiz-edits`; `POST /api/admin/quiz-edits/:id/approve|reject`
-
-### Zaboravljena lozinka
-- Stranica `/zaboravljena-lozinka` — korisnik unosi username/email
-- Backend kreira token, vraca ga direktno u API odgovoru (bez e-mail servisa, za admin upotrebu)
-- Stranica `/reset-lozinke?token=XXX` — novi password sa validacijom
-
-### Sedmična serija (Weekly Streak)
-- Automatski tracking pri rješavanju kviza — format: `${year}-W${weekNum}`
-- Prikazano kao banner kartica na student/reader dashboardima kad je streak > 0
-- API: `GET /api/me/streak`
-- Notifikacija svakih 4 sedmice (milestone)
-
-### Preporuke knjiga
-- Sekcija "Preporučeno za tebe" na vrhu biblioteke (iznad filtera)
-- API: `GET /api/books/recommended`
-- Prikazuje 5 knjiga koje user još nije čitao, iz iste starosne grupe
-
-### PWA (Progressive Web App)
-- `client/public/manifest.json` kreiran s ikonama i temom
-- `index.html` ima manifest link i apple/mobile meta tagove
-- Theme color: #FF861C
-
-### Berza knjiga — Slike i Admin Moderacija
-- Korisnici mogu uploadati sliku knjige prilikom kreiranja oglasa
-- Slike se čuvaju u `/uploads/berza/` direktoriju
-- Admin može obrisati bilo koji oglas (ShieldX dugme) via `DELETE /api/admin/book-listings/:id`
-- Slike se prikazuju na vrhu listing kartice ako postoje
-
-### Print dugmad
-- Student dashboard: "Printaj izvještaj" → `/print?tip=ucenik`
-- Reader dashboard: "Printaj izvještaj" → `/print?tip=citanje`
-- Parent dashboard: "Printaj izvještaj" → window.print()
-
-### Admin — Korisnici bulk operacije
-- Checkbox za odabir svih/pojedinih korisnika
-- "Deaktiviraj" dugme s AlertDialog potvrdom
-- CSV Export — `GET /api/admin/users/export-csv`
-- Deaktivacija: `POST /api/admin/users/bulk-deactivate`
-
-## Critical Implementation Notes
-- **NIKAD ne brisati produkcijske podatke**. Seed loader je samo-additive.
-- **Produkcija:** admin/admin123 | URL: citanje.ba | ~1996 knjiga
-- **Docker/Coolify Volume:** `/data/citanje/uploads` → `/app/uploads`
-- **Hash format:** `hashHex.saltHex` (tačka separator) — NIJE `salt:hash`
-- **Subscription system:** TRENUTNO ONEMOGUĆEN — svi korisnici imaju neograničen pristup kvizovima. `canTakeQuiz` uvijek `true`.
-- **Quiz hook ordering:** `questionsToUse` useMemo MORA biti definiran PRIJE svih useCallback koji ga koriste (production minifikacija uzrokuje TDZ grešku).
-- **Duel:** prikazuje `username`, NE `fullName`
-- **Dev DB stanje (april 2026):** 1989 knjiga, 234 kviza, 6186 pitanja (sinhronizovano s produkcijom)
-- **seed-data.json stanje:** 1989 knjiga, 234 kviza, 6187 pitanja, 24 žanra — eksportovano iz lokalnog DB april 2026
-- **PRODUKCIJA: pokrenuti** `./scripts/delete-short-quizzes.sh` da se obrišu kvizovi ispod standarda (isto kao dev)
-- **Kviz standard (min pitanja u bazi):** R1=15, R4=25, R7/O/A=30. Kviz bez dovoljno pitanja se ne smije prikazivati korisniku.
+### Critical Implementation Notes
+- Production data must never be deleted. Seed loader is additive.
+- Authentication hash format: `hashHex.saltHex`.
+- Subscription system is currently disabled; all users have unlimited quiz access.
+- Quiz questions are randomized and minimum question pools are enforced (R1=15, R4=25, R7/O/A=30).
+- Production environment requires execution of `./scripts/delete-short-quizzes.sh` to remove quizzes below standard.
 
 ## External Dependencies
-- **OpenAI API:** Za AI-generisane kvizove (via Replit AI Integrations ili `OPENAI_API_KEY` fallback).
-- **GitHub:** Za version control.
-- **Coolify / Hetzner:** Za deployment i PostgreSQL bazu.
-
-## Default Test Accounts (Development)
-- Admin: admin / admin123
-- Učitelj: ucitelj1 / ucitelj123
-- Roditelj: roditelj1 / roditelj123
-- Učenik: ucenik1 / ucenik123, ucenik2 / ucenik123, ucenik3 / ucenik123 (36 bodova, ageGroup: R1)
+- **OpenAI API:** For AI-generated quizzes.
+- **GitHub:** For version control.
+- **Coolify / Hetzner:** For deployment and PostgreSQL database hosting.
