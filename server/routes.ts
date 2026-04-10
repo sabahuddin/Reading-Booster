@@ -421,6 +421,9 @@ Sitemap: https://citanje.ba/sitemap.xml
   const { createCoverFetchStatus, fetchAllBookCovers: fetchAllCovers, isValidCover: isValidCoverFn, downloadImageToLocal, migrateExternalCoversToLocal, isExternalCover } = await import("./fetch-covers");
   const coverFetchStatus = createCoverFetchStatus();
 
+  const { createBookDetailStatus, fetchMissingBookDetails, countBooksNeedingDetails } = await import("./fetch-book-details");
+  const bookDetailStatus = createBookDetailStatus();
+
   app.post("/api/admin/fetch-covers", requireAdmin, async (_req, res) => {
     if (coverFetchStatus.running) {
       return res.status(409).json({ message: "Pretraga korica je već u toku." });
@@ -558,6 +561,50 @@ Sitemap: https://citanje.ba/sitemap.xml
       coverFetchStatus.running = false;
       return res.status(500).json({ message: error.message });
     }
+  });
+
+  app.post("/api/admin/fetch-book-details", requireAdmin, async (_req, res) => {
+    if (bookDetailStatus.running) {
+      return res.status(409).json({ message: "Preuzimanje opisa je već u toku." });
+    }
+    try {
+      const count = await countBooksNeedingDetails();
+      if (count === 0) {
+        return res.json({ message: "Sve knjige već imaju opise.", total: 0 });
+      }
+      bookDetailStatus.running = true;
+      bookDetailStatus.done = false;
+      bookDetailStatus.logs = [];
+      bookDetailStatus.processed = 0;
+      bookDetailStatus.updated = 0;
+      bookDetailStatus.notFound = 0;
+      bookDetailStatus.total = count;
+
+      res.json({ message: `Pokrenuto preuzimanje opisa za ${count} knjiga.`, total: count });
+
+      fetchMissingBookDetails(bookDetailStatus, (msg) => {
+        bookDetailStatus.logs.push(msg);
+        if (bookDetailStatus.logs.length > 100) bookDetailStatus.logs.shift();
+      }).catch(() => {
+        bookDetailStatus.done = true;
+        bookDetailStatus.running = false;
+      });
+    } catch (error: any) {
+      bookDetailStatus.running = false;
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/fetch-book-details/status", requireAdmin, (_req, res) => {
+    res.json({
+      running: bookDetailStatus.running,
+      total: bookDetailStatus.total,
+      processed: bookDetailStatus.processed,
+      updated: bookDetailStatus.updated,
+      notFound: bookDetailStatus.notFound,
+      done: bookDetailStatus.done,
+      logs: bookDetailStatus.logs.slice(-10),
+    });
   });
 
   app.post("/api/admin/generate-quiz", requireAdmin, async (req, res) => {

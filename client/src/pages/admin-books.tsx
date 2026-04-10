@@ -406,6 +406,8 @@ export default function AdminBooks() {
   }
 
   const [coverProgress, setCoverProgress] = useState("");
+  const [detailsRunning, setDetailsRunning] = useState(false);
+  const [detailsProgress, setDetailsProgress] = useState("");
   const [pendingReview, setPendingReview] = useState<Array<{ bookId: string; bookTitle: string; bookAuthor: string; foundTitle: string; imageUrl: string; similarityScore: number }>>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -499,6 +501,46 @@ export default function AdminBooks() {
       toast({ title: "Greška", description: err.message, variant: "destructive" });
       setMigrating(false);
       setCoverProgress("");
+    }
+  }
+
+  async function handleFetchBookDetails() {
+    setDetailsRunning(true);
+    setDetailsProgress("Pokrećem...");
+    try {
+      const res = await fetch("/api/admin/fetch-book-details", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Greška");
+      }
+      const data = await res.json();
+      if (data.total === 0) {
+        setDetailsProgress("Sve knjige već imaju opise.");
+        setDetailsRunning(false);
+        return;
+      }
+      setDetailsProgress(`Pokrenuto: ${data.total} knjiga bez opisa`);
+      toast({ title: "Pokrenuto", description: `Preuzimam opise za ${data.total} knjiga.` });
+
+      const poll = setInterval(async () => {
+        try {
+          const sRes = await fetch("/api/admin/fetch-book-details/status");
+          if (!sRes.ok) return;
+          const s = await sRes.json();
+          setDetailsProgress(`${s.processed}/${s.total} obrađeno — ${s.updated} ažurirano`);
+          if (s.done) {
+            clearInterval(poll);
+            setDetailsRunning(false);
+            queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+            toast({ title: "Završeno", description: `${s.updated} knjiga ažurirano opisima od ${s.total}.` });
+            setTimeout(() => setDetailsProgress(""), 15000);
+          }
+        } catch {}
+      }, 3000);
+    } catch (err: any) {
+      toast({ title: "Greška", description: err.message, variant: "destructive" });
+      setDetailsRunning(false);
+      setDetailsProgress("");
     }
   }
 
@@ -851,6 +893,10 @@ export default function AdminBooks() {
                   <Download className="mr-2 h-4 w-4" />
                   Preuzmi eksterne korice na server
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleFetchBookDetails} disabled={detailsRunning || migrating} data-testid="button-fetch-book-details">
+                  <BookOpen className={`mr-2 h-4 w-4 ${detailsRunning ? "animate-pulse" : ""}`} />
+                  {detailsRunning ? "Preuzimam opise..." : "Preuzmi opise (knjiga.ba)"}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleCleanupBooks} disabled={cleaningUp} data-testid="button-cleanup-books">
                   <Trash2 className={`mr-2 h-4 w-4`} />
                   {cleaningUp ? "Čišćenje u toku..." : "Očisti naslove i opise"}
@@ -875,6 +921,13 @@ export default function AdminBooks() {
           <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 flex items-center gap-3" data-testid="cover-progress">
             <RefreshCw className={`h-4 w-4 text-primary shrink-0 ${migrating ? "animate-spin" : ""}`} />
             <span className="text-sm font-medium">{coverProgress}</span>
+          </div>
+        )}
+
+        {detailsProgress && (
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 flex items-center gap-3" data-testid="details-progress">
+            <BookOpen className={`h-4 w-4 text-blue-500 shrink-0 ${detailsRunning ? "animate-pulse" : ""}`} />
+            <span className="text-sm font-medium">{detailsProgress}</span>
           </div>
         )}
 
