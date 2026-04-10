@@ -4000,6 +4000,160 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // ==================== SCHOOL ADMIN ANALYTICS ====================
+
+  app.get("/api/school-admin/analytics", requireSchoolAdmin, async (req, res) => {
+    try {
+      const teachers = await storage.getTeachersBySchoolAdminId(req.session.userId!);
+      const admin = await storage.getUser(req.session.userId!);
+      const schoolClassrooms = admin?.schoolName
+        ? await storage.getClassroomsBySchoolName(admin.schoolName)
+        : [];
+
+      const teacherStats = await Promise.all(teachers.map(async (teacher) => {
+        const students = await storage.getStudentsByTeacherId(teacher.id);
+        const teacherClassrooms = schoolClassrooms.filter(c => c.teacherId === teacher.id);
+        let totalPoints = 0;
+        let totalQuizzes = 0;
+        let totalCorrect = 0;
+        let totalQuestions = 0;
+        for (const student of students) {
+          totalPoints += student.points;
+          const results = await storage.getQuizResultsByUserId(student.id);
+          totalQuizzes += results.length;
+          for (const r of results) {
+            totalCorrect += r.correctAnswers;
+            totalQuestions += r.totalQuestions;
+          }
+        }
+        return {
+          id: teacher.id,
+          fullName: teacher.fullName,
+          username: teacher.username,
+          email: teacher.email,
+          className: teacher.className,
+          maxStudentAccounts: teacher.maxStudentAccounts,
+          studentCount: students.length,
+          classroomCount: teacherClassrooms.length,
+          totalPoints,
+          avgPoints: students.length > 0 ? Math.round(totalPoints / students.length) : 0,
+          quizCount: totalQuizzes,
+          accuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+        };
+      }));
+
+      const classroomStats = await Promise.all(schoolClassrooms.map(async (c) => {
+        const students = await storage.getStudentsByClassroomId(c.id);
+        const teacher = teachers.find(t => t.id === c.teacherId);
+        let totalPoints = 0;
+        let totalQuizzes = 0;
+        let totalCorrect = 0;
+        let totalQuestions = 0;
+        const studentDetails: any[] = [];
+        for (const student of students) {
+          totalPoints += student.points;
+          const results = await storage.getQuizResultsByUserId(student.id);
+          const studentQuizzes = results.length;
+          const studentCorrect = results.reduce((s, r) => s + r.correctAnswers, 0);
+          const studentQCount = results.reduce((s, r) => s + r.totalQuestions, 0);
+          totalQuizzes += studentQuizzes;
+          totalCorrect += studentCorrect;
+          totalQuestions += studentQCount;
+          const { password: _, ...sw } = student as any;
+          studentDetails.push({
+            ...sw,
+            quizCount: studentQuizzes,
+            accuracy: studentQCount > 0 ? Math.round((studentCorrect / studentQCount) * 100) : 0,
+          });
+        }
+        return {
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          teacherId: c.teacherId,
+          teacherName: teacher?.fullName || "—",
+          studentCount: students.length,
+          totalPoints,
+          avgPoints: students.length > 0 ? Math.round(totalPoints / students.length) : 0,
+          quizCount: totalQuizzes,
+          accuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+          students: studentDetails,
+        };
+      }));
+
+      return res.json({ teachers: teacherStats, classrooms: classroomStats });
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
+  // ==================== TEACHER ANALYTICS ====================
+
+  app.get("/api/teacher/analytics", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const classrooms = await storage.getClassroomsByTeacherId(teacherId);
+      const allStudents = await storage.getStudentsByTeacherId(teacherId);
+
+      const classroomStats = await Promise.all(classrooms.map(async (c) => {
+        const students = await storage.getStudentsByClassroomId(c.id);
+        let totalPoints = 0;
+        let totalQuizzes = 0;
+        let totalCorrect = 0;
+        let totalQuestions = 0;
+        const studentDetails: any[] = [];
+        for (const student of students) {
+          totalPoints += student.points;
+          const results = await storage.getQuizResultsByUserId(student.id);
+          const qCount = results.length;
+          const correct = results.reduce((s, r) => s + r.correctAnswers, 0);
+          const qTotal = results.reduce((s, r) => s + r.totalQuestions, 0);
+          totalQuizzes += qCount;
+          totalCorrect += correct;
+          totalQuestions += qTotal;
+          const { password: _, ...sw } = student as any;
+          studentDetails.push({
+            ...sw,
+            quizCount: qCount,
+            accuracy: qTotal > 0 ? Math.round((correct / qTotal) * 100) : 0,
+          });
+        }
+        return {
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          studentCount: students.length,
+          totalPoints,
+          avgPoints: students.length > 0 ? Math.round(totalPoints / students.length) : 0,
+          quizCount: totalQuizzes,
+          accuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+          students: studentDetails,
+        };
+      }));
+
+      let allTotalPoints = 0;
+      let allTotalQuizzes = 0;
+      let allTotalCorrect = 0;
+      let allTotalQuestions = 0;
+      for (const student of allStudents) {
+        allTotalPoints += student.points;
+        const results = await storage.getQuizResultsByUserId(student.id);
+        allTotalQuizzes += results.length;
+        allTotalCorrect += results.reduce((s, r) => s + r.correctAnswers, 0);
+        allTotalQuestions += results.reduce((s, r) => s + r.totalQuestions, 0);
+      }
+
+      return res.json({
+        classrooms: classroomStats,
+        totals: {
+          studentCount: allStudents.length,
+          totalPoints: allTotalPoints,
+          avgPoints: allStudents.length > 0 ? Math.round(allTotalPoints / allStudents.length) : 0,
+          quizCount: allTotalQuizzes,
+          accuracy: allTotalQuestions > 0 ? Math.round((allTotalCorrect / allTotalQuestions) * 100) : 0,
+        },
+      });
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
   // ==================== ADULT LEADERBOARD ====================
 
   app.get("/api/leaderboard/adults", async (req, res) => {
