@@ -56,17 +56,46 @@ async function upsertRow(client: pg.PoolClient, tableName: string, row: any, tab
   return true;
 }
 
+function mergeSeedParts(parts: Partial<SeedData>[]): SeedData {
+  const merged: SeedData = { genres: [], books: [], bookGenres: [], quizzes: [], questions: [] };
+  for (const p of parts) {
+    if (p.genres) merged.genres.push(...p.genres);
+    if (p.books) merged.books.push(...p.books);
+    if (p.bookGenres) merged.bookGenres.push(...p.bookGenres);
+    if (p.quizzes) merged.quizzes.push(...p.quizzes);
+    if (p.questions) merged.questions.push(...p.questions);
+    if (p.blogPosts) merged.blogPosts = [...(merged.blogPosts || []), ...p.blogPosts];
+  }
+  return merged;
+}
+
 export async function loadSeedData(): Promise<boolean> {
   console.log("[seed-data] === Starting seed data load (additive only, never deletes) ===");
 
-  const jsonPath = findFile("seed-data.json");
+  // Try split files first (seed-data-1.json, seed-data-2.json, seed-data-3.json)
+  // then fall back to single seed-data.json
+  let data: SeedData;
+  const part1Path = findFile("seed-data-1.json");
+  const singlePath = findFile("seed-data.json");
 
-  if (!jsonPath) {
-    console.log("[seed-data] No seed-data.json found, skipping.");
+  if (part1Path) {
+    console.log(`[seed-data] Loading split seed files from: ${part1Path}`);
+    const parts: Partial<SeedData>[] = [];
+    for (let i = 1; i <= 5; i++) {
+      const p = findFile(`seed-data-${i}.json`);
+      if (!p) break;
+      console.log(`[seed-data] Part ${i}: ${(fs.statSync(p).size / 1024).toFixed(0)} KB`);
+      parts.push(JSON.parse(fs.readFileSync(p, "utf-8")));
+    }
+    data = mergeSeedParts(parts);
+    console.log(`[seed-data] Merged: ${data.books.length} books, ${data.quizzes.length} quizzes, ${data.questions.length} questions`);
+  } else if (singlePath) {
+    console.log(`[seed-data] Using: ${singlePath} (${(fs.statSync(singlePath).size / 1024).toFixed(0)} KB)`);
+    data = JSON.parse(fs.readFileSync(singlePath, "utf-8"));
+  } else {
+    console.log("[seed-data] No seed-data files found, skipping.");
     return false;
   }
-
-  console.log(`[seed-data] Using: ${jsonPath} (${(fs.statSync(jsonPath).size / 1024).toFixed(0)} KB)`);
 
   let pool: pg.Pool | null = null;
   let client: pg.PoolClient | null = null;
@@ -86,8 +115,6 @@ export async function loadSeedData(): Promise<boolean> {
     }
 
     console.log(`[seed-data] Current DB: ${bookCount} books, ${quizCount} quizzes, ${questionCount} questions`);
-
-    const data: SeedData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
     console.log(`[seed-data] Seed file has: ${data.books.length} books, ${data.quizzes.length} quizzes, ${data.questions.length} questions, ${data.genres.length} genres`);
 
     await client.query(`
