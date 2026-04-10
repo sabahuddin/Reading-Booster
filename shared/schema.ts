@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   isActive: boolean("is_active").notNull().default(true),
   weeklyStreakCount: integer("weekly_streak_count").notNull().default(0),
   lastStreakWeek: text("last_streak_week"),
+  classroomId: varchar("classroom_id"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -461,6 +462,23 @@ export const insertBookmarkSchema = createInsertSchema(bookmarks).omit({
 });
 export type InsertBookmark = z.infer<typeof insertBookmarkSchema>;
 export type Bookmark = typeof bookmarks.$inferSelect;
+
+// ─── CLASSROOMS ───────────────────────────────────────────────────────────────
+export const classrooms = pgTable("classrooms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  teacherId: varchar("teacher_id").notNull(),
+  schoolName: text("school_name"),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertClassroomSchema = createInsertSchema(classrooms).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertClassroom = z.infer<typeof insertClassroomSchema>;
+export type Classroom = typeof classrooms.$inferSelect;
 
 // ─── PASSWORD RESET TOKENS ────────────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {

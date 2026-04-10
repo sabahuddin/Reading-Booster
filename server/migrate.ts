@@ -157,6 +157,21 @@ async function runManualMigrations() {
       name: "unique_book_genres_book_genre",
       sql: `ALTER TABLE book_genres ADD CONSTRAINT book_genres_book_id_genre_id_unique UNIQUE (book_id, genre_id)`
     },
+    {
+      name: "create_classrooms_table",
+      sql: `CREATE TABLE IF NOT EXISTS classrooms (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        name TEXT NOT NULL,
+        teacher_id VARCHAR(36) NOT NULL,
+        school_name TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )`
+    },
+    {
+      name: "add_classroom_id_to_users",
+      sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS classroom_id VARCHAR(36)`
+    },
   ];
 
   for (const m of migrations) {

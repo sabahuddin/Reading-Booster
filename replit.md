@@ -205,6 +205,17 @@ Ne definirano.
 - Prikazuje lijepe kartice za svaki položen kviz
 - Includirano u sidebar navigaciju za učenike i čitaoce
 
+### Razredi (Classrooms)
+- Nastavnici kreiraju razredne grupe (`classrooms` tabela): naziv, opis
+- Učenici se dodjeljuju razredu pri kreiranju (`classroomId` na `users` tabeli)
+- Nastavnički panel → "Učenici" stranica: kartica "Razredi" s CRUD za grupe, prikaz učenika po razredu
+- Forma za kreiranje učenika: selector za razred i starosnu grupu (ageGroup)
+- School Admin: tab "Grupe" prikazuje sve razrede škole s brojem učenika i imenom nastavnika
+- School Admin: dugme "Premjesti" na svakom učeniku → premještanje između razreda (move-student)
+- API: `GET/POST /api/teacher/classrooms`, `PUT/DELETE /api/teacher/classrooms/:id`, `GET /api/teacher/classrooms/:id/students`
+- API: `GET /api/school-admin/classrooms`, `PUT /api/school-admin/move-student`
+- DB migracije: `create_classrooms_table`, `add_classroom_id_to_users`
+
 ### Nastavnička izmjena kvizova (Teacher Quiz Editing)
 - Nastavnici mogu dodati 1–5 novih pitanja na postojeći kviz
 - Pitanja su označena kao `added_by_teacher: true`
@@ -262,7 +273,7 @@ Ne definirano.
 - **Quiz hook ordering:** `questionsToUse` useMemo MORA biti definiran PRIJE svih useCallback koji ga koriste (production minifikacija uzrokuje TDZ grešku).
 - **Duel:** prikazuje `username`, NE `fullName`
 - **Dev DB stanje (april 2026):** 1989 knjiga, 234 kviza, 6186 pitanja (sinhronizovano s produkcijom)
-- **seed-data.json stanje:** 1879 knjiga, 234 kviza, 6131 pitanja, 24 žanra — fetchovano s produkcije april 2026
+- **seed-data.json stanje:** 1989 knjiga, 234 kviza, 6187 pitanja, 24 žanra — eksportovano iz lokalnog DB april 2026
 - **PRODUKCIJA: pokrenuti** `./scripts/delete-short-quizzes.sh` da se obrišu kvizovi ispod standarda (isto kao dev)
 - **Kviz standard (min pitanja u bazi):** R1=15, R4=25, R7/O/A=30. Kviz bez dovoljno pitanja se ne smije prikazivati korisniku.
 

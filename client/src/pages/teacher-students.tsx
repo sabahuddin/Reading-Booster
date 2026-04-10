@@ -43,13 +43,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Star, Eye, Trophy, Target, UserPlus, Download, Copy, Check, KeyRound, UsersRound, Pencil, Trash2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Users, Star, Eye, Trophy, Target, UserPlus, Download, Copy, Check, KeyRound, UsersRound, Pencil, Trash2, FolderOpen, Plus, X } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
 type StudentUser = Omit<User, "password">;
 
 const createStudentSchema = z.object({
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
+  classroomId: z.string().optional(),
+  ageGroup: z.string().optional(),
 });
 
 type CreateStudentValues = z.infer<typeof createStudentSchema>;
@@ -353,11 +362,47 @@ export default function TeacherStudents() {
 
   const form = useForm<CreateStudentValues>({
     resolver: zodResolver(createStudentSchema),
-    defaultValues: { fullName: "" },
+    defaultValues: { fullName: "", classroomId: "", ageGroup: "R1" },
   });
 
   const { data: students, isLoading } = useQuery<StudentUser[]>({
     queryKey: ["/api/teacher/students"],
+  });
+
+  const { data: classrooms = [], isLoading: classroomsLoading } = useQuery<any[]>({
+    queryKey: ["/api/teacher/classrooms"],
+  });
+
+  const [classroomDialogOpen, setClassroomDialogOpen] = useState(false);
+  const [classroomName, setClassroomName] = useState("");
+  const [classroomDesc, setClassroomDesc] = useState("");
+  const [selectedClassroom, setSelectedClassroom] = useState<any>(null);
+
+  const createClassroomMutation = useMutation({
+    mutationFn: async ({ name, description }: { name: string; description: string }) => {
+      const res = await apiRequest("POST", "/api/teacher/classrooms", { name, description });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/classrooms"] });
+      setClassroomDialogOpen(false);
+      setClassroomName("");
+      setClassroomDesc("");
+      toast({ title: "Razred kreiran" });
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteClassroomMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/teacher/classrooms/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/classrooms"] });
+      toast({ title: "Razred obrisan" });
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
 
   const createMutation = useMutation({
@@ -493,9 +538,70 @@ export default function TeacherStudents() {
           </Card>
         </div>
 
+        <Card data-testid="card-classrooms">
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FolderOpen className="h-5 w-5 text-primary" />
+              Razredi
+            </CardTitle>
+            <Button size="sm" onClick={() => setClassroomDialogOpen(true)} data-testid="button-create-classroom">
+              <Plus className="mr-1 h-4 w-4" />
+              Novi razred
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {classroomsLoading ? (
+              <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-10 bg-muted rounded animate-pulse" />)}</div>
+            ) : classrooms.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                <FolderOpen className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                <p>Nemate kreiranih razreda. Kreirajte razred da organizujete učenike.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {classrooms.map((c: any) => {
+                  const classStudents = students?.filter((s: any) => s.classroomId === c.id) || [];
+                  return (
+                    <div key={c.id} className="border rounded-lg p-4 flex flex-col gap-2" data-testid={`card-classroom-${c.id}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold truncate">{c.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive shrink-0"
+                          onClick={() => deleteClassroomMutation.mutate(c.id)}
+                          disabled={deleteClassroomMutation.isPending}
+                          title="Obriši razred"
+                          data-testid={`button-delete-classroom-${c.id}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Users className="h-3.5 w-3.5" />
+                        <span>{classStudents.length} učenika</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-1"
+                        onClick={() => setSelectedClassroom(c)}
+                        data-testid={`button-view-classroom-${c.id}`}
+                      >
+                        Prikaži učenike
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Popis učenika</CardTitle>
+            <CardTitle className="text-lg">Popis svih učenika</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -611,6 +717,46 @@ export default function TeacherStudents() {
                     <FormMessage />
                   </FormItem>
                 )} />
+                <FormField control={form.control} name="ageGroup" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Starosna grupa</FormLabel>
+                    <Select value={field.value || "R1"} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-create-student-age-group">
+                          <SelectValue placeholder="Odaberi grupu" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="R1">R1 — 1.–3. razred (6–9 god)</SelectItem>
+                        <SelectItem value="R4">R4 — 4.–6. razred (10–12 god)</SelectItem>
+                        <SelectItem value="R7">R7 — 7.–9. razred (13–15 god)</SelectItem>
+                        <SelectItem value="O">O — Omladina (15–18 god)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                {classrooms.length > 0 && (
+                  <FormField control={form.control} name="classroomId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Razred (opciono)</FormLabel>
+                      <Select value={field.value || ""} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-create-student-classroom">
+                            <SelectValue placeholder="Odaberi razred" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">— Bez razreda —</SelectItem>
+                          {classrooms.map((c: any) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
                 <Button type="submit" className="w-full" disabled={createMutation.isPending} data-testid="button-submit-create-student">
                   {createMutation.isPending ? "Kreiranje..." : "Kreiraj račun"}
                 </Button>
@@ -706,6 +852,86 @@ export default function TeacherStudents() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={classroomDialogOpen} onOpenChange={(v) => { if (!v) { setClassroomDialogOpen(false); setClassroomName(""); setClassroomDesc(""); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Kreiraj novi razred</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Naziv razreda <span className="text-destructive">*</span></label>
+                <Input
+                  value={classroomName}
+                  onChange={(e) => setClassroomName(e.target.value)}
+                  placeholder="npr. 5a, 6b, Grupa naprednih..."
+                  data-testid="input-classroom-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Opis (opciono)</label>
+                <Input
+                  value={classroomDesc}
+                  onChange={(e) => setClassroomDesc(e.target.value)}
+                  placeholder="Kratki opis razreda..."
+                  data-testid="input-classroom-description"
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => createClassroomMutation.mutate({ name: classroomName, description: classroomDesc })}
+                disabled={createClassroomMutation.isPending || classroomName.trim().length < 1}
+                data-testid="button-submit-classroom"
+              >
+                {createClassroomMutation.isPending ? "Kreiranje..." : "Kreiraj razred"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!selectedClassroom} onOpenChange={(v) => { if (!v) setSelectedClassroom(null); }}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                <span className="flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-primary" />
+                  {selectedClassroom?.name}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            {selectedClassroom && (() => {
+              const classStudents = students?.filter((s: any) => s.classroomId === selectedClassroom.id) || [];
+              return classStudents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  <Users className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                  <p>Nema učenika u ovom razredu.</p>
+                  <p className="mt-1">Kada dodajete novog učenika, odaberite ovaj razred.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ime i prezime</TableHead>
+                      <TableHead>Korisničko ime</TableHead>
+                      <TableHead>Bodovi</TableHead>
+                      <TableHead>Starosna gr.</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {classStudents.map((s) => (
+                      <TableRow key={s.id} data-testid={`row-classroom-student-${s.id}`}>
+                        <TableCell className="font-medium">{s.fullName}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.username}</TableCell>
+                        <TableCell><Badge variant="default">{s.points}</Badge></TableCell>
+                        <TableCell><Badge variant="outline">{(s as any).ageGroup || "R1"}</Badge></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

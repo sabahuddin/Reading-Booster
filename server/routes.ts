@@ -2434,6 +2434,77 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
   // ==================== TEACHER ROUTES ====================
 
+  // ── Razredi (Classrooms) ──────────────────────────────────────────────────
+
+  app.get("/api/teacher/classrooms", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const rows = await storage.getClassroomsByTeacherId(teacherId);
+      const result = await Promise.all(rows.map(async (c) => {
+        const studs = await storage.getStudentsByClassroomId(c.id);
+        return { ...c, studentCount: studs.length };
+      }));
+      return res.json(result);
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/teacher/classrooms", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const teacher = await storage.getUser(teacherId);
+      if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+      const { name, description } = req.body;
+      if (!name || name.trim().length < 1) return res.status(400).json({ message: "Naziv razreda je obavezan." });
+      const existing = await storage.getClassroomsByTeacherId(teacherId);
+      if (existing.some(c => c.name.toLowerCase() === name.trim().toLowerCase())) {
+        return res.status(400).json({ message: "Razred s tim nazivom već postoji." });
+      }
+      const classroom = await storage.createClassroom({
+        name: name.trim(),
+        teacherId,
+        schoolName: teacher.schoolName || undefined,
+        description: description || undefined,
+      });
+      return res.status(201).json(classroom);
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
+  app.put("/api/teacher/classrooms/:id", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const classroom = await storage.getClassroom(req.params.id);
+      if (!classroom || classroom.teacherId !== teacherId) return res.status(403).json({ message: "Nemate pristup ovom razredu." });
+      const { name, description } = req.body;
+      const updated = await storage.updateClassroom(req.params.id, {
+        ...(name ? { name: name.trim() } : {}),
+        ...(description !== undefined ? { description } : {}),
+      });
+      return res.json(updated);
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/teacher/classrooms/:id", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const classroom = await storage.getClassroom(req.params.id);
+      if (!classroom || classroom.teacherId !== teacherId) return res.status(403).json({ message: "Nemate pristup ovom razredu." });
+      const studs = await storage.getStudentsByClassroomId(req.params.id);
+      if (studs.length > 0) return res.status(400).json({ message: "Razred nije prazan. Prebacite ili obrišite učenike prije brisanja razreda." });
+      await storage.deleteClassroom(req.params.id);
+      return res.json({ ok: true });
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/teacher/classrooms/:id/students", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const classroom = await storage.getClassroom(req.params.id);
+      if (!classroom || classroom.teacherId !== teacherId) return res.status(403).json({ message: "Nemate pristup ovom razredu." });
+      const studs = await storage.getStudentsByClassroomId(req.params.id);
+      return res.json(studs.map(({ password, ...s }) => s));
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
   app.get("/api/teacher/students", requireTeacher, async (req, res) => {
     try {
       const teacherId = req.session.userId!;
@@ -2482,9 +2553,16 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.status(400).json({ message: `Dostigli ste maksimalan broj učeničkih računa (${teacher.maxStudentAccounts}).` });
       }
 
-      const { fullName } = req.body;
+      const { fullName, classroomId, ageGroup } = req.body;
       if (!fullName || fullName.trim().length < 2) {
         return res.status(400).json({ message: "Ime i prezime je obavezno." });
+      }
+
+      if (classroomId) {
+        const classroom = await storage.getClassroom(classroomId);
+        if (!classroom || classroom.teacherId !== teacherId) {
+          return res.status(400).json({ message: "Odabrani razred ne postoji ili nije vaš." });
+        }
       }
 
       let username = generateUsername(fullName);
@@ -2506,6 +2584,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
         schoolName: teacher.schoolName,
         className: teacher.className,
         createdByTeacherId: teacherId,
+        classroomId: classroomId || null,
+        ageGroup: ageGroup || "R1",
       });
 
       const { password, ...studentData } = student;
@@ -3865,6 +3945,39 @@ Odgovori ISKLJUČIVO u JSON formatu:
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
+  });
+
+  app.get("/api/school-admin/classrooms", requireSchoolAdmin, async (req, res) => {
+    try {
+      const admin = await storage.getUser(req.session.userId!);
+      if (!admin?.schoolName) return res.json([]);
+      const rows = await storage.getClassroomsBySchoolName(admin.schoolName);
+      const result = await Promise.all(rows.map(async (c) => {
+        const studs = await storage.getStudentsByClassroomId(c.id);
+        const teacher = await storage.getUser(c.teacherId);
+        return { ...c, studentCount: studs.length, teacherName: teacher?.fullName || "—" };
+      }));
+      return res.json(result);
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
+  });
+
+  app.put("/api/school-admin/move-student", requireSchoolAdmin, async (req, res) => {
+    try {
+      const admin = await storage.getUser(req.session.userId!);
+      if (!admin) return res.status(403).json({ message: "Pristup odbijen" });
+      const { studentId, classroomId } = req.body;
+      if (!studentId) return res.status(400).json({ message: "studentId je obavezan." });
+      const student = await storage.getUser(studentId);
+      if (!student || student.role !== "student") return res.status(404).json({ message: "Učenik nije pronađen." });
+      if (classroomId) {
+        const classroom = await storage.getClassroom(classroomId);
+        if (!classroom || classroom.schoolName !== admin.schoolName) {
+          return res.status(400).json({ message: "Razred ne pripada vašoj školi." });
+        }
+      }
+      await storage.moveStudentToClassroom(studentId, classroomId || null);
+      return res.json({ ok: true });
+    } catch (e: any) { return res.status(500).json({ message: e.message }); }
   });
 
   app.delete("/api/school-admin/delete-teacher/:teacherId", requireSchoolAdmin, async (req, res) => {

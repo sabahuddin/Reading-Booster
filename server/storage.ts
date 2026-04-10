@@ -23,6 +23,7 @@ import {
   pageViews,
   notifications,
   bookmarks,
+  classrooms,
   passwordResetTokens,
   type PageView,
   type User,
@@ -62,6 +63,8 @@ import {
   duels,
   type Duel,
   type InsertDuel,
+  type Classroom,
+  type InsertClassroom,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -185,6 +188,15 @@ export interface IStorage {
 
   getTeachersBySchoolAdminId(schoolAdminId: string): Promise<User[]>;
   getPendingSchoolAdmins(): Promise<User[]>;
+
+  createClassroom(data: InsertClassroom): Promise<Classroom>;
+  getClassroomsByTeacherId(teacherId: string): Promise<Classroom[]>;
+  getClassroomsBySchoolName(schoolName: string): Promise<Classroom[]>;
+  getClassroom(id: string): Promise<Classroom | undefined>;
+  updateClassroom(id: string, data: Partial<InsertClassroom>): Promise<Classroom | undefined>;
+  deleteClassroom(id: string): Promise<void>;
+  moveStudentToClassroom(studentId: string, classroomId: string | null): Promise<void>;
+  getStudentsByClassroomId(classroomId: string): Promise<User[]>;
 
   getAllBookListings(): Promise<BookListing[]>;
   getBookListingsByUserId(userId: string): Promise<BookListing[]>;
@@ -1445,6 +1457,45 @@ export class DatabaseStorage implements IStorage {
         eq(bookListings.active, true),
         lt(bookListings.expiresAt, new Date())
       ));
+  }
+
+  // ─── CLASSROOMS ─────────────────────────────────────────────────────────────
+
+  async createClassroom(data: InsertClassroom): Promise<Classroom> {
+    const [classroom] = await db.insert(classrooms).values(data).returning();
+    return classroom;
+  }
+
+  async getClassroomsByTeacherId(teacherId: string): Promise<Classroom[]> {
+    return db.select().from(classrooms).where(eq(classrooms.teacherId, teacherId)).orderBy(classrooms.name);
+  }
+
+  async getClassroomsBySchoolName(schoolName: string): Promise<Classroom[]> {
+    return db.select().from(classrooms).where(eq(classrooms.schoolName, schoolName)).orderBy(classrooms.name);
+  }
+
+  async getClassroom(id: string): Promise<Classroom | undefined> {
+    const [row] = await db.select().from(classrooms).where(eq(classrooms.id, id));
+    return row;
+  }
+
+  async updateClassroom(id: string, data: Partial<InsertClassroom>): Promise<Classroom | undefined> {
+    const [row] = await db.update(classrooms).set(data).where(eq(classrooms.id, id)).returning();
+    return row;
+  }
+
+  async deleteClassroom(id: string): Promise<void> {
+    await db.delete(classrooms).where(eq(classrooms.id, id));
+  }
+
+  async moveStudentToClassroom(studentId: string, classroomId: string | null): Promise<void> {
+    await db.update(users).set({ classroomId }).where(eq(users.id, studentId));
+  }
+
+  async getStudentsByClassroomId(classroomId: string): Promise<User[]> {
+    return db.select().from(users).where(
+      and(eq(users.classroomId, classroomId), eq(users.role, "student"))
+    );
   }
 }
 

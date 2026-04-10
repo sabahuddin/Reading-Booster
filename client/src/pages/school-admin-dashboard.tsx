@@ -20,7 +20,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { Users, UserPlus, Trash2, GraduationCap, BookOpen, BarChart3, Copy, Pencil, RefreshCw, Search, Printer } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Users, UserPlus, Trash2, GraduationCap, BookOpen, BarChart3, Copy, Pencil, RefreshCw, Search, Printer, FolderOpen, ArrowRightLeft } from "lucide-react";
 
 interface Teacher {
   id: string;
@@ -67,9 +74,30 @@ export default function SchoolAdminDashboard() {
   const [editForm, setEditForm] = useState({ fullName: "", className: "", maxStudentAccounts: "" });
   const [generatedCredentials, setGeneratedCredentials] = useState<{ username: string; password: string } | null>(null);
   const [studentSearch, setStudentSearch] = useState("");
+  const [moveStudentDialog, setMoveStudentDialog] = useState<StudentWithTeacher | null>(null);
+  const [moveToClassroom, setMoveToClassroom] = useState("");
 
   const { data: teachers, isLoading: teachersLoading } = useQuery<Teacher[]>({
     queryKey: ["/api/school-admin/teachers"],
+  });
+
+  const { data: classrooms = [] } = useQuery<any[]>({
+    queryKey: ["/api/school-admin/classrooms"],
+  });
+
+  const moveStudentMutation = useMutation({
+    mutationFn: async ({ studentId, classroomId }: { studentId: string; classroomId: string }) => {
+      const res = await apiRequest("PUT", "/api/school-admin/move-student", { studentId, classroomId: classroomId || null });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/school-admin/students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/school-admin/classrooms"] });
+      setMoveStudentDialog(null);
+      setMoveToClassroom("");
+      toast({ title: "Učenik premješten u drugi razred" });
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery<SchoolStats>({
@@ -288,6 +316,9 @@ export default function SchoolAdminDashboard() {
             <TabsTrigger value="classes" data-testid="tab-classes">
               Razredi ({classSummary.length})
             </TabsTrigger>
+            <TabsTrigger value="classrooms" data-testid="tab-classrooms">
+              Grupe ({classrooms.length})
+            </TabsTrigger>
           </TabsList>
 
           {/* UČITELJI */}
@@ -406,9 +437,9 @@ export default function SchoolAdminDashboard() {
                         <TableHead>Ime i prezime</TableHead>
                         <TableHead>Korisničko ime</TableHead>
                         <TableHead>Razred</TableHead>
-                        <TableHead>Starosna grupa</TableHead>
                         <TableHead>Bodovi</TableHead>
                         <TableHead>Učitelj</TableHead>
+                        {classrooms.length > 0 && <TableHead></TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -417,11 +448,21 @@ export default function SchoolAdminDashboard() {
                           <TableCell className="font-medium">{student.fullName}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">{student.username}</TableCell>
                           <TableCell>{student.className || "—"}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{student.ageGroup || "—"}</Badge>
-                          </TableCell>
                           <TableCell className="font-bold text-orange-600">{student.points}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{student.teacherName}</TableCell>
+                          {classrooms.length > 0 && (
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Premjesti u razred"
+                                onClick={() => { setMoveStudentDialog(student); setMoveToClassroom((student as any).classroomId || ""); }}
+                                data-testid={`button-move-student-${student.id}`}
+                              >
+                                <ArrowRightLeft className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -482,7 +523,84 @@ export default function SchoolAdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* GRUPE (classroom entities) */}
+          <TabsContent value="classrooms">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FolderOpen className="h-4 w-4" />
+                  Razredne grupe učitelja
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {classrooms.length === 0 ? (
+                  <div className="text-center py-10 text-muted-foreground">
+                    <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>Nema kreiranh razrednih grupa. Učitelji kreiraju grupe u svom panelu.</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Naziv grupe</TableHead>
+                        <TableHead>Učitelj</TableHead>
+                        <TableHead>Opis</TableHead>
+                        <TableHead>Broj učenika</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {classrooms.map((c: any) => (
+                        <TableRow key={c.id} data-testid={`row-classroom-${c.id}`}>
+                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{c.teacherName}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{c.description || "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{c.studentCount}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Dialog za premještanje učenika */}
+        <Dialog open={!!moveStudentDialog} onOpenChange={(v) => { if (!v) { setMoveStudentDialog(null); setMoveToClassroom(""); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Premjesti učenika u razred</DialogTitle>
+              <DialogDescription>
+                Odaberite razred u koji premještate <strong>{moveStudentDialog?.fullName}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <Select value={moveToClassroom} onValueChange={setMoveToClassroom}>
+                <SelectTrigger data-testid="select-move-classroom">
+                  <SelectValue placeholder="Odaberi razred" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Ukloni iz razreda —</SelectItem>
+                  {classrooms.map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} ({c.teacherName})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                className="w-full"
+                onClick={() => moveStudentDialog && moveStudentMutation.mutate({ studentId: moveStudentDialog.id, classroomId: moveToClassroom })}
+                disabled={moveStudentMutation.isPending}
+                data-testid="button-confirm-move-student"
+              >
+                {moveStudentMutation.isPending ? "Premještam..." : "Premjesti"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Dodaj učitelja dialog */}
         <Dialog open={showAddDialog} onOpenChange={(open) => { if (!open) { setShowAddDialog(false); setGeneratedCredentials(null); } }}>
