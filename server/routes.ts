@@ -1019,7 +1019,12 @@ Odgovori ISKLJUČIVO u JSON formatu:
       req.session.userRole = user.role;
 
       const { password: _, ...userWithoutPassword } = user;
-      return res.json(userWithoutPassword);
+      req.session.save((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Session save failed" });
+        }
+        return res.json(userWithoutPassword);
+      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || "Login failed" });
     }
