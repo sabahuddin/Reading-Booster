@@ -4236,6 +4236,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
   app.get("/api/duels/my", requireAuth, async (req, res) => {
     try {
+      await storage.expireOldPendingDuels();
       const duels = await storage.getDuelsByUserId(req.session.userId!);
       const enriched = await Promise.all(duels.map(async (d) => {
         const challenger = await storage.getUser(d.challengerId);
@@ -4276,6 +4277,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
   app.get("/api/duels/pending", requireAuth, async (req, res) => {
     try {
+      await storage.expireOldPendingDuels();
       const pending = await storage.getPendingDuelsForUser(req.session.userId!);
       const enriched = await Promise.all(pending.map(async (d) => {
         const challenger = await storage.getUser(d.challengerId);
@@ -4291,6 +4293,24 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  app.get("/api/duels/my-sent", requireAuth, async (req, res) => {
+    try {
+      await storage.expireOldPendingDuels();
+      const { db } = await import("./db");
+      const { sql: sqlRaw } = await import("drizzle-orm");
+      const rows = await db.execute(sqlRaw`
+        SELECT d.*, u.username AS opponent_name, u.points AS opponent_points
+        FROM duels d
+        JOIN users u ON u.id = d.opponent_id
+        WHERE d.challenger_id = ${req.session.userId!} AND d.status = 'pending'
+        ORDER BY d.created_at DESC
+      `);
+      res.json(rows.rows);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/duels/create", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
@@ -4299,9 +4319,10 @@ Odgovori ISKLJUČIVO u JSON formatu:
         return res.status(403).json({ message: "Samo učenici i čitaoci mogu izazvati na duel." });
       }
 
+      await storage.expireOldPendingDuels();
       const existing = await storage.getActiveDuelForUser(userId);
       if (existing) {
-        return res.status(400).json({ message: "Već imate aktivan duel. Završite ga prvo." });
+        return res.status(400).json({ message: "Već imate aktivan duel u toku. Završite ga prvo." });
       }
 
       const user = await storage.getUser(userId);

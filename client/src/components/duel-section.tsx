@@ -4,10 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Swords, Trophy, Clock, CheckCircle, XCircle, Zap, PartyPopper, Shield } from "lucide-react";
+import { Swords, Trophy, Clock, CheckCircle, XCircle, Zap, PartyPopper, Shield, Send } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
 import type { Duel } from "@shared/schema";
 
 interface EnrichedDuel extends Duel {
@@ -21,6 +20,16 @@ interface EnrichedDuel extends Duel {
   finished?: boolean;
 }
 
+interface SentDuel {
+  id: string;
+  opponent_id: string;
+  opponent_name: string;
+  opponent_points: number;
+  target_points: number;
+  deadline: string;
+  status: string;
+}
+
 function DuelProgress({ duel, userId }: { duel: EnrichedDuel; userId: string }) {
   const { data: checkData } = useQuery<EnrichedDuel & { challengerGained: number; opponentGained: number; finished: boolean }>({
     queryKey: ["/api/duels", duel.id, "check"],
@@ -31,6 +40,7 @@ function DuelProgress({ duel, userId }: { duel: EnrichedDuel; userId: string }) 
         queryClient.invalidateQueries({ queryKey: ["/api/duels/active"] });
         queryClient.invalidateQueries({ queryKey: ["/api/duels/my"] });
         queryClient.invalidateQueries({ queryKey: ["/api/duels/pending"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/duels/my-sent"] });
       }
       return data;
     },
@@ -126,9 +136,20 @@ export default function DuelSection() {
     queryKey: ["/api/duels/pending"],
   });
 
+  const { data: sentDuels } = useQuery<SentDuel[]>({
+    queryKey: ["/api/duels/my-sent"],
+  });
+
   const { data: allDuels } = useQuery<EnrichedDuel[]>({
     queryKey: ["/api/duels/my"],
   });
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/duels/active"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/duels/my"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/duels/pending"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/duels/my-sent"] });
+  };
 
   const createDuel = useMutation({
     mutationFn: async () => {
@@ -136,10 +157,8 @@ export default function DuelSection() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/my"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/pending"] });
-      toast({ title: "Duel kreiran!", description: "Čekamo da protivnik prihvati izazov." });
+      invalidateAll();
+      toast({ title: "Zahtjev poslan!", description: "Čekamo da protivnik prihvati izazov." });
     },
     onError: (error: any) => {
       toast({ title: "Greška", description: error.message, variant: "destructive" });
@@ -152,9 +171,7 @@ export default function DuelSection() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/my"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/pending"] });
+      invalidateAll();
       toast({ title: "Duel prihvaćen!", description: "Neka počne takmičenje!" });
     },
     onError: (error: any) => {
@@ -168,9 +185,7 @@ export default function DuelSection() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/my"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/duels/pending"] });
+      invalidateAll();
       toast({ title: "Duel odbijen" });
     },
     onError: (error: any) => {
@@ -212,8 +227,10 @@ export default function DuelSection() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+
         {pendingDuels && pendingDuels.length > 0 && (
           <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Primljeni izazovi</p>
             {pendingDuels.map((d) => (
               <div key={d.id} className="p-3 rounded-lg border border-primary/30 bg-primary/5" data-testid={`card-pending-duel-${d.id}`}>
                 <p className="text-sm font-medium mb-2">
@@ -227,7 +244,7 @@ export default function DuelSection() {
                   <Button
                     size="sm"
                     onClick={() => acceptDuel.mutate(d.id)}
-                    disabled={acceptDuel.isPending}
+                    disabled={acceptDuel.isPending || !!activeDuel}
                     data-testid={`button-accept-duel-${d.id}`}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
@@ -244,29 +261,18 @@ export default function DuelSection() {
                     Odbij
                   </Button>
                 </div>
+                {activeDuel && (
+                  <p className="text-xs text-muted-foreground mt-2">Završi aktivan duel da bi prihvatio novi.</p>
+                )}
               </div>
             ))}
           </div>
         )}
 
-        {activeDuel && (activeDuel.status === "active" || activeDuel.status === "pending") ? (
-          <div>
-            {activeDuel.status === "pending" && activeDuel.challengerId === user?.id ? (
-              <div className="text-center py-4">
-                <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground" data-testid="text-duel-waiting">
-                  Čekamo da {activeDuel.opponentName} prihvati duel...
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cilj: {activeDuel.targetPoints} bodova za 7 dana
-                </p>
-              </div>
-            ) : activeDuel.status === "active" ? (
-              <DuelProgress duel={activeDuel} userId={user?.id || ""} />
-            ) : null}
-          </div>
+        {activeDuel ? (
+          <DuelProgress duel={activeDuel} userId={user?.id || ""} />
         ) : (
-          <div className="text-center py-4">
+          <div className="text-center py-3">
             <Swords className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mb-3">
               Izazovi nekoga sa sličnim brojem bodova!
@@ -277,13 +283,50 @@ export default function DuelSection() {
               data-testid="button-create-duel"
             >
               <Swords className="h-4 w-4 mr-2" />
-              {createDuel.isPending ? "Tražim protivnika..." : "Započni duel"}
+              {createDuel.isPending ? "Tražim protivnika..." : "Pošalji izazov"}
             </Button>
           </div>
         )}
 
+        {sentDuels && sentDuels.length > 0 && (
+          <div className="border-t pt-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Čekaju odgovor</p>
+            <div className="space-y-2">
+              {sentDuels.map((d) => {
+                const deadline = new Date(d.deadline);
+                const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+                return (
+                  <div key={d.id} className="flex items-center justify-between text-sm p-2 rounded bg-muted" data-testid={`card-sent-duel-${d.id}`}>
+                    <div className="flex items-center gap-2">
+                      <Send className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>vs {d.opponent_name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {daysLeft}d
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {!activeDuel && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full mt-2"
+                onClick={() => createDuel.mutate()}
+                disabled={createDuel.isPending}
+                data-testid="button-create-another-duel"
+              >
+                <Swords className="h-3.5 w-3.5 mr-1" />
+                Pošalji još jedan izazov
+              </Button>
+            )}
+          </div>
+        )}
+
         {completedDuels.length > 0 && (
-          <div className="border-t pt-3 mt-3">
+          <div className="border-t pt-3">
             <p className="text-xs font-medium text-muted-foreground mb-2">Prethodni dueli</p>
             <div className="space-y-2">
               {completedDuels.slice(0, 3).map((d) => {

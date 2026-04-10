@@ -212,6 +212,7 @@ export interface IStorage {
   updateDuelStatus(id: string, status: string, winnerId?: string): Promise<Duel | undefined>;
   findDuelOpponent(userId: string, pointsRange: number): Promise<User | undefined>;
   incrementDuelWins(userId: string): Promise<void>;
+  expireOldPendingDuels(): Promise<number>;
 
   logPageView(data: { path: string; ipHash?: string; country?: string; countryCode?: string; city?: string; userAgent?: string; referrer?: string; userId?: string }): Promise<void>;
   getAnalyticsSummary(): Promise<{ today: number; week: number; month: number; total: number; uniqueToday: number; uniqueMonth: number }>;
@@ -973,7 +974,7 @@ export class DatabaseStorage implements IStorage {
     const [duel] = await db.select().from(duels).where(
       and(
         or(eq(duels.challengerId, userId), eq(duels.opponentId, userId)),
-        or(eq(duels.status, "active"), eq(duels.status, "pending"))
+        eq(duels.status, "active")
       )
     );
     return duel;
@@ -998,16 +999,18 @@ export class DatabaseStorage implements IStorage {
     const minPoints = Math.max(0, (currentUser.points ?? 0) - pointsRange);
     const maxPoints = (currentUser.points ?? 0) + pointsRange;
 
-    const activeDuelUserIds = await db.select({ id: duels.challengerId }).from(duels).where(
-      or(eq(duels.status, "active"), eq(duels.status, "pending"))
-    );
-    const activeDuelOpponentIds = await db.select({ id: duels.opponentId }).from(duels).where(
-      or(eq(duels.status, "active"), eq(duels.status, "pending"))
+    // Only exclude users who are in an ACTIVE duel (not pending)
+    const activeDuelUserIds = await db.select({ id: duels.challengerId }).from(duels).where(eq(duels.status, "active"));
+    const activeDuelOpponentIds = await db.select({ id: duels.opponentId }).from(duels).where(eq(duels.status, "active"));
+    // Also exclude opponents who already have a pending request from this challenger
+    const alreadyPendingOpponents = await db.select({ id: duels.opponentId }).from(duels).where(
+      and(eq(duels.challengerId, userId), eq(duels.status, "pending"))
     );
     const busyIds = new Set([
       userId,
       ...activeDuelUserIds.map(r => r.id),
       ...activeDuelOpponentIds.map(r => r.id),
+      ...alreadyPendingOpponents.map(r => r.id),
     ]);
 
     const candidates = await db.select().from(users).where(
@@ -1026,6 +1029,14 @@ export class DatabaseStorage implements IStorage {
 
   async incrementDuelWins(userId: string): Promise<void> {
     await db.update(users).set({ duelWins: sql`COALESCE(${users.duelWins}, 0) + 1` }).where(eq(users.id, userId));
+  }
+
+  async expireOldPendingDuels(): Promise<number> {
+    const result = await db.update(duels)
+      .set({ status: "expired" })
+      .where(and(eq(duels.status, "pending"), lt(duels.deadline, new Date())))
+      .returning();
+    return result.length;
   }
 
   async logPageView(data: { path: string; ipHash?: string; country?: string; countryCode?: string; city?: string; userAgent?: string; referrer?: string; userId?: string }): Promise<void> {
