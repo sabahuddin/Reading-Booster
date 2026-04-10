@@ -33,6 +33,10 @@ async function getTableColumns(client: pg.PoolClient, tableName: string): Promis
   return new Set(res.rows.map((r: any) => r.column_name));
 }
 
+function toSnakeCase(key: string): string {
+  return key.replace(/([A-Z])/g, "_$1").toLowerCase();
+}
+
 async function upsertRow(client: pg.PoolClient, tableName: string, row: any, tableColumns: Set<string>): Promise<boolean> {
   const fields: string[] = [];
   const placeholders: string[] = [];
@@ -40,8 +44,9 @@ async function upsertRow(client: pg.PoolClient, tableName: string, row: any, tab
   let idx = 1;
 
   for (const [key, value] of Object.entries(row)) {
-    if (tableColumns.has(key) && value !== undefined) {
-      fields.push(key);
+    const colName = tableColumns.has(key) ? key : tableColumns.has(toSnakeCase(key)) ? toSnakeCase(key) : null;
+    if (colName && value !== undefined) {
+      fields.push(colName);
       placeholders.push(`$${idx++}`);
       values.push(value);
     }
