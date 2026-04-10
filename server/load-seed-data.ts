@@ -149,15 +149,15 @@ export async function loadSeedData(): Promise<boolean> {
     const existingQuestionIds = new Set(
       (await client.query("SELECT id FROM questions")).rows.map((r: any) => r.id)
     );
-    // Safety: if DB already has >= 80% of seed books, skip book seeding entirely.
-    // This prevents accidentally restoring manually-deleted books on existing databases.
+    // Safety: if DB already has >= 80% of seed books, skip BOOK seeding only.
+    // Quizzes and questions are always seeded additively (they are cleaned separately).
     const dbHasEnoughBooks = bookCount >= Math.floor(data.books.length * 0.8);
     if (dbHasEnoughBooks) {
-      console.log(`[seed-data] DB already has ${bookCount} books (≥80% of seed). Skipping book/quiz/question seeding to protect manual deletions.`);
-      return true;
+      console.log(`[seed-data] DB already has ${bookCount} books (≥80% of seed). Skipping book seeding to protect manual deletions.`);
+      console.log(`[seed-data] Quiz/question seeding will still run additively.`);
     }
 
-    const newBooks = data.books.filter((b: any) => {
+    const newBooks = dbHasEnoughBooks ? [] : data.books.filter((b: any) => {
       if (existingBookIds.has(b.id) || deletedBookIds.has(b.id)) return false;
       const key = `${(b.title || '').toLowerCase()}::${(b.author || '').toLowerCase()}`;
       if (existingBookKeys.has(key)) return false;
