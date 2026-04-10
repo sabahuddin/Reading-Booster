@@ -81,7 +81,7 @@ export async function loadSeedData(): Promise<boolean> {
   if (part1Path) {
     console.log(`[seed-data] Loading split seed files from: ${part1Path}`);
     const parts: Partial<SeedData>[] = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 20; i++) {
       const p = findFile(`seed-data-${i}.json`);
       if (!p) break;
       console.log(`[seed-data] Part ${i}: ${(fs.statSync(p).size / 1024).toFixed(0)} KB`);
