@@ -149,6 +149,14 @@ export async function loadSeedData(): Promise<boolean> {
     const existingQuestionIds = new Set(
       (await client.query("SELECT id FROM questions")).rows.map((r: any) => r.id)
     );
+    // Safety: if DB already has >= 80% of seed books, skip book seeding entirely.
+    // This prevents accidentally restoring manually-deleted books on existing databases.
+    const dbHasEnoughBooks = bookCount >= Math.floor(data.books.length * 0.8);
+    if (dbHasEnoughBooks) {
+      console.log(`[seed-data] DB already has ${bookCount} books (≥80% of seed). Skipping book/quiz/question seeding to protect manual deletions.`);
+      return true;
+    }
+
     const newBooks = data.books.filter((b: any) => {
       if (existingBookIds.has(b.id) || deletedBookIds.has(b.id)) return false;
       const key = `${(b.title || '').toLowerCase()}::${(b.author || '').toLowerCase()}`;
