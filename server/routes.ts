@@ -627,7 +627,7 @@ Sitemap: https://citanje.ba/sitemap.xml
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
         apiKey,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined) : undefined,
       });
 
       const ageLabels: Record<string, string> = {
@@ -640,9 +640,9 @@ Sitemap: https://citanje.ba/sitemap.xml
       const ageDesc = ageLabels[book.ageGroup || "R4"] || "djeca";
 
       const ageQuestionCount: Record<string, number> = {
-        R1: 20, R4: 25, R7: 30, O: 30, A: 30,
+        R1: 20, R4: 30, R7: 30, O: 30, A: 30,
       };
-      const questionCount = numQuestions || ageQuestionCount[book.ageGroup || "R4"] || 20;
+      const questionCount = numQuestions || ageQuestionCount[book.ageGroup || "R4"] || 30;
 
       const prompt = `Generiraj kviz sa ${questionCount} pitanja o knjizi "${book.title}" autora ${book.author}.
 Opis knjige: ${book.description || "Nema opisa."}
@@ -745,7 +745,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
       if (!book) return res.status(404).json({ message: "Knjiga nije pronađena" });
 
       const existingQuestions = await storage.getQuestionsByQuizId(quizId);
-      const ageQuestionCount: Record<string, number> = { R1: 20, R4: 25, R7: 30, O: 30, A: 30 };
+      const ageQuestionCount: Record<string, number> = { R1: 20, R4: 30, R7: 30, O: 30, A: 30 };
       const needed = (targetCount || ageQuestionCount[book.ageGroup || "R4"] || 30) - existingQuestions.length;
 
       if (needed <= 0) return res.json({ message: "Kviz već ima dovoljan broj pitanja", added: 0 });
@@ -754,7 +754,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
       if (!apiKey) return res.status(503).json({ message: "AI generiranje nije dostupno" });
 
       const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined });
+      const openai = new OpenAI({ apiKey, baseURL: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined) : undefined });
 
       const existingSummary = existingQuestions.slice(0, 10).map(q => `- ${q.questionText}`).join("\n");
       const prompt = `Generiraj još ${needed} NOVIH i RAZLIČITIH pitanja o knjizi "${book.title}" autora ${book.author}.
@@ -4550,7 +4550,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
         apiKey,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? (process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined) : undefined,
       });
 
       const results = {
