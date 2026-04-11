@@ -973,7 +973,7 @@ export default function AdminQuizzes() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Autor kviza (opcionalno)</label>
-                  <Input value={wizardAuthor} onChange={(e) => setWizardAuthor(e.target.value)} placeholder="npr. Ime učitelja ili Citanje.ba" className="mt-1" data-testid="input-quiz-author" />
+                  <Input value={wizardAuthor} onChange={(e) => setWizardAuthor(e.target.value)} placeholder="npr. Ime nastavnika ili Citanje.ba" className="mt-1" data-testid="input-quiz-author" />
                 </div>
                 <DialogFooter>
                   <Button disabled={!wizardBookId} onClick={() => setWizardStep(2)} data-testid="button-wizard-next">
