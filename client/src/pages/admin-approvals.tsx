@@ -53,6 +53,7 @@ const roleLabels: Record<string, string> = {
 
 const typeLabels: Record<string, string> = {
   school: "Škola",
+  library: "Biblioteka",
 };
 
 export default function AdminApprovals() {
