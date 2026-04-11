@@ -323,6 +323,9 @@ export default function AdminQuizzes() {
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const [selectedQuizIds, setSelectedQuizIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkSelectOpen, setBulkSelectOpen] = useState(false);
+  const [selectedBulkBookIds, setSelectedBulkBookIds] = useState<Set<string>>(new Set());
+  const [bulkBookSearch, setBulkBookSearch] = useState("");
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<QuizWithCount[]>({
     queryKey: ["/api/quizzes"],
@@ -628,13 +631,40 @@ export default function AdminQuizzes() {
   }
 
   const handleBulkGenerate = () => {
-    const ids = booksWithoutQuiz.slice(0, 5).map(b => b.id); // Limit to 5 at a time to avoid timeout
-    if (ids.length === 0) {
+    if (booksWithoutQuiz.length === 0) {
       toast({ title: "Nema knjiga", description: "Sve knjige već imaju kvizove." });
       return;
     }
-    bulkAiGenerateMutation.mutate(ids);
+    setSelectedBulkBookIds(new Set());
+    setBulkBookSearch("");
+    setBulkSelectOpen(true);
   };
+
+  const filteredBulkBooks = useMemo(() => {
+    const q = bulkBookSearch.toLowerCase();
+    return booksWithoutQuiz.filter(b =>
+      b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)
+    );
+  }, [booksWithoutQuiz, bulkBookSearch]);
+
+  function toggleBulkBook(id: string) {
+    setSelectedBulkBookIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < 10) {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function handleConfirmBulkGenerate() {
+    const ids = Array.from(selectedBulkBookIds);
+    if (ids.length === 0) return;
+    setBulkSelectOpen(false);
+    bulkAiGenerateMutation.mutate(ids);
+  }
 
   return (
     <DashboardLayout role="admin">
@@ -652,7 +682,9 @@ export default function AdminQuizzes() {
               data-testid="button-bulk-ai-generate"
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              {bulkAiGenerateMutation.isPending ? "Generišem (batch 5)..." : `Bulk AI (${booksWithoutQuiz.length})`}
+              {bulkAiGenerateMutation.isPending
+                ? `Generišem... (${selectedBulkBookIds.size || "?"} knjiga)`
+                : `AI Generiraj (${booksWithoutQuiz.length} bez kviza)`}
             </Button>
             <Button
               onClick={downloadTemplate}
@@ -1240,6 +1272,114 @@ export default function AdminQuizzes() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Book selection dialog for bulk AI generation */}
+        <Dialog open={bulkSelectOpen} onOpenChange={open => { if (!open) setBulkSelectOpen(false); }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Odaberi knjige za AI generisanje kvizova</DialogTitle>
+              <DialogDescription>
+                Odaberi do 10 knjiga bez kviza. Za svaku će biti generisano 30 pitanja (R1: 20).
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Pretraži po naslovu ili autoru..."
+                  value={bulkBookSearch}
+                  onChange={e => setBulkBookSearch(e.target.value)}
+                  data-testid="input-bulk-book-search"
+                />
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  {selectedBulkBookIds.size}/10 odabrano
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const first10 = filteredBulkBooks.slice(0, 10).map(b => b.id);
+                    setSelectedBulkBookIds(new Set(first10));
+                  }}
+                  data-testid="button-select-first-10"
+                >
+                  Odaberi prvih 10
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedBulkBookIds(new Set())}
+                  disabled={selectedBulkBookIds.size === 0}
+                  data-testid="button-clear-bulk-selection"
+                >
+                  Poništi odabir
+                </Button>
+              </div>
+
+              <div className="border rounded-md max-h-80 overflow-y-auto">
+                {filteredBulkBooks.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Nema knjiga bez kviza</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted sticky top-0">
+                      <tr>
+                        <th className="w-10 px-3 py-2"></th>
+                        <th className="text-left px-3 py-2">Naslov</th>
+                        <th className="text-left px-3 py-2">Autor</th>
+                        <th className="text-center px-3 py-2">Grupa</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {filteredBulkBooks.map(book => {
+                        const isSelected = selectedBulkBookIds.has(book.id);
+                        const isDisabled = !isSelected && selectedBulkBookIds.size >= 10;
+                        return (
+                          <tr
+                            key={book.id}
+                            className={`cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : isDisabled ? "opacity-40" : "hover:bg-muted/50"}`}
+                            onClick={() => !isDisabled && toggleBulkBook(book.id)}
+                            data-testid={`row-bulk-book-${book.id}`}
+                          >
+                            <td className="px-3 py-2">
+                              <Checkbox
+                                checked={isSelected}
+                                disabled={isDisabled}
+                                onCheckedChange={() => !isDisabled && toggleBulkBook(book.id)}
+                                data-testid={`checkbox-bulk-book-${book.id}`}
+                              />
+                            </td>
+                            <td className="px-3 py-2 font-medium">{book.title}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{book.author}</td>
+                            <td className="px-3 py-2 text-center">
+                              <span className="font-mono text-xs font-semibold">{book.ageGroup || "?"}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBulkSelectOpen(false)} data-testid="button-cancel-bulk-select">
+                Odustani
+              </Button>
+              <Button
+                onClick={handleConfirmBulkGenerate}
+                disabled={selectedBulkBookIds.size === 0}
+                data-testid="button-confirm-bulk-generate"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generiraj kvizove ({selectedBulkBookIds.size})
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
