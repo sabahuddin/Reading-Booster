@@ -83,6 +83,7 @@ export interface IStorage {
   getPendingTeachers(): Promise<User[]>;
 
   getAllBooks(): Promise<Book[]>;
+  getAllBooksAdmin(): Promise<Book[]>;
   getBook(id: string): Promise<Book | undefined>;
   createBook(book: InsertBook): Promise<Book>;
   updateBook(id: string, data: Partial<InsertBook>): Promise<Book | undefined>;
@@ -96,8 +97,14 @@ export interface IStorage {
   getAllQuizzes(): Promise<Quiz[]>;
   updateQuizTeacherStatus(quizId: string, status: "none" | "pending" | "approved", teacherEditorId?: string, approvedTeacherName?: string): Promise<void>;
   getPendingTeacherQuizEdits(): Promise<Array<Quiz & { bookTitle?: string; teacherName?: string }>>;
+  getPendingTeacherQuizCreations(): Promise<Array<Quiz & { bookTitle?: string; bookAuthor?: string; bookAgeGroup?: string; teacherName?: string; questionCount?: number }>>;
   getTeacherAddedQuestionsCount(quizId: string): Promise<number>;
   deleteTeacherAddedQuestions(quizId: string): Promise<void>;
+  getBooksWithoutQuiz(): Promise<Book[]>;
+  createTeacherQuizForBook(bookId: string, teacherId: string, title: string, qs: Array<any>): Promise<Quiz>;
+  createTeacherBookAndQuiz(bookData: Partial<InsertBook>, teacherId: string, quizTitle: string, qs: Array<any>): Promise<{ book: Book; quiz: Quiz }>;
+  approveTeacherQuizCreation(quizId: string, approverName: string): Promise<void>;
+  rejectTeacherQuizCreation(quizId: string): Promise<void>;
 
   getQuestionsByQuizId(quizId: string): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
@@ -328,6 +335,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllBooks(): Promise<Book[]> {
+    return db.select().from(books).where(ne(books.pendingApproval, true));
+  }
+
+  async getAllBooksAdmin(): Promise<Book[]> {
     return db.select().from(books);
   }
 
@@ -359,7 +370,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getQuizzesByBookId(bookId: string): Promise<Quiz[]> {
-    return db.select().from(quizzes).where(eq(quizzes.bookId, bookId));
+    const all = await db.select().from(quizzes).where(eq(quizzes.bookId, bookId));
+    return all.filter(q => !(q.isTeacherCreated && q.teacherEditStatus === "pending"));
   }
 
   async getQuiz(id: string): Promise<Quiz | undefined> {
@@ -397,7 +409,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPendingTeacherQuizEdits(): Promise<Array<Quiz & { bookTitle?: string; teacherName?: string }>> {
-    const pendingQuizzes = await db.select().from(quizzes).where(eq(quizzes.teacherEditStatus, "pending"));
+    const pendingQuizzes = await db.select().from(quizzes).where(
+      and(eq(quizzes.teacherEditStatus, "pending"), eq(quizzes.isTeacherCreated, false))
+    );
     const result = [];
     for (const q of pendingQuizzes) {
       const book = q.bookId ? await this.getBook(q.bookId) : undefined;
@@ -405,6 +419,96 @@ export class DatabaseStorage implements IStorage {
       result.push({ ...q, bookTitle: book?.title, teacherName: teacher?.fullName });
     }
     return result;
+  }
+
+  async getPendingTeacherQuizCreations(): Promise<Array<Quiz & { bookTitle?: string; bookAuthor?: string; bookAgeGroup?: string; teacherName?: string; questionCount?: number }>> {
+    const pending = await db.select().from(quizzes).where(
+      and(eq(quizzes.teacherEditStatus, "pending"), eq(quizzes.isTeacherCreated, true))
+    );
+    const result = [];
+    for (const q of pending) {
+      const book = q.bookId ? await this.getBook(q.bookId) : undefined;
+      const teacher = q.teacherEditorId ? await this.getUser(q.teacherEditorId) : undefined;
+      const qs = await db.select().from(questions).where(eq(questions.quizId, q.id));
+      result.push({
+        ...q,
+        bookTitle: book?.title,
+        bookAuthor: book?.author,
+        bookAgeGroup: book?.ageGroup,
+        teacherName: teacher?.fullName,
+        questionCount: qs.length,
+      });
+    }
+    return result;
+  }
+
+  async getBooksWithoutQuiz(): Promise<Book[]> {
+    const allBooks = await db.select().from(books).where(eq(books.pendingApproval, false));
+    const allQuizzes = await db.select().from(quizzes).where(eq(quizzes.isTeacherCreated, false));
+    const booksWithQuiz = new Set(allQuizzes.map(q => q.bookId));
+    return allBooks.filter(b => !booksWithQuiz.has(b.id));
+  }
+
+  async createTeacherQuizForBook(bookId: string, teacherId: string, title: string, qs: Array<any>): Promise<Quiz> {
+    const [quiz] = await db.insert(quizzes).values({
+      bookId,
+      title,
+      teacherEditStatus: "pending",
+      teacherEditorId: teacherId,
+      isTeacherCreated: true,
+    }).returning();
+    for (const q of qs) {
+      await db.insert(questions).values({
+        quizId: quiz.id,
+        questionText: q.questionText.trim(),
+        optionA: q.optionA.trim(),
+        optionB: q.optionB.trim(),
+        optionC: q.optionC.trim(),
+        optionD: q.optionD.trim(),
+        correctAnswer: q.correctAnswer,
+        points: 1,
+        addedByTeacher: true,
+      });
+    }
+    return quiz;
+  }
+
+  async createTeacherBookAndQuiz(bookData: Partial<InsertBook>, teacherId: string, quizTitle: string, qs: Array<any>): Promise<{ book: Book; quiz: Quiz }> {
+    const [book] = await db.insert(books).values({
+      ...(bookData as InsertBook),
+      pendingApproval: true,
+      teacherCreatorId: teacherId,
+    }).returning();
+    const quiz = await this.createTeacherQuizForBook(book.id, teacherId, quizTitle, qs);
+    return { book, quiz };
+  }
+
+  async approveTeacherQuizCreation(quizId: string, approverName: string): Promise<void> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, quizId));
+    if (!quiz) return;
+    if (quiz.bookId) {
+      await db.update(books).set({ pendingApproval: false }).where(
+        and(eq(books.id, quiz.bookId), eq(books.pendingApproval, true))
+      );
+    }
+    await db.update(quizzes).set({
+      teacherEditStatus: "approved",
+      approvedTeacherName: approverName,
+    }).where(eq(quizzes.id, quizId));
+  }
+
+  async rejectTeacherQuizCreation(quizId: string): Promise<void> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, quizId));
+    if (!quiz) return;
+    const bookId = quiz.bookId;
+    await db.delete(questions).where(eq(questions.quizId, quizId));
+    await db.delete(quizzes).where(eq(quizzes.id, quizId));
+    if (bookId) {
+      const [book] = await db.select().from(books).where(eq(books.id, bookId));
+      if (book?.pendingApproval) {
+        await db.delete(books).where(eq(books.id, bookId));
+      }
+    }
   }
 
   async getTeacherAddedQuestionsCount(quizId: string): Promise<number> {
