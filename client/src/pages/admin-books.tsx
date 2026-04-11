@@ -34,7 +34,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Pencil, Trash2, BookOpen, Upload, Image, ImageOff, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, FolderArchive, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Upload, Image, ImageOff, FileUp, Star, Download, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, HelpCircle, FolderArchive, RefreshCw, CheckCircle2, Wrench } from "lucide-react";
 
 type BookWithGenres = Book & { genres?: Genre[] };
 
@@ -858,6 +858,36 @@ export default function AdminBooks() {
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
+                <Button variant="outline" data-testid="button-tools-menu">
+                  <Wrench className="mr-2 h-4 w-4" />
+                  Alati
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuItem onClick={handleMigrateCovers} disabled={migrating} data-testid="button-migrate-covers">
+                  <RefreshCw className={`mr-2 h-4 w-4 ${migrating ? "animate-spin" : ""}`} />
+                  {migrating ? "Pretraga u toku..." : "Pronađi korice (knjiga.ba)"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMigrateExternalToLocal} disabled={migrating} data-testid="button-migrate-external">
+                  <Download className="mr-2 h-4 w-4" />
+                  Preuzmi eksterne korice na server
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleFetchBookDetails} disabled={detailsRunning || migrating} data-testid="button-fetch-book-details">
+                  <BookOpen className={`mr-2 h-4 w-4 ${detailsRunning ? "animate-pulse" : ""}`} />
+                  {detailsRunning ? "Preuzimam opise..." : "Preuzmi opise (knjiga.ba)"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCleanupBooks} disabled={cleaningUp} data-testid="button-cleanup-books">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {cleaningUp ? "Čišćenje u toku..." : "Očisti naslove i opise"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("/api/admin/missing-covers-csv", "_blank")} data-testid="button-download-missing-covers">
+                  <ImageOff className="mr-2 h-4 w-4" />
+                  Preuzmi listu nedostajućih naslovnica
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button variant="outline" data-testid="button-import-menu">
                   <Upload className="mr-2 h-4 w-4" />
                   Uvoz / Izvoz
@@ -882,28 +912,6 @@ export default function AdminBooks() {
                 <DropdownMenuItem onClick={() => zipInputRef.current?.click()} disabled={zipUploading} data-testid="button-upload-covers-zip">
                   <FolderArchive className="mr-2 h-4 w-4" />
                   {zipUploading ? "Učitavanje..." : "Uvezi korice (ZIP)"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Alati</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handleMigrateCovers} disabled={migrating} data-testid="button-migrate-covers">
-                  <RefreshCw className={`mr-2 h-4 w-4 ${migrating ? "animate-spin" : ""}`} />
-                  {migrating ? "Pretraga u toku..." : "Pronađi korice (knjiga.ba)"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleMigrateExternalToLocal} disabled={migrating} data-testid="button-migrate-external">
-                  <Download className="mr-2 h-4 w-4" />
-                  Preuzmi eksterne korice na server
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleFetchBookDetails} disabled={detailsRunning || migrating} data-testid="button-fetch-book-details">
-                  <BookOpen className={`mr-2 h-4 w-4 ${detailsRunning ? "animate-pulse" : ""}`} />
-                  {detailsRunning ? "Preuzimam opise..." : "Preuzmi opise (knjiga.ba)"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCleanupBooks} disabled={cleaningUp} data-testid="button-cleanup-books">
-                  <Trash2 className={`mr-2 h-4 w-4`} />
-                  {cleaningUp ? "Čišćenje u toku..." : "Očisti naslove i opise"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open("/api/admin/missing-covers-csv", "_blank")} data-testid="button-download-missing-covers">
-                  <ImageOff className="mr-2 h-4 w-4" />
-                  Preuzmi listu nedostajućih naslovnica
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
