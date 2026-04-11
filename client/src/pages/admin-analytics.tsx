@@ -24,7 +24,7 @@ function formatPath(path: string) {
     "/": "Početna", "/biblioteka": "Biblioteka", "/rang-lista": "Rang-lista",
     "/razmjena": "Berza knjiga", "/vodic": "Vodič", "/blog": "Blog",
     "/login": "Prijava", "/registracija": "Registracija",
-    "/ucenik": "Učenik - početna", "/ucitelj": "Učitelj - početna",
+    "/ucenik": "Učenik - početna", "/ucitelj": "Nastavnik - početna",
     "/roditelj": "Roditelj - početna", "/admin": "Admin - početna",
     "/citanje": "Čitalac - početna",
   };
