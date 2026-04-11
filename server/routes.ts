@@ -3343,9 +3343,11 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const bookMap = new Map(allBooks.map(b => [b.id, b]));
       const result = await Promise.all(
         allQuizzes.map(async (quiz) => {
+          if (quiz.isTeacherCreated) return null;
           const book = bookMap.get(quiz.bookId);
           if (!book) return null;
-          const teacherAddedCount = await storage.getTeacherAddedQuestionsCount(quiz.id);
+          const qs = await storage.getQuestionsByQuizId(quiz.id);
+          const teacherAddedCount = qs.filter((q: any) => q.addedByTeacher).length;
           return {
             quizId: quiz.id,
             quizTitle: quiz.title,
@@ -3354,7 +3356,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
             bookAuthor: book.author,
             bookAgeGroup: book.ageGroup,
             coverImage: book.coverImage,
-            questionCount: quiz.questionCount,
+            questionCount: qs.length,
             teacherEditStatus: quiz.teacherEditStatus || "none",
             approvedTeacherName: quiz.approvedTeacherName,
             teacherAddedQuestionsCount: teacherAddedCount,
@@ -3363,6 +3365,80 @@ Odgovori ISKLJUČIVO u JSON formatu:
         })
       );
       return res.json(result.filter(Boolean));
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/teacher/books-without-quiz", requireTeacher, async (_req, res) => {
+    try {
+      const booksNoQuiz = await storage.getBooksWithoutQuiz();
+      return res.json(booksNoQuiz);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/teacher/quizzes/create-for-book", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const { bookId, quizTitle, questions: qs } = req.body;
+      if (!bookId || !quizTitle?.trim()) return res.status(400).json({ message: "bookId i quizTitle su obavezni." });
+      if (!Array.isArray(qs) || qs.length < 1) return res.status(400).json({ message: "Morate unijeti najmanje 1 pitanje." });
+      if (qs.length > 40) return res.status(400).json({ message: "Kviz može imati najviše 40 pitanja." });
+      for (const q of qs) {
+        if (!q.questionText?.trim()) return res.status(400).json({ message: "Tekst pitanja je obavezan." });
+        if (!q.optionA?.trim() || !q.optionB?.trim() || !q.optionC?.trim() || !q.optionD?.trim()) {
+          return res.status(400).json({ message: "Sva 4 odgovora su obavezna." });
+        }
+        if (!["a", "b", "c", "d"].includes(q.correctAnswer)) {
+          return res.status(400).json({ message: "Tačan odgovor mora biti a, b, c ili d." });
+        }
+      }
+      const book = await storage.getBook(bookId);
+      if (!book) return res.status(404).json({ message: "Knjiga nije pronađena." });
+      const quiz = await storage.createTeacherQuizForBook(bookId, teacherId, quizTitle.trim(), qs);
+      return res.json({ message: "Kviz uspješno kreiran i poslan na odobrenje.", quizId: quiz.id });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/teacher/books-and-quizzes/create", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const { book: bookData, quizTitle, questions: qs } = req.body;
+      if (!bookData?.title?.trim() || !bookData?.author?.trim()) {
+        return res.status(400).json({ message: "Naslov i autor knjige su obavezni." });
+      }
+      if (!quizTitle?.trim()) return res.status(400).json({ message: "Naziv kviza je obavezan." });
+      if (!Array.isArray(qs) || qs.length < 1) return res.status(400).json({ message: "Morate unijeti najmanje 1 pitanje." });
+      if (qs.length > 40) return res.status(400).json({ message: "Kviz može imati najviše 40 pitanja." });
+      for (const q of qs) {
+        if (!q.questionText?.trim()) return res.status(400).json({ message: "Tekst pitanja je obavezan." });
+        if (!q.optionA?.trim() || !q.optionB?.trim() || !q.optionC?.trim() || !q.optionD?.trim()) {
+          return res.status(400).json({ message: "Sva 4 odgovora su obavezna." });
+        }
+        if (!["a", "b", "c", "d"].includes(q.correctAnswer)) {
+          return res.status(400).json({ message: "Tačan odgovor mora biti a, b, c ili d." });
+        }
+      }
+      const insertBook = {
+        title: bookData.title.trim(),
+        author: bookData.author.trim(),
+        description: bookData.description?.trim() || "",
+        coverImage: "",
+        content: "",
+        ageGroup: bookData.ageGroup || "R1",
+        genre: bookData.genre || "lektira",
+        readingDifficulty: bookData.readingDifficulty || "srednje",
+        pageCount: bookData.pageCount ? parseInt(bookData.pageCount) : 0,
+        publisher: bookData.publisher?.trim() || "",
+        isbn: bookData.isbn?.trim() || null,
+        language: "bosanski",
+      };
+      const { book, quiz } = await storage.createTeacherBookAndQuiz(insertBook as any, teacherId, quizTitle.trim(), qs);
+      return res.json({ message: "Knjiga i kviz uspješno kreirani i poslani na odobrenje.", bookId: book.id, quizId: quiz.id });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -3444,6 +3520,49 @@ Odgovori ISKLJUČIVO u JSON formatu:
         message: `${newQuestions.length} pitanje(a) uspješno dodano. Čeka odobrenje admina.`,
         teacherName: teacher?.fullName,
       });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ==================== ADMIN QUIZ CREATION APPROVALS ====================
+
+  app.get("/api/admin/pending-quiz-creations", requireAdmin, async (_req, res) => {
+    try {
+      const pending = await storage.getPendingTeacherQuizCreations();
+      return res.json(pending);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/quiz-creations/:id/approve", requireAdmin, async (req, res) => {
+    try {
+      const quizId = req.params.id as string;
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+      if (!quiz.isTeacherCreated || quiz.teacherEditStatus !== "pending") {
+        return res.status(400).json({ message: "Kviz nije na čekanju za odobrenje." });
+      }
+      const teacher = quiz.teacherEditorId ? await storage.getUser(quiz.teacherEditorId) : null;
+      const teacherName = teacher?.fullName || "Nastavnik";
+      await storage.approveTeacherQuizCreation(quizId, teacherName);
+      return res.json({ message: `Kviz odobren. Kreirano od: ${teacherName}` });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/quiz-creations/:id/reject", requireAdmin, async (req, res) => {
+    try {
+      const quizId = req.params.id as string;
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+      if (!quiz.isTeacherCreated || quiz.teacherEditStatus !== "pending") {
+        return res.status(400).json({ message: "Kviz nije na čekanju za odobrenje." });
+      }
+      await storage.rejectTeacherQuizCreation(quizId);
+      return res.json({ message: "Kreiranje kviza odbijeno i obrisano." });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
