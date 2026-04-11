@@ -197,7 +197,7 @@ function TeacherDashboardMock() {
             <GraduationCap className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100">Učiteljski pregled</h3>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100">Nastavnički pregled</h3>
             <p className="text-xs text-slate-500">Dobrodošli nazad, Amra Hodžić</p>
           </div>
         </div>
@@ -419,7 +419,7 @@ export default function GuidePage() {
               <Badge className="text-sm px-4 py-1.5 rounded-full">Vodič kroz platformu</Badge>
               <h1 className="text-5xl md:text-6xl font-bold">Čitanje.ba</h1>
               <p className="text-2xl text-muted-foreground leading-relaxed">
-                Digitalni most između knjige i djeteta. Platforma koja pretvara svaku pročitanu knjigu u bodove, certifikate i zajedničko takmičenje — za učenike, roditelje, učitelje i škole.
+                Digitalni most između knjige i djeteta. Platforma koja pretvara svaku pročitanu knjigu u bodove, certifikate i zajedničko takmičenje — za učenike, roditelje, nastavnike i škole.
               </p>
               <div className="h-1 w-24 bg-primary mx-auto rounded-full" />
             </motion.div>
@@ -491,7 +491,7 @@ export default function GuidePage() {
                 <Users className="w-5 h-5" /> Roditelj
               </TabsTrigger>
               <TabsTrigger value="teacher" className="py-3 px-4 flex items-center gap-2" data-testid="tab-guide-teacher">
-                <GraduationCap className="w-5 h-5" /> Učitelj
+                <GraduationCap className="w-5 h-5" /> Nastavnik
               </TabsTrigger>
               <TabsTrigger value="school" className="py-3 px-4 flex items-center gap-2" data-testid="tab-guide-school">
                 <SchoolIcon className="w-5 h-5" /> Škola
@@ -507,7 +507,7 @@ export default function GuidePage() {
                     Vodič za čitaoce i učenike
                   </CardTitle>
                   <p className="text-muted-foreground mt-1">
-                    Učenici dobivaju račun od učitelja ili roditelja. Čitaoci (18+) se registruju samostalno. Obje uloge imaju pristup istim funkcijama čitanja.
+                    Učenici dobivaju račun od nastavnika ili roditelja. Čitaoci (18+) se registruju samostalno. Obje uloge imaju pristup istim funkcijama čitanja.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-8">
@@ -648,7 +648,7 @@ export default function GuidePage() {
                         </li>
                         <li className="flex gap-4">
                           <span className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">4</span>
-                          <p><strong>Povežite se sa školom:</strong> Ako je dijete dobilo račun od učitelja, pošaljite zahtjev za linkovanje da pratite školskog učenika zajedno s nastavnikom.</p>
+                          <p><strong>Povežite se sa školom:</strong> Ako je dijete dobilo račun od nastavnika, pošaljite zahtjev za linkovanje da pratite školskog učenika zajedno s nastavnikom.</p>
                         </li>
                       </ul>
                     </div>
@@ -704,7 +704,7 @@ export default function GuidePage() {
                 <CardHeader>
                   <CardTitle className="text-3xl flex items-center gap-3">
                     <GraduationCap className="w-10 h-10 text-primary" />
-                    Vodič za učitelje
+                    Vodič za nastavnike
                   </CardTitle>
                   <p className="text-muted-foreground mt-1">
                     Nastavnici kreiraju i prate učenike, dodjeljuju bonus bodove, odobravaju roditelje i mogu predlagati poboljšanja kvizova.
