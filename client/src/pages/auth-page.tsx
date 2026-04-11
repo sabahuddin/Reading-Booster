@@ -283,6 +283,9 @@ export default function AuthPage() {
                               <Input
                                 placeholder="Unesite korisničko ime"
                                 data-testid="input-login-username"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
                                 {...field}
                               />
                             </FormControl>
@@ -376,6 +379,9 @@ export default function AuthPage() {
                               <Input
                                 placeholder="Odaberite korisničko ime"
                                 data-testid="input-register-username"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
                                 {...field}
                               />
                             </FormControl>
@@ -564,7 +570,7 @@ export default function AuthPage() {
                               <FormItem>
                                 <FormLabel>Korisničko ime</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Odaberite korisničko ime" data-testid="input-school-username" {...field} />
+                                  <Input placeholder="Odaberite korisničko ime" data-testid="input-school-username" autoCapitalize="none" autoCorrect="off" spellCheck={false} {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
