@@ -80,6 +80,9 @@ export default function ForgotPasswordPage() {
                           <Input
                             placeholder="npr. ucenik1 ili ucenik@skola.ba"
                             data-testid="input-username-or-email"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck={false}
                             {...field}
                           />
                         </FormControl>
