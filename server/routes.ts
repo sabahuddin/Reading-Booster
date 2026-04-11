@@ -3336,6 +3336,38 @@ Odgovori ISKLJUČIVO u JSON formatu:
 
   // ==================== TEACHER QUIZ EDITING ====================
 
+  app.get("/api/teacher/quizzes-overview", requireTeacher, async (req, res) => {
+    try {
+      const allQuizzes = await storage.getAllQuizzes();
+      const allBooks = await storage.getAllBooks();
+      const bookMap = new Map(allBooks.map(b => [b.id, b]));
+      const result = await Promise.all(
+        allQuizzes.map(async (quiz) => {
+          const book = bookMap.get(quiz.bookId);
+          if (!book) return null;
+          const teacherAddedCount = await storage.getTeacherAddedQuestionsCount(quiz.id);
+          return {
+            quizId: quiz.id,
+            quizTitle: quiz.title,
+            bookId: book.id,
+            bookTitle: book.title,
+            bookAuthor: book.author,
+            bookAgeGroup: book.ageGroup,
+            coverImage: book.coverImage,
+            questionCount: quiz.questionCount,
+            teacherEditStatus: quiz.teacherEditStatus || "none",
+            approvedTeacherName: quiz.approvedTeacherName,
+            teacherAddedQuestionsCount: teacherAddedCount,
+            canEdit: (quiz.teacherEditStatus === "none" || quiz.teacherEditStatus === null) && teacherAddedCount === 0,
+          };
+        })
+      );
+      return res.json(result.filter(Boolean));
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/teacher/quizzes/:id/edit-info", requireTeacher, async (req, res) => {
     try {
       const quiz = await storage.getQuiz(req.params.id as string);
