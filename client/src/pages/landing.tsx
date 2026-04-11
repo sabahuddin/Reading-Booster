@@ -76,7 +76,7 @@ const features = [
     icon: TrendingUp,
     title: "Prati napredak",
     description:
-      "Učitelji i roditelji imaju dashboarde s grafikonima. Svaki učenik vidi svoje rezultate i historiju.",
+      "Nastavnici i roditelji imaju dashboarde s grafikonima. Svaki učenik vidi svoje rezultate i historiju.",
   },
   {
     icon: ShieldCheck,
@@ -490,7 +490,7 @@ function AboutSection() {
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">2</div>
                 <div>
-                  <h4 className="font-bold text-xl mb-1">Učitelji i škole</h4>
+                  <h4 className="font-bold text-xl mb-1">Nastavnici i škole</h4>
                   <p className="text-muted-foreground">Kreira se razred, dodaju učenici i prati napredak svakog djeteta. Grafikon bodova po učeniku i žanrovski prikaz čitanja pomažu u planiranju nastave. Bonus bodovi za najvrjednije!</p>
                 </div>
               </div>
