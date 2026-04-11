@@ -1285,18 +1285,22 @@ export default function AdminQuizzes() {
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Pretraži po naslovu ili autoru..."
-                  value={bulkBookSearch}
-                  onChange={e => setBulkBookSearch(e.target.value)}
-                  data-testid="input-bulk-book-search"
-                />
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  {selectedBulkBookIds.size}/10 odabrano
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-8"
+                    placeholder="Pretraži po naslovu ili autoru..."
+                    value={bulkBookSearch}
+                    onChange={e => setBulkBookSearch(e.target.value)}
+                    data-testid="input-bulk-book-search"
+                  />
+                </div>
+                <span className="text-sm font-medium whitespace-nowrap">
+                  {selectedBulkBookIds.size}/10
                 </span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
@@ -1317,29 +1321,37 @@ export default function AdminQuizzes() {
                 >
                   Poništi odabir
                 </Button>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {filteredBulkBooks.length === booksWithoutQuiz.length
+                    ? `${booksWithoutQuiz.length} knjiga bez kviza`
+                    : `${filteredBulkBooks.length} od ${booksWithoutQuiz.length} rezultata`}
+                </span>
               </div>
 
-              <div className="border rounded-md max-h-80 overflow-y-auto">
+              <div
+                className="border rounded-md overflow-y-auto overscroll-contain"
+                style={{ height: "340px" }}
+              >
                 {filteredBulkBooks.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Nema knjiga bez kviza</p>
+                  <p className="text-center text-muted-foreground py-10">Nema rezultata za pretragu</p>
                 ) : (
                   <table className="w-full text-sm">
-                    <thead className="bg-muted sticky top-0">
+                    <thead className="bg-muted sticky top-0 z-10">
                       <tr>
                         <th className="w-10 px-3 py-2"></th>
                         <th className="text-left px-3 py-2">Naslov</th>
-                        <th className="text-left px-3 py-2">Autor</th>
-                        <th className="text-center px-3 py-2">Grupa</th>
+                        <th className="text-left px-3 py-2 hidden sm:table-cell">Autor</th>
+                        <th className="text-center px-3 py-2">Gr.</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {filteredBulkBooks.map(book => {
+                      {filteredBulkBooks.slice(0, 200).map(book => {
                         const isSelected = selectedBulkBookIds.has(book.id);
                         const isDisabled = !isSelected && selectedBulkBookIds.size >= 10;
                         return (
                           <tr
                             key={book.id}
-                            className={`cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : isDisabled ? "opacity-40" : "hover:bg-muted/50"}`}
+                            className={`cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : isDisabled ? "opacity-40 cursor-not-allowed" : "hover:bg-muted/50"}`}
                             onClick={() => !isDisabled && toggleBulkBook(book.id)}
                             data-testid={`row-bulk-book-${book.id}`}
                           >
@@ -1351,14 +1363,21 @@ export default function AdminQuizzes() {
                                 data-testid={`checkbox-bulk-book-${book.id}`}
                               />
                             </td>
-                            <td className="px-3 py-2 font-medium">{book.title}</td>
-                            <td className="px-3 py-2 text-muted-foreground">{book.author}</td>
+                            <td className="px-3 py-2 font-medium leading-tight">{book.title}</td>
+                            <td className="px-3 py-2 text-muted-foreground hidden sm:table-cell">{book.author}</td>
                             <td className="px-3 py-2 text-center">
                               <span className="font-mono text-xs font-semibold">{book.ageGroup || "?"}</span>
                             </td>
                           </tr>
                         );
                       })}
+                      {filteredBulkBooks.length > 200 && (
+                        <tr>
+                          <td colSpan={4} className="px-3 py-3 text-center text-xs text-muted-foreground bg-muted/30">
+                            Prikazano prvih 200 od {filteredBulkBooks.length} — pretraži za sužavanje liste
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 )}
