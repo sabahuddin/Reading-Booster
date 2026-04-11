@@ -45,7 +45,7 @@ interface PendingUser {
 type PendingQuizEdit = Quiz & { bookTitle?: string; teacherName?: string };
 
 const roleLabels: Record<string, string> = {
-  ucitelj: "Učitelj",
+  ucitelj: "Nastavnik",
   bibliotekar: "Bibliotekar",
   sekretar: "Sekretar",
   administrator: "Školski administrator",
@@ -53,6 +53,8 @@ const roleLabels: Record<string, string> = {
 
 const typeLabels: Record<string, string> = {
   school: "Škola",
+  osnovna_skola: "Osnovna škola",
+  srednja_skola: "Srednja škola",
   library: "Biblioteka",
 };
 
@@ -258,7 +260,7 @@ export default function AdminApprovals() {
                         </p>
                         {quiz.teacherName && (
                           <p className="text-sm text-muted-foreground mt-1">
-                            Učitelj/ica: <span className="font-medium">{quiz.teacherName}</span>
+                            Nastavnik/ica: <span className="font-medium">{quiz.teacherName}</span>
                           </p>
                         )}
                       </div>
@@ -323,7 +325,7 @@ export default function AdminApprovals() {
                 Odobravate račun za <strong>{approveDialog?.fullName}</strong> iz institucije{" "}
                 <strong>{approveDialog?.schoolName}</strong>.
                 {isSchoolAdmin
-                  ? " Odredite maksimalan broj učiteljskih i učeničkih računa za ovu školu."
+                  ? " Odredite maksimalan broj nastavničkih i učeničkih računa za ovu školu."
                   : " Odredite maksimalan broj učeničkih računa."}
               </DialogDescription>
             </DialogHeader>
@@ -332,7 +334,7 @@ export default function AdminApprovals() {
                 <div>
                   <label className="text-sm font-medium flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    Maksimalan broj učiteljskih računa
+                    Maksimalan broj nastavničkih računa
                   </label>
                   <Input
                     type="number"
