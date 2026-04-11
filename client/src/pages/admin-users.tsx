@@ -595,7 +595,7 @@ export default function AdminUsers() {
                   <FormField control={createForm.control} name="username" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Korisničko ime</FormLabel>
-                      <FormControl><Input {...field} data-testid="input-create-username" /></FormControl>
+                      <FormControl><Input {...field} data-testid="input-create-username" autoCapitalize="none" autoCorrect="off" spellCheck={false} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
