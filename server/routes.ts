@@ -2564,6 +2564,32 @@ Odgovori ISKLJUČIVO u JSON formatu:
     } catch (e: any) { return res.status(500).json({ message: e.message }); }
   });
 
+  app.post("/api/teacher/classrooms/:id/generate-cards", requireTeacher, async (req, res) => {
+    try {
+      const teacherId = req.session.userId!;
+      const classroomId = req.params.id;
+      const classroom = await storage.getClassroom(classroomId);
+      if (!classroom || classroom.teacherId !== teacherId) {
+        return res.status(403).json({ message: "Nemate pristup ovom razredu." });
+      }
+      const teacher = await storage.getUser(teacherId);
+      const students = await storage.getStudentsByClassroomId(classroomId);
+      const cards = await Promise.all(students.map(async (student) => {
+        const newPassword = generatePassword();
+        const hashedPw = await hashPassword(newPassword);
+        await storage.updateUser(student.id, { password: hashedPw } as any);
+        return { id: student.id, fullName: student.fullName, username: student.username, newPassword };
+      }));
+      return res.json({
+        classroom: { id: classroom.id, name: classroom.name },
+        teacher: { fullName: teacher?.fullName || "", schoolName: teacher?.schoolName || "" },
+        cards,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/teacher/students", requireTeacher, async (req, res) => {
     try {
       const teacherId = req.session.userId!;
