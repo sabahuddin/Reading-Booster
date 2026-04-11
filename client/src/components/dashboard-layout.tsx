@@ -74,6 +74,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
     { title: "Početna", url: "/ucitelj", icon: Home },
     { title: "Odjeljenja i učenici", url: "/ucitelj/ucenici", icon: GraduationCap },
     { title: "Biblioteka", url: "/ucitelj/biblioteka", icon: BookOpen },
+    { title: "Kvizovi", url: "/ucitelj/kvizovi", icon: FileQuestion },
     { title: "Poruke", url: "/ucitelj/poruke", icon: Mail },
   ],
   parent: [
