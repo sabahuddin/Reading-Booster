@@ -72,8 +72,9 @@ const menusByRole: Record<Role, MenuItem[]> = {
   ],
   teacher: [
     { title: "Početna", url: "/ucitelj", icon: Home },
-    { title: "Učenici", url: "/ucitelj/ucenici", icon: GraduationCap },
+    { title: "Odjeljenja i učenici", url: "/ucitelj/ucenici", icon: GraduationCap },
     { title: "Biblioteka", url: "/ucitelj/biblioteka", icon: BookOpen },
+    { title: "Poruke", url: "/ucitelj/poruke", icon: Mail },
   ],
   parent: [
     { title: "Početna", url: "/roditelj", icon: Home },
@@ -92,6 +93,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
   school_admin: [
     { title: "Početna", url: "/skola", icon: SchoolIcon },
     { title: "Učitelji", url: "/skola/ucitelji", icon: Users },
+    { title: "Poruke", url: "/skola/poruke", icon: Mail },
   ],
   admin: [
     { title: "Početna", url: "/admin", icon: Home },
