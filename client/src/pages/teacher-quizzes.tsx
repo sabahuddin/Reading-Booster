@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -15,11 +16,13 @@ import {
 } from "@/components/ui/select";
 import {
   Search, PlusCircle, Trash2, Send, Clock, Lock, CheckCircle2, FileQuestion, Heart,
+  BookPlus, BookOpen, AlertCircle,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { AgeGroupBadge } from "@/components/age-group-badge";
-import { BookCover } from "@/components/book-cover";
+import type { Book } from "@shared/schema";
+
+// ─── Shared types ─────────────────────────────────────────────────────────────
 
 interface QuizOverview {
   quizId: string;
@@ -49,6 +52,23 @@ function emptyQuestion(): QuestionDraft {
   return { questionText: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "a" };
 }
 
+const AGE_GROUPS = [
+  { value: "R1", label: "R1 (do 9 godina)" },
+  { value: "R4", label: "R4 (10–12 godina)" },
+  { value: "R7", label: "R7 (13–15 godina)" },
+  { value: "O", label: "O (16–18 godina)" },
+  { value: "A", label: "A (odrasli)" },
+];
+
+const GENRES = [
+  "lektira", "roman", "bajke_basne", "avantura_fantasy", "humor", "poezija",
+  "beletristika", "klasici", "drama", "detektivski_roman", "historijski_roman",
+  "djeciji_roman", "pustolovni_roman", "pripovjetke", "islam", "mitologija",
+  "zanimljiva_nauka", "savremena_knjizevnost", "publicistika",
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
 function StatusBadge({ status, approvedBy }: { status: string; approvedBy?: string | null }) {
   if (status === "approved") {
     return (
@@ -69,17 +89,115 @@ function StatusBadge({ status, approvedBy }: { status: string; approvedBy?: stri
   return (
     <Badge variant="outline" className="text-muted-foreground">
       <PlusCircle className="mr-1 h-3 w-3" />
-      Dostupno za uređivanje
+      Dostupno
     </Badge>
   );
 }
 
-export default function TeacherQuizzes() {
+function QuestionEditor({
+  questions,
+  onChange,
+  max = 5,
+}: {
+  questions: QuestionDraft[];
+  onChange: (qs: QuestionDraft[]) => void;
+  max?: number;
+}) {
+  function update(idx: number, field: keyof QuestionDraft, value: string) {
+    onChange(questions.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
+  }
+  function add() { if (questions.length < max) onChange([...questions, emptyQuestion()]); }
+  function remove(idx: number) { onChange(questions.filter((_, i) => i !== idx)); }
+
+  return (
+    <div className="space-y-5">
+      {questions.map((q, idx) => (
+        <div key={idx} className="border rounded-lg p-4 space-y-3 bg-muted/20" data-testid={`question-block-${idx}`}>
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Pitanje {idx + 1}</span>
+            {questions.length > 1 && (
+              <Button variant="ghost" size="sm" onClick={() => remove(idx)} data-testid={`button-remove-q-${idx}`}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Tekst pitanja *</label>
+            <Textarea
+              placeholder="Unesite pitanje o sadržaju knjige..."
+              value={q.questionText}
+              onChange={e => update(idx, "questionText", e.target.value)}
+              className="mt-1"
+              rows={2}
+              data-testid={`input-q-text-${idx}`}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {(["A", "B", "C", "D"] as const).map(letter => {
+              const field = `option${letter}` as keyof QuestionDraft;
+              return (
+                <div key={letter}>
+                  <label className="text-xs font-medium text-muted-foreground">Odgovor {letter} *</label>
+                  <Input
+                    placeholder={`Odgovor ${letter}...`}
+                    value={q[field] as string}
+                    onChange={e => update(idx, field, e.target.value)}
+                    className="mt-1"
+                    data-testid={`input-opt-${letter.toLowerCase()}-${idx}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Tačan odgovor *</label>
+            <Select value={q.correctAnswer} onValueChange={v => update(idx, "correctAnswer", v)}>
+              <SelectTrigger className="mt-1" data-testid={`select-correct-${idx}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {["a", "b", "c", "d"].map(l => (
+                  <SelectItem key={l} value={l}>{l.toUpperCase()}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      ))}
+      {questions.length < max && (
+        <Button variant="outline" className="w-full" onClick={add} data-testid="button-add-question">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Dodaj pitanje ({questions.length}/{max})
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function isQValid(q: QuestionDraft) {
+  return q.questionText.trim() && q.optionA.trim() && q.optionB.trim() && q.optionC.trim() && q.optionD.trim() && q.correctAnswer;
+}
+
+// ─── Thanks banner ─────────────────────────────────────────────────────────────
+function ThanksNote() {
+  return (
+    <div className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-3 flex items-start gap-3">
+      <Heart className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+      <p className="text-sm text-muted-foreground">
+        <strong className="text-primary">Hvala na saradnji!</strong>{" "}
+        Administracija platforme <strong>Čitanje.ba</strong> zahvaljuje nastavnicima koji doprinose kvalitetu kvizova.
+        Svaki vaš prijedlog prolazi pregled i obogaćuje bazu znanja za sve učenike.
+      </p>
+    </div>
+  );
+}
+
+// ─── Tab 1: Izmjene postojećih kvizova ────────────────────────────────────────
+function TabQuizEdits() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "none" | "pending" | "approved">("all");
   const [selectedQuiz, setSelectedQuiz] = useState<QuizOverview | null>(null);
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
 
   const { data: quizzes, isLoading } = useQuery<QuizOverview[]>({
@@ -95,286 +213,105 @@ export default function TeacherQuizzes() {
       const res = await apiRequest("POST", `/api/teacher/quizzes/${selectedQuiz!.quizId}/submit-questions`, { questions });
       return res.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       toast({ title: "Uspješno poslano!", description: "Vaša pitanja čekaju odobrenje administracije." });
       queryClient.invalidateQueries({ queryKey: ["/api/teacher/quizzes-overview"] });
-      closeModal();
+      setSelectedQuiz(null);
+      setQuestions([emptyQuestion()]);
     },
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
 
   const filtered = useMemo(() => {
     if (!quizzes) return [];
-    return quizzes.filter((q) => {
+    return quizzes.filter(q => {
       const matchSearch =
         q.bookTitle.toLowerCase().includes(search.toLowerCase()) ||
-        q.bookAuthor.toLowerCase().includes(search.toLowerCase()) ||
-        q.quizTitle.toLowerCase().includes(search.toLowerCase());
+        q.bookAuthor.toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || q.teacherEditStatus === statusFilter;
       return matchSearch && matchStatus;
     });
   }, [quizzes, search, statusFilter]);
 
-  const counts = useMemo(() => ({
-    all: quizzes?.length ?? 0,
-    none: quizzes?.filter(q => q.teacherEditStatus === "none").length ?? 0,
-    pending: quizzes?.filter(q => q.teacherEditStatus === "pending").length ?? 0,
-    approved: quizzes?.filter(q => q.teacherEditStatus === "approved").length ?? 0,
-  }), [quizzes]);
-
-  function openEditModal(quiz: QuizOverview) {
-    setSelectedQuiz(quiz);
-    setQuestions([emptyQuestion()]);
-    setEditModalOpen(true);
-  }
-
-  function closeModal() {
-    setEditModalOpen(false);
-    setSelectedQuiz(null);
-    setQuestions([emptyQuestion()]);
-  }
-
-  function updateQuestion(idx: number, field: keyof QuestionDraft, value: string) {
-    setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
-  }
-
-  function addQuestion() {
-    if (questions.length < 5) setQuestions((prev) => [...prev, emptyQuestion()]);
-  }
-
-  function removeQuestion(idx: number) {
-    setQuestions((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function canSubmit() {
-    return questions.every(
-      (q) => q.questionText.trim() && q.optionA.trim() && q.optionB.trim() && q.optionC.trim() && q.optionD.trim() && q.correctAnswer
-    );
-  }
-
   return (
-    <DashboardLayout role="teacher">
-      <div className="space-y-6">
-        <div className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-4 flex items-start gap-3">
-          <Heart className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-primary text-sm">Hvala na saradnji!</p>
-            <p className="text-sm text-muted-foreground">
-              Administracija platforme <strong>Čitanje.ba</strong> zahvaljuje nastavnicima koji doprinose kvalitetu
-              kvizova. Vaša pitanja prolaze pregled i obogaćuju bazu znanja za sve učenike.
-            </p>
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Pretraži po naslovu ili autoru..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-10"
+            data-testid="input-search-quizzes"
+          />
         </div>
-
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileQuestion className="h-6 w-6 text-primary" />
-            Kvizovi
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Predložite nova pitanja za kvizove. Svaki kviz prima do <strong>5 novih pitanja</strong> koja administracija pregleda i odobrava.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Pretraži po naslovu knjige ili autoru..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-              data-testid="input-search-quizzes"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-            <SelectTrigger className="w-full sm:w-52" data-testid="select-status-filter">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Svi kvizovi ({counts.all})</SelectItem>
-              <SelectItem value="none">Dostupni za uređivanje ({counts.none})</SelectItem>
-              <SelectItem value="pending">Na čekanju ({counts.pending})</SelectItem>
-              <SelectItem value="approved">Odobreni ({counts.approved})</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i}><CardContent className="p-4 space-y-3">
-                <Skeleton className="h-36 w-full rounded-md" />
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-8 w-full" />
-              </CardContent></Card>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <FileQuestion className="mx-auto mb-4 h-12 w-12 opacity-30" />
-            <p className="font-medium text-lg">Nema kvizova</p>
-            <p className="text-sm">
-              {search || statusFilter !== "all" ? "Nema rezultata za odabrani filter." : "Kvizovi još nisu dodani."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((quiz) => (
-              <Card key={quiz.quizId} className="flex flex-col h-full" data-testid={`card-quiz-${quiz.quizId}`}>
-                <CardContent className="p-4 flex flex-col gap-3 flex-1">
-                  <div className="flex gap-3">
-                    <div className="w-16 shrink-0">
-                      <div className="aspect-[2/3] rounded-md bg-muted overflow-hidden">
-                        <BookCover
-                          title={quiz.bookTitle}
-                          author={quiz.bookAuthor}
-                          ageGroup={quiz.bookAgeGroup}
-                          coverImage={quiz.coverImage}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm leading-snug line-clamp-2" data-testid={`text-quiz-book-title-${quiz.quizId}`}>
-                        {quiz.bookTitle}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{quiz.bookAuthor}</p>
-                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <AgeGroupBadge ageGroup={quiz.bookAgeGroup} />
-                        <Badge variant="outline" className="text-xs">
-                          {quiz.questionCount} pitanja
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-auto pt-2 space-y-2">
-                    <StatusBadge status={quiz.teacherEditStatus} approvedBy={quiz.approvedTeacherName} />
-
-                    {quiz.teacherEditStatus === "pending" && quiz.teacherAddedQuestionsCount > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Predloženo {quiz.teacherAddedQuestionsCount} pitanje(a) — čeka pregled
-                      </p>
-                    )}
-
-                    {quiz.canEdit && (
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        onClick={() => openEditModal(quiz)}
-                        data-testid={`button-edit-quiz-${quiz.quizId}`}
-                      >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Dodaj pitanja (1–5)
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <Select value={statusFilter} onValueChange={v => setStatusFilter(v as any)}>
+          <SelectTrigger className="w-full sm:w-52" data-testid="select-status-filter">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Svi kvizovi</SelectItem>
+            <SelectItem value="none">Dostupni za izmjene</SelectItem>
+            <SelectItem value="pending">Na čekanju</SelectItem>
+            <SelectItem value="approved">Odobreni</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <Dialog open={editModalOpen} onOpenChange={closeModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Dodaj pitanja kvizu</DialogTitle>
-            <DialogDescription>
-              <strong>{selectedQuiz?.bookTitle}</strong> — Možete dodati 1–5 pitanja. Administracija pregleda i odobrava svako pitanje.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 mb-2">
-            <p className="text-sm text-primary font-medium flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Administracija Čitanje.ba zahvaljuje na saradnji i doprinosu!
-            </p>
-          </div>
-
-          <div className="space-y-6 py-2">
-            {questions.map((q, idx) => (
-              <div key={idx} className="border rounded-lg p-4 space-y-3" data-testid={`question-block-${idx}`}>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">Pitanje {idx + 1}</span>
-                  {questions.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeQuestion(idx)}
-                      data-testid={`button-remove-question-${idx}`}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <Card key={i}><CardContent className="p-4"><Skeleton className="h-32 w-full" /></CardContent></Card>)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <FileQuestion className="mx-auto mb-4 h-12 w-12 opacity-30" />
+          <p className="font-medium">Nema kvizova za odabrani filter.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map(quiz => (
+            <Card key={quiz.quizId} className="flex flex-col" data-testid={`card-quiz-${quiz.quizId}`}>
+              <CardContent className="p-4 flex flex-col gap-3 flex-1">
+                <div>
+                  <p className="font-semibold text-sm line-clamp-2" data-testid={`text-quiz-book-${quiz.quizId}`}>{quiz.bookTitle}</p>
+                  <p className="text-xs text-muted-foreground">{quiz.bookAuthor} · {quiz.bookAgeGroup} · {quiz.questionCount} pitanja</p>
+                </div>
+                <div className="mt-auto space-y-2">
+                  <StatusBadge status={quiz.teacherEditStatus} approvedBy={quiz.approvedTeacherName} />
+                  {quiz.teacherEditStatus === "pending" && (
+                    <p className="text-xs text-muted-foreground">{quiz.teacherAddedQuestionsCount} pitanje(a) na čekanju</p>
+                  )}
+                  {quiz.canEdit && (
+                    <Button size="sm" className="w-full" onClick={() => { setSelectedQuiz(quiz); setQuestions([emptyQuestion()]); }} data-testid={`button-edit-quiz-${quiz.quizId}`}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Dodaj pitanja (1–5)
                     </Button>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Tekst pitanja *</label>
-                  <Textarea
-                    placeholder="Unesite pitanje o sadržaju knjige..."
-                    value={q.questionText}
-                    onChange={(e) => updateQuestion(idx, "questionText", e.target.value)}
-                    className="mt-1"
-                    rows={2}
-                    data-testid={`input-question-text-${idx}`}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {(["A", "B", "C", "D"] as const).map((letter) => {
-                    const field = `option${letter}` as keyof QuestionDraft;
-                    return (
-                      <div key={letter}>
-                        <label className="text-xs font-medium text-muted-foreground">Odgovor {letter} *</label>
-                        <Input
-                          placeholder={`Odgovor ${letter}...`}
-                          value={q[field] as string}
-                          onChange={(e) => updateQuestion(idx, field, e.target.value)}
-                          className="mt-1"
-                          data-testid={`input-option-${letter.toLowerCase()}-${idx}`}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Tačan odgovor *</label>
-                  <Select value={q.correctAnswer} onValueChange={(val) => updateQuestion(idx, "correctAnswer", val)}>
-                    <SelectTrigger className="mt-1" data-testid={`select-correct-answer-${idx}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="a">A</SelectItem>
-                      <SelectItem value="b">B</SelectItem>
-                      <SelectItem value="c">C</SelectItem>
-                      <SelectItem value="d">D</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ))}
-
-            {questions.length < 5 && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={addQuestion}
-                data-testid="button-add-question"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Dodaj još jedno pitanje ({questions.length}/5)
-              </Button>
-            )}
+      <Dialog open={!!selectedQuiz} onOpenChange={open => { if (!open) { setSelectedQuiz(null); setQuestions([emptyQuestion()]); }}}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Dodaj pitanja kvizu</DialogTitle>
+            <DialogDescription>{selectedQuiz?.bookTitle} — max 5 novih pitanja</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 mb-2">
+            <p className="text-sm text-primary font-medium flex items-center gap-2">
+              <Heart className="h-4 w-4" />Administracija Čitanje.ba zahvaljuje na saradnji!
+            </p>
           </div>
-
+          <QuestionEditor questions={questions} onChange={setQuestions} max={5} />
           <DialogFooter>
-            <Button variant="outline" onClick={closeModal}>Otkaži</Button>
+            <Button variant="outline" onClick={() => setSelectedQuiz(null)}>Otkaži</Button>
             <Button
               onClick={() => submitMutation.mutate()}
-              disabled={!canSubmit() || submitMutation.isPending}
+              disabled={!questions.every(isQValid) || submitMutation.isPending}
               data-testid="button-submit-questions"
             >
               <Send className="mr-2 h-4 w-4" />
@@ -383,6 +320,344 @@ export default function TeacherQuizzes() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Tab 2: Kreiraj kviz za knjigu bez kviza ───────────────────────────────────
+function TabCreateQuiz() {
+  const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [quizTitle, setQuizTitle] = useState("");
+  const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
+
+  const { data: books, isLoading } = useQuery<Book[]>({
+    queryKey: ["/api/teacher/books-without-quiz"],
+    queryFn: async () => {
+      const res = await fetch("/api/teacher/books-without-quiz", { credentials: "include" });
+      return res.json();
+    },
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/teacher/quizzes/create-for-book", {
+        bookId: selectedBook!.id,
+        quizTitle: quizTitle.trim(),
+        questions,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Kviz poslan na odobrenje!", description: "Admin će pregledati vaš kviz i odobriti ga." });
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher/books-without-quiz"] });
+      setSelectedBook(null);
+      setQuizTitle("");
+      setQuestions([emptyQuestion()]);
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
+  const filtered = useMemo(() => {
+    if (!books) return [];
+    return books.filter(b =>
+      b.title.toLowerCase().includes(search.toLowerCase()) ||
+      b.author.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [books, search]);
+
+  const canSubmit = quizTitle.trim() && questions.length >= 1 && questions.every(isQValid);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+        <p className="text-sm text-blue-800 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          Ovdje su prikazane samo knjige koje još <strong>nemaju kviz</strong>. Kreirajte kviz s 1–40 pitanja koji administrator mora odobriti.
+        </p>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          placeholder="Pretraži knjige bez kviza..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-10"
+          data-testid="input-search-books-no-quiz"
+        />
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <BookOpen className="mx-auto mb-3 h-10 w-10 opacity-30" />
+          <p>Sve knjige već imaju kviz, ili nema rezultata za pretragu.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map(book => (
+            <Card
+              key={book.id}
+              className="cursor-pointer hover:border-primary transition-colors"
+              onClick={() => { setSelectedBook(book); setQuizTitle(`Kviz — ${book.title}`); setQuestions([emptyQuestion()]); }}
+              data-testid={`card-book-no-quiz-${book.id}`}
+            >
+              <CardContent className="p-4">
+                <p className="font-semibold text-sm line-clamp-2">{book.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{book.author} · {book.ageGroup}</p>
+                <Button size="sm" className="mt-3 w-full" variant="outline">
+                  <PlusCircle className="mr-2 h-3 w-3" />
+                  Kreiraj kviz
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={!!selectedBook} onOpenChange={open => { if (!open) { setSelectedBook(null); setQuizTitle(""); setQuestions([emptyQuestion()]); }}}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Kreiraj kviz</DialogTitle>
+            <DialogDescription>
+              <BookOpen className="inline mr-1 h-4 w-4" />
+              <strong>{selectedBook?.title}</strong> — {selectedBook?.author}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Naziv kviza *</label>
+              <Input
+                value={quizTitle}
+                onChange={e => setQuizTitle(e.target.value)}
+                placeholder="npr. Kviz — Harry Potter i Kamen mudrosti"
+                className="mt-1"
+                data-testid="input-quiz-title"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Pitanja (1–40) *</label>
+              <p className="text-xs text-muted-foreground mb-3">Unesite najmanje 1, a najviše 40 pitanja</p>
+              <QuestionEditor questions={questions} onChange={setQuestions} max={40} />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedBook(null)}>Otkaži</Button>
+            <Button
+              onClick={() => submitMutation.mutate()}
+              disabled={!canSubmit || submitMutation.isPending}
+              data-testid="button-submit-new-quiz"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              {submitMutation.isPending ? "Šaljem..." : `Pošalji kviz (${questions.length} pitanja)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Tab 3: Nova knjiga + kviz ─────────────────────────────────────────────────
+function TabCreateBookAndQuiz() {
+  const { toast } = useToast();
+  const [bookForm, setBookForm] = useState({
+    title: "", author: "", description: "", ageGroup: "R1", genre: "lektira",
+    readingDifficulty: "srednje" as "lako" | "srednje" | "tesko",
+    pageCount: "", publisher: "", isbn: "",
+  });
+  const [quizTitle, setQuizTitle] = useState("");
+  const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
+
+  function setBook(field: string, value: string) {
+    setBookForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/teacher/books-and-quizzes/create", {
+        book: bookForm,
+        quizTitle: quizTitle.trim(),
+        questions,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Knjiga i kviz poslani na odobrenje!", description: "Admin će pregledati i odobriti vaš prijedlog." });
+      setBookForm({ title: "", author: "", description: "", ageGroup: "R1", genre: "lektira", readingDifficulty: "srednje", pageCount: "", publisher: "", isbn: "" });
+      setQuizTitle("");
+      setQuestions([emptyQuestion()]);
+    },
+    onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
+  });
+
+  const canSubmit = bookForm.title.trim() && bookForm.author.trim() && quizTitle.trim() && questions.length >= 1 && questions.every(isQValid);
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+        <p className="text-sm text-blue-800 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          Ovu opciju koristite kada knjiga <strong>ne postoji u biblioteci</strong>. Vaš prijedlog (knjiga + kviz) administrator mora odobriti prije nego postane dostupno.
+        </p>
+      </div>
+
+      {/* Podaci o knjizi */}
+      <div className="space-y-4">
+        <h3 className="font-semibold text-base flex items-center gap-2">
+          <BookPlus className="h-5 w-5 text-primary" />
+          Podaci o knjizi
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">Naslov *</label>
+            <Input value={bookForm.title} onChange={e => setBook("title", e.target.value)} placeholder="npr. Mali princ" className="mt-1" data-testid="input-book-title" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Autor *</label>
+            <Input value={bookForm.author} onChange={e => setBook("author", e.target.value)} placeholder="npr. Antoine de Saint-Exupéry" className="mt-1" data-testid="input-book-author" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Starosna skupina *</label>
+            <Select value={bookForm.ageGroup} onValueChange={v => setBook("ageGroup", v)}>
+              <SelectTrigger className="mt-1" data-testid="select-book-age-group">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AGE_GROUPS.map(ag => <SelectItem key={ag.value} value={ag.value}>{ag.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Žanr</label>
+            <Select value={bookForm.genre} onValueChange={v => setBook("genre", v)}>
+              <SelectTrigger className="mt-1" data-testid="select-book-genre">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GENRES.map(g => <SelectItem key={g} value={g}>{g.replace(/_/g, " ")}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Težina čitanja</label>
+            <Select value={bookForm.readingDifficulty} onValueChange={v => setBook("readingDifficulty", v)}>
+              <SelectTrigger className="mt-1" data-testid="select-book-difficulty">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lako">Lako</SelectItem>
+                <SelectItem value="srednje">Srednje</SelectItem>
+                <SelectItem value="tesko">Teško</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Broj stranica</label>
+            <Input type="number" value={bookForm.pageCount} onChange={e => setBook("pageCount", e.target.value)} placeholder="npr. 128" className="mt-1" data-testid="input-book-pages" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Izdavač</label>
+            <Input value={bookForm.publisher} onChange={e => setBook("publisher", e.target.value)} placeholder="npr. Bosanska knjiga" className="mt-1" data-testid="input-book-publisher" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">ISBN</label>
+            <Input value={bookForm.isbn} onChange={e => setBook("isbn", e.target.value)} placeholder="npr. 9789926234567" className="mt-1" data-testid="input-book-isbn" />
+          </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium">Opis knjige</label>
+          <Textarea value={bookForm.description} onChange={e => setBook("description", e.target.value)} placeholder="Kratki opis knjige..." className="mt-1" rows={3} data-testid="input-book-description" />
+        </div>
+      </div>
+
+      {/* Podaci o kvizu */}
+      <div className="space-y-4">
+        <h3 className="font-semibold text-base flex items-center gap-2">
+          <FileQuestion className="h-5 w-5 text-primary" />
+          Podaci o kvizu
+        </h3>
+        <div>
+          <label className="text-sm font-medium">Naziv kviza *</label>
+          <Input value={quizTitle} onChange={e => setQuizTitle(e.target.value)} placeholder="npr. Kviz — Mali princ" className="mt-1" data-testid="input-new-quiz-title" />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Pitanja (1–40) *</label>
+          <p className="text-xs text-muted-foreground mb-3">Unesite najmanje 1, a najviše 40 pitanja</p>
+          <QuestionEditor questions={questions} onChange={setQuestions} max={40} />
+        </div>
+      </div>
+
+      <Button
+        size="lg"
+        className="w-full"
+        onClick={() => submitMutation.mutate()}
+        disabled={!canSubmit || submitMutation.isPending}
+        data-testid="button-submit-book-and-quiz"
+      >
+        <Send className="mr-2 h-5 w-5" />
+        {submitMutation.isPending ? "Šaljem na odobrenje..." : `Pošalji na odobrenje (${questions.length} pitanja)`}
+      </Button>
+    </div>
+  );
+}
+
+// ─── Main page ─────────────────────────────────────────────────────────────────
+export default function TeacherQuizzes() {
+  return (
+    <DashboardLayout role="teacher">
+      <div className="space-y-6">
+        <ThanksNote />
+
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <FileQuestion className="h-6 w-6 text-primary" />
+            Kvizovi
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Dopunite postojeće kvizove pitanjima, ili kreirajte nov kviz za knjige koje ga još nemaju.
+            Sve izmjene odobrava administracija platforme.
+          </p>
+        </div>
+
+        <Tabs defaultValue="edit">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="edit" data-testid="tab-edit-quizzes">
+              <FileQuestion className="mr-2 h-4 w-4" />
+              Izmjene kvizova
+            </TabsTrigger>
+            <TabsTrigger value="create" data-testid="tab-create-quiz">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Kreiraj kviz
+            </TabsTrigger>
+            <TabsTrigger value="book-quiz" data-testid="tab-create-book-quiz">
+              <BookPlus className="mr-2 h-4 w-4" />
+              Nova knjiga i kviz
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="edit" className="mt-6">
+            <TabQuizEdits />
+          </TabsContent>
+          <TabsContent value="create" className="mt-6">
+            <TabCreateQuiz />
+          </TabsContent>
+          <TabsContent value="book-quiz" className="mt-6">
+            <TabCreateBookAndQuiz />
+          </TabsContent>
+        </Tabs>
+      </div>
     </DashboardLayout>
   );
 }
