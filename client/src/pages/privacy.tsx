@@ -62,7 +62,7 @@ export default function PrivacyPage() {
               <li>Praćenje napretka u čitanju i bodovanje</li>
               <li>Prikaz rang-lista i statistika</li>
               <li>Komunikaciju s korisnicima (odgovori na upite, obavijesti)</li>
-              <li>Omogućavanje učiteljima praćenje napretka učenika</li>
+              <li>Omogućavanje nastavnicima praćenje napretka učenika</li>
               <li>Omogućavanje roditeljima uvid u aktivnosti djeteta</li>
               <li>Sigurnost i zaštitu od zloupotrebe</li>
             </ul>
@@ -74,11 +74,11 @@ export default function PrivacyPage() {
               Posebno vodimo računa o zaštiti podataka maloljetnih korisnika:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground leading-relaxed">
-              <li>Račune za djecu kreiraju učitelji ili roditelji/staratelji.</li>
+              <li>Račune za djecu kreiraju nastavnici ili roditelji/staratelji.</li>
               <li>Ne prikupljamo više podataka nego što je neophodno za funkcioniranje Platforme.</li>
               <li>Podaci djece nisu javno vidljivi izvan Platforme.</li>
               <li>Na rang-listama se prikazuju samo korisničko ime i bodovi.</li>
-              <li>Povezivanje roditelja s djetetom zahtijeva odobrenje učitelja.</li>
+              <li>Povezivanje roditelja s djetetom zahtijeva odobrenje nastavnika.</li>
             </ul>
           </div>
 
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground leading-relaxed">
               <li>Kada je to zakonski obavezno (sudski nalog, zakonska obaveza).</li>
-              <li>Učiteljima — ograničen pristup podacima o napretku učenika u njihovom razredu.</li>
+              <li>Nastavnicima — ograničen pristup podacima o napretku učenika u njihovom razredu.</li>
               <li>Roditeljima — pristup podacima o napretku vlastite djece (nakon odobrenja).</li>
               <li>Školskim administratorima — agregirane statistike škole.</li>
             </ul>
