@@ -53,7 +53,8 @@ const schoolSchema = insertUserSchema.extend({
   email: z.string().email("Unesite ispravnu email adresu"),
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
-  schoolName: z.string().min(2, "Naziv škole je obavezan"),
+  schoolName: z.string().min(2, "Naziv institucije je obavezan"),
+  institutionType: z.enum(["school", "library"]).default("school"),
   captchaAnswer: z.string().min(1, "Odgovorite na sigurnosno pitanje"),
 });
 
@@ -149,9 +150,12 @@ export default function AuthPage() {
       password: "",
       fullName: "",
       schoolName: "",
+      institutionType: "school",
       captchaAnswer: "",
     },
   });
+
+  const selectedInstitutionType = schoolForm.watch("institutionType");
 
   const selectedRole = registerForm.watch("role");
 
@@ -212,7 +216,6 @@ export default function AuthPage() {
       const submitData = {
         ...rest,
         role: "school_admin" as const,
-        institutionType: "school" as const,
         institutionRole: "administrator" as const,
       };
       const result: any = await register.mutateAsync(submitData);
@@ -521,12 +524,39 @@ export default function AuthPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={schoolForm.control}
+                          name="institutionType"
+                          render={({ field }) => (
+                            <FormItem className="col-span-2">
+                              <FormLabel>Tip institucije</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-institution-type">
+                                    <SelectValue placeholder="Odaberite tip" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="school">🏫 Škola</SelectItem>
+                                  <SelectItem value="library">📚 Biblioteka</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={schoolForm.control}
                           name="schoolName"
                           render={({ field }) => (
                             <FormItem className="col-span-2">
-                              <FormLabel>Naziv škole</FormLabel>
+                              <FormLabel>
+                                {selectedInstitutionType === "library" ? "Naziv biblioteke" : "Naziv škole"}
+                              </FormLabel>
                               <FormControl>
-                                <Input placeholder="Npr. Druga osnovna škola" data-testid="input-school-name" {...field} />
+                                <Input
+                                  placeholder={selectedInstitutionType === "library" ? "Npr. Gradska biblioteka Sarajevo" : "Npr. Druga osnovna škola"}
+                                  data-testid="input-school-name"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
