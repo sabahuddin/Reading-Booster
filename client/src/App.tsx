@@ -63,6 +63,7 @@ import CertificatesPage from "@/pages/certificates-page";
 import TeacherClassCards from "@/pages/teacher-class-cards";
 import TeacherMessages from "@/pages/teacher-messages";
 import SchoolMessages from "@/pages/school-messages";
+import TeacherQuizzes from "@/pages/teacher-quizzes";
 import { usePageTracking } from "@/hooks/use-page-tracking";
 
 function Router() {
@@ -100,6 +101,7 @@ function Router() {
       <Route path="/ucitelj/ucenici" component={TeacherStudents} />
       <Route path="/ucitelj/biblioteka" component={TeacherLibrary} />
       <Route path="/ucitelj/kartice/:classroomId" component={TeacherClassCards} />
+      <Route path="/ucitelj/kvizovi" component={TeacherQuizzes} />
       <Route path="/ucitelj/poruke" component={TeacherMessages} />
       <Route path="/roditelj" component={ParentDashboard} />
       <Route path="/roditelj/djeca" component={ParentChildren} />
