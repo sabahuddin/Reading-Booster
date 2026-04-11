@@ -651,6 +651,8 @@ Ciljana publika: ${ageDesc}
 
 VAŽNO: Sva pitanja i odgovori moraju biti napisani na BOSANSKOM JEZIKU, ijekavica (npr. "rijeka", "dijete", "vrijeme", "lijepo"). NIKAKO ne koristiti ekavicu (ne: "reka", "dete", "vreme", "lepo").
 
+ZABRANA: Ne postavljaj pitanja o autoru knjige, godini izdavanja, broju stranica, žanru, nakladniku ili drugim bibliografskim podacima. Osoba je već pročitala knjigu — pitaj o sadržaju.
+
 Svako pitanje mora imati:
 - Tekst pitanja na bosanskom jeziku (ijekavica)
 - 4 opcije odgovora (A, B, C, D) na bosanskom jeziku (ijekavica)
@@ -764,6 +766,8 @@ Već postoje sljedeća pitanja (nemoj ih ponavljati):
 ${existingSummary}
 
 VAŽNO: Sva pitanja i odgovori moraju biti na BOSANSKOM JEZIKU, ijekavica (npr. "rijeka", "dijete", "vrijeme", "lijepo"). NIKAKO ne koristiti ekavicu (ne: "reka", "dete", "vreme", "lepo").
+
+ZABRANA: Ne postavljaj pitanja o autoru knjige, godini izdavanja, broju stranica, žanru, nakladniku ili bibliografskim podacima. Pitaj isključivo o sadržaju.
 
 Svako pitanje mora imati 4 opcije odgovora i tačan odgovor (a/b/c/d) i testirati razumijevanje sadržaja.
 
@@ -4596,6 +4600,8 @@ Opis: ${book.description || "Nema opisa."}
 Publika: ${ageDesc}
 
 VAŽNO: Sva pitanja i odgovori moraju biti na BOSANSKOM JEZIKU, ijekavica (npr. "rijeka", "dijete", "vrijeme", "lijepo"). NIKAKO ne koristiti ekavicu (ne: "reka", "dete", "vreme", "lepo").
+
+ZABRANA: Ne postavljaj pitanja o autoru knjige, godini izdavanja, broju stranica, žanru, nakladniku ili bibliografskim podacima. Pitaj isključivo o sadržaju.
 
 Pitanja trebaju testirati razumijevanje sadržaja knjige, likova, radnje i tema.
 
