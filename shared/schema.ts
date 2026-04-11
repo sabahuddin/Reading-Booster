@@ -81,6 +81,8 @@ export const books = pgTable("books", {
   recommendedForGrades: text("recommended_for_grades").array(),
   language: text("language").default("bosanski"),
   bookFormat: text("book_format"),
+  pendingApproval: boolean("pending_approval").notNull().default(false),
+  teacherCreatorId: varchar("teacher_creator_id"),
 });
 
 export const insertBookSchema = createInsertSchema(books).omit({
@@ -101,6 +103,7 @@ export const quizzes = pgTable("quizzes", {
   teacherEditStatus: text("teacher_edit_status").notNull().default("none"), // "none" | "pending" | "approved"
   teacherEditorId: varchar("teacher_editor_id"),
   approvedTeacherName: text("approved_teacher_name"),
+  isTeacherCreated: boolean("is_teacher_created").notNull().default(false),
 });
 
 export const insertQuizSchema = createInsertSchema(quizzes).omit({
