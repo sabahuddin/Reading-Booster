@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Link } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import {
   Users, Star, Eye, Trophy, Target, UserPlus, Download, Copy, Check, KeyRound,
-  UsersRound, Pencil, Trash2, FolderOpen, Plus, X, BarChart3, ArrowUpDown, BookOpen,
+  UsersRound, Pencil, Trash2, FolderOpen, Plus, X, BarChart3, ArrowUpDown, BookOpen, Printer,
 } from "lucide-react";
 import type { User, QuizResult } from "@shared/schema";
 
@@ -294,10 +295,18 @@ function OdjeljenjeDetailDialog({ classroom, open, onClose }: { classroom: Class
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5 text-primary" />
-            {classroom.name}
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-primary" />
+              {classroom.name}
+            </DialogTitle>
+            <Link href={`/ucitelj/kartice/${classroom.id}`}>
+              <Button variant="outline" size="sm" data-testid={`button-print-cards-${classroom.id}`}>
+                <Printer className="mr-1.5 h-4 w-4" />
+                Printaj kartice
+              </Button>
+            </Link>
+          </div>
         </DialogHeader>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-3 border-y">
           <StatCard label="Učenika" value={classroom.studentCount} icon={Users} />
