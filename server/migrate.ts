@@ -172,6 +172,16 @@ async function runManualMigrations() {
       name: "add_classroom_id_to_users",
       sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS classroom_id VARCHAR(36)`
     },
+    {
+      name: "add_teacher_created_quiz_columns",
+      sql: `ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS is_teacher_created boolean NOT NULL DEFAULT false`
+    },
+    {
+      name: "add_pending_approval_to_books",
+      sql: `ALTER TABLE books
+        ADD COLUMN IF NOT EXISTS pending_approval boolean NOT NULL DEFAULT false,
+        ADD COLUMN IF NOT EXISTS teacher_creator_id varchar`
+    },
   ];
 
   for (const m of migrations) {
