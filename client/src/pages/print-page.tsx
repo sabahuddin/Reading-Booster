@@ -69,7 +69,7 @@ function SchoolReport() {
       {/* Summary */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
         {[
-          { label: "Učitelja", value: stats.totalTeachers },
+          { label: "Nastavnika", value: stats.totalTeachers },
           { label: "Učenika", value: stats.totalStudents },
           { label: "Ukupno bodova", value: stats.totalPoints?.toLocaleString() },
           { label: "Prosjek bodova", value: stats.avgPoints },
