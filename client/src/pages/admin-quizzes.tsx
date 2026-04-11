@@ -326,6 +326,7 @@ export default function AdminQuizzes() {
   const [bulkSelectOpen, setBulkSelectOpen] = useState(false);
   const [selectedBulkBookIds, setSelectedBulkBookIds] = useState<Set<string>>(new Set());
   const [bulkBookSearch, setBulkBookSearch] = useState("");
+  const [shuffledBulkBooks, setShuffledBulkBooks] = useState<Book[]>([]);
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<QuizWithCount[]>({
     queryKey: ["/api/quizzes"],
@@ -635,17 +636,21 @@ export default function AdminQuizzes() {
       toast({ title: "Nema knjiga", description: "Sve knjige već imaju kvizove." });
       return;
     }
+    const shuffled = [...booksWithoutQuiz].sort(() => Math.random() - 0.5);
+    setShuffledBulkBooks(shuffled);
     setSelectedBulkBookIds(new Set());
     setBulkBookSearch("");
     setBulkSelectOpen(true);
   };
 
   const filteredBulkBooks = useMemo(() => {
+    const source = shuffledBulkBooks.length > 0 ? shuffledBulkBooks : booksWithoutQuiz;
     const q = bulkBookSearch.toLowerCase();
-    return booksWithoutQuiz.filter(b =>
+    if (!q) return source;
+    return source.filter(b =>
       b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)
     );
-  }, [booksWithoutQuiz, bulkBookSearch]);
+  }, [shuffledBulkBooks, booksWithoutQuiz, bulkBookSearch]);
 
   function toggleBulkBook(id: string) {
     setSelectedBulkBookIds(prev => {
@@ -1311,6 +1316,18 @@ export default function AdminQuizzes() {
                   data-testid="button-select-first-10"
                 >
                   Odaberi prvih 10
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const shuffled = [...booksWithoutQuiz].sort(() => Math.random() - 0.5);
+                    setShuffledBulkBooks(shuffled);
+                    setBulkBookSearch("");
+                  }}
+                  data-testid="button-reshuffle"
+                >
+                  🔀 Promiješaj
                 </Button>
                 <Button
                   variant="ghost"
