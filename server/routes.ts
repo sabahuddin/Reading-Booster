@@ -649,9 +649,11 @@ Opis knjige: ${book.description || "Nema opisa."}
 Ciljana publika: ${ageDesc}
 Žanr: ${book.genre || "opći"}
 
+VAŽNO: Sva pitanja i odgovori moraju biti napisani na BOSANSKOM JEZIKU, ijekavica (npr. "rijeka", "dijete", "vrijeme", "lijepo"). NIKAKO ne koristiti ekavicu (ne: "reka", "dete", "vreme", "lepo").
+
 Svako pitanje mora imati:
-- Tekst pitanja (na bosanskom/hrvatskom jeziku)
-- 4 opcije odgovora (A, B, C, D)
+- Tekst pitanja na bosanskom jeziku (ijekavica)
+- 4 opcije odgovora (A, B, C, D) na bosanskom jeziku (ijekavica)
 - Tačan odgovor (a, b, c ili d)
 - Bodove (1)
 
@@ -761,8 +763,9 @@ Odgovori ISKLJUČIVO u JSON formatu:
 Već postoje sljedeća pitanja (nemoj ih ponavljati):
 ${existingSummary}
 
-Svako pitanje mora imati 4 opcije odgovora i tačan odgovor (a/b/c/d).
-Pitanja trebaju biti na bosanskom/hrvatskom jeziku i testirati razumijevanje sadržaja.
+VAŽNO: Sva pitanja i odgovori moraju biti na BOSANSKOM JEZIKU, ijekavica (npr. "rijeka", "dijete", "vrijeme", "lijepo"). NIKAKO ne koristiti ekavicu (ne: "reka", "dete", "vreme", "lepo").
+
+Svako pitanje mora imati 4 opcije odgovora i tačan odgovor (a/b/c/d) i testirati razumijevanje sadržaja.
 
 Odgovori ISKLJUČIVO u JSON formatu:
 {"questions":[{"questionText":"?","optionA":"","optionB":"","optionC":"","optionD":"","correctAnswer":"a","points":1}]}`;
@@ -4591,6 +4594,11 @@ Odgovori ISKLJUČIVO u JSON formatu:
           const prompt = `Generiraj kviz sa ${questionCount} pitanja o knjizi "${book.title}" autora ${book.author}.
 Opis: ${book.description || "Nema opisa."}
 Publika: ${ageDesc}
+
+VAŽNO: Sva pitanja i odgovori moraju biti na BOSANSKOM JEZIKU, ijekavica (npr. "rijeka", "dijete", "vrijeme", "lijepo"). NIKAKO ne koristiti ekavicu (ne: "reka", "dete", "vreme", "lepo").
+
+Pitanja trebaju testirati razumijevanje sadržaja knjige, likova, radnje i tema.
+
 Odgovori ISKLJUČIVO u JSON formatu:
 {
   "questions": [
