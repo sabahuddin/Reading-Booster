@@ -71,7 +71,7 @@ type CreateUserValues = z.infer<typeof createUserSchema>;
 
 const roleLabels: Record<string, string> = {
   student: "Učenik",
-  teacher: "Učitelj/Nastavnik",
+  teacher: "Nastavnik",
   parent: "Roditelj",
   admin: "Administrator",
   school_admin: "Školski administrator",
@@ -248,7 +248,7 @@ export default function AdminUsers() {
 
   const roleOptions = [
     { value: "student", label: "Učenik" },
-    { value: "teacher", label: "Učitelj/Nastavnik" },
+    { value: "teacher", label: "Nastavnik" },
     { value: "parent", label: "Roditelj" },
     { value: "admin", label: "Administrator" },
     { value: "school_admin", label: "Školski administrator" },
@@ -368,7 +368,7 @@ export default function AdminUsers() {
             <SelectContent>
               <SelectItem value="all">Sve uloge</SelectItem>
               <SelectItem value="student">Učenik</SelectItem>
-              <SelectItem value="teacher">Učitelj/Nastavnik</SelectItem>
+              <SelectItem value="teacher">Nastavnik</SelectItem>
               <SelectItem value="parent">Roditelj</SelectItem>
               <SelectItem value="reader">Čitalac</SelectItem>
               <SelectItem value="school_admin">Školski administrator</SelectItem>
