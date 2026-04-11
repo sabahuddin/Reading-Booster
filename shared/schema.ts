@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   className: text("class_name"),
   points: integer("points").notNull().default(0),
   parentId: varchar("parent_id"),
-  institutionType: text("institution_type", { enum: ["school", "library"] }),
+  institutionType: text("institution_type", { enum: ["school", "osnovna_skola", "srednja_skola", "library"] }),
   institutionRole: text("institution_role", { enum: ["ucitelj", "bibliotekar", "sekretar", "administrator"] }),
   approved: boolean("approved").default(false),
   maxStudentAccounts: integer("max_student_accounts").default(0),
