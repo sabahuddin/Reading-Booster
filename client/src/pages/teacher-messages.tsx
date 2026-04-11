@@ -33,9 +33,9 @@ export default function TeacherMessages() {
 
   const sendMutation = useMutation({
     mutationFn: async (data: MessageValues) => {
-      const body = `[Poruka od učitelja]\nIme: ${user?.fullName || ""}\nKorisničko ime: ${user?.username || ""}\nŠkola: ${user?.schoolName || "—"}\n\n---\n\n${data.message}`;
+      const body = `[Poruka od nastavnika]\nIme: ${user?.fullName || ""}\nKorisničko ime: ${user?.username || ""}\nŠkola: ${user?.schoolName || "—"}\n\n---\n\n${data.message}`;
       const res = await apiRequest("POST", "/api/contact", {
-        name: user?.fullName || user?.username || "Učitelj",
+        name: user?.fullName || user?.username || "Nastavnik",
         email: `${user?.username || "ucitelj"}@citanje.ba`,
         subject: data.subject,
         message: body,
