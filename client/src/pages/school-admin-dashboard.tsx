@@ -209,7 +209,7 @@ export default function SchoolAdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/school-admin/analytics"] });
       setGeneratedCredentials({ username: newTeacher.username, password: newTeacher.password });
       setNewTeacher(emptyTeacherForm);
-      toast({ title: "Učitelj kreiran uspješno" });
+      toast({ title: "Nastavnik kreiran uspješno" });
     },
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
@@ -222,7 +222,7 @@ export default function SchoolAdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/school-admin/teachers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/school/stats"] });
-      toast({ title: "Učitelj ažuriran" });
+      toast({ title: "Nastavnik ažuriran" });
       setEditTeacher(null);
     },
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
@@ -235,7 +235,7 @@ export default function SchoolAdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/school/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/school-admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/school-admin/analytics"] });
-      toast({ title: "Učitelj i njegovi učenici su obrisani" });
+      toast({ title: "Nastavnik i njegovi učenici su obrisani" });
       setDeleteConfirm(null);
     },
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
@@ -318,7 +318,7 @@ export default function SchoolAdminDashboard() {
             <h1 className="text-2xl font-bold" data-testid="text-school-admin-title">
               {stats?.schoolName || user?.schoolName || "Škola"} — Upravljanje
             </h1>
-            <p className="text-muted-foreground">Upravljajte učiteljima i pratite napredak škole</p>
+            <p className="text-muted-foreground">Upravljajte nastavnicima i pratite napredak škole</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => window.open("/print?tip=skola", "_blank")} data-testid="button-print-school">
             <Printer className="h-4 w-4 mr-2" />
@@ -332,7 +332,7 @@ export default function SchoolAdminDashboard() {
         ) : stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { value: stats.totalTeachers, label: "Učitelja", icon: Users, color: "text-blue-500" },
+              { value: stats.totalTeachers, label: "Nastavnika", icon: Users, color: "text-blue-500" },
               { value: stats.totalStudents, label: "Učenika", icon: GraduationCap, color: "text-green-500" },
               { value: stats.totalQuizzes, label: "Kvizova", icon: BookOpen, color: "text-orange-500" },
               { value: stats.avgPoints, label: "Prosjek bodova", icon: BarChart3, color: "text-purple-500" },
@@ -357,16 +357,16 @@ export default function SchoolAdminDashboard() {
             <strong className={totalLicencesUsed > totalLicencesAvail ? "text-destructive" : "text-green-600"}>
               {totalLicencesUsed}
             </strong>
-            {" / "}{totalLicencesAvail} dodijeljenih učiteljima
+            {" / "}{totalLicencesAvail} dodijeljenih nastavnicima
           </span>
           <span className="text-muted-foreground">•</span>
-          <span>Učitelji: <strong>{currentTeacherCount}</strong> / {maxTeachers}</span>
+          <span>Nastavnici: <strong>{currentTeacherCount}</strong> / {maxTeachers}</span>
         </div>
 
         <Tabs defaultValue="teachers">
           <TabsList>
             <TabsTrigger value="teachers" data-testid="tab-teachers">
-              Učitelji ({currentTeacherCount})
+              Nastavnici ({currentTeacherCount})
             </TabsTrigger>
             <TabsTrigger value="odjeljenja" data-testid="tab-odjeljenja">
               Odjeljenja ({analyticsClassrooms.length})
@@ -382,7 +382,7 @@ export default function SchoolAdminDashboard() {
               <CardHeader className="flex flex-row items-center justify-between pb-3 gap-2 flex-wrap">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Lista učitelja
+                  Lista nastavnika
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <SortSelect
@@ -403,7 +403,7 @@ export default function SchoolAdminDashboard() {
                     data-testid="button-add-teacher"
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Dodaj učitelja
+                    Dodaj nastavnika
                   </Button>
                 </div>
               </CardHeader>
@@ -461,8 +461,8 @@ export default function SchoolAdminDashboard() {
                 ) : (
                   <div className="text-center py-10 text-muted-foreground">
                     <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p className="font-medium">Još nema učitelja</p>
-                    <p className="text-sm">Kliknite "Dodaj učitelja" da kreirate prvi račun</p>
+                    <p className="font-medium">Još nema nastavnika</p>
+                    <p className="text-sm">Kliknite "Dodaj nastavnika" da kreirate prvi račun</p>
                   </div>
                 )}
               </CardContent>
@@ -497,7 +497,7 @@ export default function SchoolAdminDashboard() {
                 ) : sortedOdjeljenja.length === 0 ? (
                   <div className="text-center py-10 text-muted-foreground">
                     <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Nema odjeljenja — učitelji ih kreiraju u svom panelu</p>
+                    <p>Nema odjeljenja — nastavnici ih kreiraju u svom panelu</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -578,7 +578,7 @@ export default function SchoolAdminDashboard() {
                         <TableHead>Bodovi</TableHead>
                         <TableHead>Kvizova</TableHead>
                         <TableHead>Tačnost</TableHead>
-                        <TableHead>Učitelj</TableHead>
+                        <TableHead>Nastavnik</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -617,7 +617,7 @@ export default function SchoolAdminDashboard() {
                 ) : (
                   <div className="text-center py-10 text-muted-foreground">
                     <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>{studentSearch ? "Nema rezultata za pretragu" : "Nema učenika — učitelji ih dodaju"}</p>
+                    <p>{studentSearch ? "Nema rezultata za pretragu" : "Nema učenika — nastavnici ih dodaju"}</p>
                   </div>
                 )}
               </CardContent>
@@ -625,7 +625,7 @@ export default function SchoolAdminDashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* ===== MODAL: Detalji učitelja ===== */}
+        {/* ===== MODAL: Detalji nastavnika ===== */}
         <Dialog open={!!selectedTeacher} onOpenChange={(v) => !v && setSelectedTeacher(null)}>
           <DialogContent>
             <DialogHeader>
@@ -651,7 +651,7 @@ export default function SchoolAdminDashboard() {
                   <p>Razred(i): <span className="text-foreground font-medium">{selectedTeacher.className || "—"}</span></p>
                   <p>Licence za učenike: <span className="text-foreground font-medium">{selectedTeacher.maxStudentAccounts}</span></p>
                 </div>
-                <div className="text-xs text-muted-foreground">Kliknite na red učitelja u tabeli za pregled. Za editovanje ili brisanje koristite akcije u tabeli.</div>
+                <div className="text-xs text-muted-foreground">Kliknite na red nastavnika u tabeli za pregled. Za editovanje ili brisanje koristite akcije u tabeli.</div>
               </div>
             )}
           </DialogContent>
@@ -665,7 +665,7 @@ export default function SchoolAdminDashboard() {
                 <FolderOpen className="h-5 w-5 text-primary" />
                 {selectedOdjeljenje?.name}
               </DialogTitle>
-              <DialogDescription>Učitelj: {selectedOdjeljenje?.teacherName}</DialogDescription>
+              <DialogDescription>Nastavnik: {selectedOdjeljenje?.teacherName}</DialogDescription>
             </DialogHeader>
             {selectedOdjeljenje && (
               <div className="space-y-4">
@@ -730,7 +730,7 @@ export default function SchoolAdminDashboard() {
                   <p>Odjeljenje: <span className="text-foreground font-medium">{analyticsClassrooms.find(c => c.id === selectedStudent.classroomId)?.name || "—"}</span></p>
                   <p>Razred: <span className="text-foreground font-medium">{selectedStudent.className || "—"}</span></p>
                   <p>Starosna grupa: <span className="text-foreground font-medium">{selectedStudent.ageGroup || "—"}</span></p>
-                  <p>Učitelj: <span className="text-foreground font-medium">{selectedStudent.teacherName}</span></p>
+                  <p>Nastavnik: <span className="text-foreground font-medium">{selectedStudent.teacherName}</span></p>
                 </div>
                 <Button
                   variant="outline" className="w-full"
@@ -778,17 +778,17 @@ export default function SchoolAdminDashboard() {
           </DialogContent>
         </Dialog>
 
-        {/* Dodaj učitelja */}
+        {/* Dodaj nastavnika */}
         <Dialog open={showAddDialog} onOpenChange={(open) => { if (!open) { setShowAddDialog(false); setGeneratedCredentials(null); } }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Dodaj novog učitelja</DialogTitle>
+              <DialogTitle>Dodaj novog nastavnika</DialogTitle>
               <DialogDescription>Kreirajte račun za nastavnika vaše škole.</DialogDescription>
             </DialogHeader>
             {generatedCredentials ? (
               <div className="py-4 space-y-4">
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <p className="font-medium text-green-800 dark:text-green-200 mb-3">Učitelj je uspješno kreiran!</p>
+                  <p className="font-medium text-green-800 dark:text-green-200 mb-3">Nastavnik je uspješno kreiran!</p>
                   <div className="space-y-2 text-sm">
                     {[["Korisničko ime:", generatedCredentials.username], ["Lozinka:", generatedCredentials.password]].map(([label, val]) => (
                       <div key={label} className="flex items-center justify-between gap-2">
@@ -802,7 +802,7 @@ export default function SchoolAdminDashboard() {
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs mt-3 text-muted-foreground">Zapišite i proslijedite ove podatke učitelju.</p>
+                  <p className="text-xs mt-3 text-muted-foreground">Zapišite i proslijedite ove podatke nastavniku.</p>
                 </div>
                 <DialogFooter className="gap-2">
                   <Button variant="outline" onClick={() => setGeneratedCredentials(null)}>
@@ -848,7 +848,7 @@ export default function SchoolAdminDashboard() {
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setShowAddDialog(false)}>Otkaži</Button>
                   <Button onClick={() => createTeacherMutation.mutate(newTeacher)} disabled={createTeacherMutation.isPending || !newTeacher.fullName || !newTeacher.username || !newTeacher.password} data-testid="button-confirm-create-teacher">
-                    {createTeacherMutation.isPending ? "Kreiranje..." : "Kreiraj učitelja"}
+                    {createTeacherMutation.isPending ? "Kreiranje..." : "Kreiraj nastavnika"}
                   </Button>
                 </DialogFooter>
               </div>
@@ -856,11 +856,11 @@ export default function SchoolAdminDashboard() {
           </DialogContent>
         </Dialog>
 
-        {/* Uredi učitelja */}
+        {/* Uredi nastavnika */}
         <Dialog open={!!editTeacher} onOpenChange={(open) => !open && setEditTeacher(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Uredi učitelja</DialogTitle>
+              <DialogTitle>Uredi nastavnika</DialogTitle>
               <DialogDescription>Izmijeni podatke za {editTeacher?.fullName}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
@@ -887,13 +887,13 @@ export default function SchoolAdminDashboard() {
           </DialogContent>
         </Dialog>
 
-        {/* Brisanje učitelja */}
+        {/* Brisanje nastavnika */}
         <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Obriši učitelja?</AlertDialogTitle>
+              <AlertDialogTitle>Obriši nastavnika?</AlertDialogTitle>
               <AlertDialogDescription>
-                Brisat ćete učitelja <strong>{deleteConfirm?.fullName}</strong> i sve učenike koje je kreirao/la. Ova radnja je nepovratna.
+                Brisat ćete nastavnika <strong>{deleteConfirm?.fullName}</strong> i sve učenike koje je kreirao/la. Ova radnja je nepovratna.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
