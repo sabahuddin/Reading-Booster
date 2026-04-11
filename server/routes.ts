@@ -4585,7 +4585,10 @@ Odgovori ISKLJUČIVO u JSON formatu:
           };
           const ageDesc = ageLabels[book.ageGroup || "R4"] || "djeca";
 
-          const prompt = `Generiraj kviz sa 20 pitanja o knjizi "${book.title}" autora ${book.author}.
+          const ageQuestionCount: Record<string, number> = { R1: 20, R4: 30, R7: 30, O: 30, A: 30 };
+          const questionCount = ageQuestionCount[book.ageGroup || "R4"] || 30;
+
+          const prompt = `Generiraj kviz sa ${questionCount} pitanja o knjizi "${book.title}" autora ${book.author}.
 Opis: ${book.description || "Nema opisa."}
 Publika: ${ageDesc}
 Odgovori ISKLJUČIVO u JSON formatu:
