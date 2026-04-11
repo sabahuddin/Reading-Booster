@@ -92,7 +92,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
   ],
   school_admin: [
     { title: "Početna", url: "/skola", icon: SchoolIcon },
-    { title: "Učitelji", url: "/skola/ucitelji", icon: Users },
+    { title: "Nastavnici", url: "/skola/ucitelji", icon: Users },
     { title: "Poruke", url: "/skola/poruke", icon: Mail },
   ],
   admin: [
@@ -112,7 +112,7 @@ const menusByRole: Record<Role, MenuItem[]> = {
 
 const roleLabels: Record<Role, string> = {
   student: "Učenik",
-  teacher: "Učitelj",
+  teacher: "Nastavnik",
   parent: "Roditelj",
   admin: "Administrator",
   school: "Ustanova",
