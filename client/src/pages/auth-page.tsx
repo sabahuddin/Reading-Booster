@@ -54,7 +54,7 @@ const schoolSchema = insertUserSchema.extend({
   password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
   fullName: z.string().min(2, "Ime i prezime je obavezno"),
   schoolName: z.string().min(2, "Naziv institucije je obavezan"),
-  institutionType: z.enum(["school", "library"]).default("school"),
+  institutionType: z.enum(["school", "osnovna_skola", "srednja_skola", "library"]).default("osnovna_skola"),
   captchaAnswer: z.string().min(1, "Odgovorite na sigurnosno pitanje"),
 });
 
@@ -150,7 +150,7 @@ export default function AuthPage() {
       password: "",
       fullName: "",
       schoolName: "",
-      institutionType: "school",
+      institutionType: "osnovna_skola",
       captchaAnswer: "",
     },
   });
@@ -513,7 +513,7 @@ export default function AuthPage() {
                 <TabsContent value="school">
                   <div className="mt-2 mb-4 p-3 bg-muted rounded-md border-l-4 border-orange-500">
                     <p className="text-base font-medium">
-                      Registracija školskog administratora. Nakon odobrenja, moći ćete dodavati učitelje i upravljati školom.
+                      Registracija školskog administratora. Nakon odobrenja, moći ćete dodavati nastavnike i upravljati školom.
                     </p>
                   </div>
                   <Form {...schoolForm}>
@@ -535,7 +535,8 @@ export default function AuthPage() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="school">🏫 Škola</SelectItem>
+                                  <SelectItem value="osnovna_skola">🏫 Osnovna škola</SelectItem>
+                                  <SelectItem value="srednja_skola">🏛 Srednja škola</SelectItem>
                                   <SelectItem value="library">📚 Biblioteka</SelectItem>
                                 </SelectContent>
                               </Select>
@@ -549,11 +550,17 @@ export default function AuthPage() {
                           render={({ field }) => (
                             <FormItem className="col-span-2">
                               <FormLabel>
-                                {selectedInstitutionType === "library" ? "Naziv biblioteke" : "Naziv škole"}
+                                {selectedInstitutionType === "library" ? "Naziv biblioteke" :
+                                 selectedInstitutionType === "srednja_skola" ? "Naziv srednje škole" :
+                                 "Naziv osnovne škole"}
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder={selectedInstitutionType === "library" ? "Npr. Gradska biblioteka Sarajevo" : "Npr. Druga osnovna škola"}
+                                  placeholder={
+                                    selectedInstitutionType === "library" ? "Npr. Gradska biblioteka Sarajevo" :
+                                    selectedInstitutionType === "srednja_skola" ? "Npr. Prva srednja škola Sarajevo" :
+                                    "Npr. Druga osnovna škola Sarajevo"
+                                  }
                                   data-testid="input-school-name"
                                   {...field}
                                 />
