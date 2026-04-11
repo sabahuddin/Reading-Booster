@@ -60,6 +60,9 @@ import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import BookmarksPage from "@/pages/bookmarks-page";
 import CertificatesPage from "@/pages/certificates-page";
+import TeacherClassCards from "@/pages/teacher-class-cards";
+import TeacherMessages from "@/pages/teacher-messages";
+import SchoolMessages from "@/pages/school-messages";
 import { usePageTracking } from "@/hooks/use-page-tracking";
 
 function Router() {
@@ -96,10 +99,13 @@ function Router() {
       <Route path="/ucitelj" component={TeacherDashboard} />
       <Route path="/ucitelj/ucenici" component={TeacherStudents} />
       <Route path="/ucitelj/biblioteka" component={TeacherLibrary} />
+      <Route path="/ucitelj/kartice/:classroomId" component={TeacherClassCards} />
+      <Route path="/ucitelj/poruke" component={TeacherMessages} />
       <Route path="/roditelj" component={ParentDashboard} />
       <Route path="/roditelj/djeca" component={ParentChildren} />
       <Route path="/skola" component={SchoolAdminDashboard} />
       <Route path="/skola/ucitelji" component={SchoolAdminDashboard} />
+      <Route path="/skola/poruke" component={SchoolMessages} />
       <Route path="/print" component={PrintPage} />
       <Route path="/zaboravljena-lozinka" component={ForgotPasswordPage} />
       <Route path="/reset-lozinke" component={ResetPasswordPage} />
