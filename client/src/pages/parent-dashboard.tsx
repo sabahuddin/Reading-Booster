@@ -194,7 +194,7 @@ export default function ParentDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/parent/link-requests"] });
-      toast({ title: "Zahtjev poslan", description: "Učitelj će odobriti vaš zahtjev za povezivanje." });
+      toast({ title: "Zahtjev poslan", description: "Nastavnik će odobriti vaš zahtjev za povezivanje." });
       setStudentUsername("");
     },
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
@@ -482,7 +482,7 @@ export default function ParentDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Ako vaše dijete već ima školski račun, unesite korisničko ime. Učitelj će odobriti povezivanje.
+              Ako vaše dijete već ima školski račun, unesite korisničko ime. Nastavnik će odobriti povezivanje.
             </p>
             <div className="flex gap-2">
               <Input
