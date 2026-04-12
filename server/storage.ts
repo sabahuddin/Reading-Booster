@@ -100,6 +100,8 @@ export interface IStorage {
   getPendingTeacherQuizCreations(): Promise<Array<Quiz & { bookTitle?: string; bookAuthor?: string; bookAgeGroup?: string; teacherName?: string; questionCount?: number }>>;
   getTeacherAddedQuestionsCount(quizId: string): Promise<number>;
   deleteTeacherAddedQuestions(quizId: string): Promise<void>;
+  promoteTeacherQuestionsToOfficial(quizId: string): Promise<void>;
+  getPublicQuestionsForQuiz(quizId: string): Promise<Question[]>;
   getBooksWithoutQuiz(): Promise<Book[]>;
   createTeacherQuizForBook(bookId: string, teacherId: string, title: string, qs: Array<any>): Promise<Quiz>;
   createTeacherBookAndQuiz(bookData: Partial<InsertBook>, teacherId: string, quizTitle: string, qs: Array<any>): Promise<{ book: Book; quiz: Quiz }>;
@@ -522,6 +524,26 @@ export class DatabaseStorage implements IStorage {
     await db.delete(questions).where(
       and(eq(questions.quizId, quizId), eq(questions.addedByTeacher, true))
     );
+  }
+
+  async promoteTeacherQuestionsToOfficial(quizId: string): Promise<void> {
+    await db.delete(questions).where(
+      and(eq(questions.quizId, quizId), eq(questions.addedByTeacher, false))
+    );
+    await db.update(questions).set({ addedByTeacher: false }).where(
+      and(eq(questions.quizId, quizId), eq(questions.addedByTeacher, true))
+    );
+  }
+
+  async getPublicQuestionsForQuiz(quizId: string): Promise<Question[]> {
+    const quiz = await this.getQuiz(quizId);
+    if (!quiz) return [];
+    if (!quiz.isTeacherCreated && quiz.teacherEditStatus === "pending") {
+      return db.select().from(questions).where(
+        and(eq(questions.quizId, quizId), eq(questions.addedByTeacher, false))
+      );
+    }
+    return db.select().from(questions).where(eq(questions.quizId, quizId));
   }
 
   async getQuestionsByQuizId(quizId: string): Promise<Question[]> {
