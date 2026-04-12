@@ -3464,6 +3464,21 @@ Odgovori ISKLJUČIVO u JSON formatu:
     }
   });
 
+  // GET existing questions for a quiz (for teacher preview when editing)
+  app.get("/api/teacher/quizzes/:id/questions", requireTeacher, async (req, res) => {
+    try {
+      const quizId = req.params.id as string;
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
+      const all = await storage.getQuestionsByQuizId(quizId);
+      const official = all.filter((q: any) => !q.addedByTeacher);
+      const pending = all.filter((q: any) => q.addedByTeacher);
+      return res.json({ official, pending });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/teacher/quizzes/:id/submit-questions", requireTeacher, async (req, res) => {
     try {
       const teacherId = req.session.userId!;
