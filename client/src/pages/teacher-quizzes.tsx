@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   Search, PlusCircle, Trash2, Send, Clock, Lock, CheckCircle2, FileQuestion, Heart,
-  BookPlus, BookOpen, AlertCircle,
+  BookPlus, BookOpen, AlertCircle, ChevronDown, ChevronUp, Eye,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -193,12 +193,54 @@ function ThanksNote() {
 }
 
 // ─── Tab 1: Izmjene postojećih kvizova ────────────────────────────────────────
+interface ExistingQuestions {
+  official: Array<{ id: string; questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string }>;
+  pending: Array<{ id: string; questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string }>;
+}
+
+function OfficialQuestionsPanel({ questions }: { questions: ExistingQuestions["official"] }) {
+  const [open, setOpen] = useState(false);
+  const letters: Record<string, string> = { a: "A", b: "B", c: "C", d: "D" };
+  return (
+    <div className="rounded-lg border bg-muted/40">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium"
+        onClick={() => setOpen(o => !o)}
+        data-testid="button-toggle-official-questions"
+      >
+        <span className="flex items-center gap-2">
+          <Eye className="h-4 w-4 text-muted-foreground" />
+          Trenutna pitanja kviza ({questions.length})
+        </span>
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+      {open && (
+        <div className="px-4 pb-4 space-y-3 max-h-72 overflow-y-auto">
+          {questions.map((q, i) => (
+            <div key={q.id} className="text-xs border rounded-md p-3 bg-background">
+              <p className="font-semibold mb-1">{i + 1}. {q.questionText}</p>
+              {(["a","b","c","d"] as const).map(l => (
+                <p key={l} className={q.correctAnswer === l ? "text-green-700 font-medium" : "text-muted-foreground"}>
+                  {letters[l]}) {(q as any)[`option${l.toUpperCase()}`]}
+                  {q.correctAnswer === l && " ✓"}
+                </p>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TabQuizEdits() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "none" | "pending" | "approved">("all");
   const [selectedQuiz, setSelectedQuiz] = useState<QuizOverview | null>(null);
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
+  const [questionsLoaded, setQuestionsLoaded] = useState(false);
 
   const { data: quizzes, isLoading } = useQuery<QuizOverview[]>({
     queryKey: ["/api/teacher/quizzes-overview"],
@@ -207,6 +249,32 @@ function TabQuizEdits() {
       return res.json();
     },
   });
+
+  // Fetch existing questions when a quiz is selected
+  const { data: existingQs, isLoading: loadingQs } = useQuery<ExistingQuestions>({
+    queryKey: ["/api/teacher/quizzes", selectedQuiz?.quizId, "questions"],
+    queryFn: async () => {
+      const res = await fetch(`/api/teacher/quizzes/${selectedQuiz!.quizId}/questions`, { credentials: "include" });
+      return res.json();
+    },
+    enabled: !!selectedQuiz,
+  });
+
+  // When questions load, pre-populate editor with pending teacher questions (if any)
+  useEffect(() => {
+    if (!existingQs || questionsLoaded) return;
+    if (existingQs.pending.length > 0) {
+      setQuestions(existingQs.pending.map(q => ({
+        questionText: q.questionText,
+        optionA: q.optionA,
+        optionB: q.optionB,
+        optionC: q.optionC,
+        optionD: q.optionD,
+        correctAnswer: q.correctAnswer,
+      })));
+    }
+    setQuestionsLoaded(true);
+  }, [existingQs, questionsLoaded]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -218,9 +286,22 @@ function TabQuizEdits() {
       queryClient.invalidateQueries({ queryKey: ["/api/teacher/quizzes-overview"] });
       setSelectedQuiz(null);
       setQuestions([emptyQuestion()]);
+      setQuestionsLoaded(false);
     },
     onError: (err: any) => toast({ title: "Greška", description: err.message, variant: "destructive" }),
   });
+
+  function openModal(quiz: QuizOverview) {
+    setSelectedQuiz(quiz);
+    setQuestions([emptyQuestion()]);
+    setQuestionsLoaded(false);
+  }
+
+  function closeModal() {
+    setSelectedQuiz(null);
+    setQuestions([emptyQuestion()]);
+    setQuestionsLoaded(false);
+  }
 
   const filtered = useMemo(() => {
     if (!quizzes) return [];
@@ -289,7 +370,7 @@ function TabQuizEdits() {
                       size="sm"
                       className="w-full"
                       variant={quiz.teacherEditStatus === "pending" ? "outline" : "default"}
-                      onClick={() => { setSelectedQuiz(quiz); setQuestions([emptyQuestion()]); }}
+                      onClick={() => openModal(quiz)}
                       data-testid={`button-edit-quiz-${quiz.quizId}`}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
@@ -303,27 +384,51 @@ function TabQuizEdits() {
         </div>
       )}
 
-      <Dialog open={!!selectedQuiz} onOpenChange={open => { if (!open) { setSelectedQuiz(null); setQuestions([emptyQuestion()]); }}}>
+      <Dialog open={!!selectedQuiz} onOpenChange={open => { if (!open) closeModal(); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Uredi kviz — {selectedQuiz?.bookTitle}</DialogTitle>
             <DialogDescription>
-              Unesite 1–40 pitanja koja <strong>zamjenjuju</strong> trenutni sadržaj kviza.
-              Vaš prijedlog čeka odobrenje admina, a potom se ispod kviza prikazuje vaše ime.
-              {selectedQuiz?.teacherEditStatus === "pending" && " Možete ažurirati prijedlog dok čeka odobrenje."}
+              {selectedQuiz?.teacherEditStatus === "pending"
+                ? "Vaš prijedlog čeka odobrenje. Možete ažurirati pitanja — nova lista zamjenjuje prethodnu."
+                : "Unesite 1–40 pitanja koja zamjenjuju trenutni sadržaj kviza. Admin odobrava i vaše ime se prikazuje ispod kviza."}
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 mb-2">
+
+          {/* Existing official questions — collapsible read-only */}
+          {loadingQs ? (
+            <Skeleton className="h-10 w-full" />
+          ) : existingQs && existingQs.official.length > 0 ? (
+            <OfficialQuestionsPanel questions={existingQs.official} />
+          ) : null}
+
+          {/* Pending note */}
+          {existingQs && existingQs.pending.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>Vaš prethodni prijedlog ({existingQs.pending.length} pitanja) je učitan u editor ispod. Možete ga izmijeniti i ponovo poslati.</span>
+            </div>
+          )}
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2">
             <p className="text-sm text-primary font-medium flex items-center gap-2">
               <Heart className="h-4 w-4" />Administracija Čitanje.ba zahvaljuje na saradnji!
             </p>
           </div>
-          <QuestionEditor questions={questions} onChange={setQuestions} max={40} />
+
+          {loadingQs ? (
+            <div className="space-y-3">
+              {[1,2,3].map(i => <Skeleton key={i} className="h-28 w-full" />)}
+            </div>
+          ) : (
+            <QuestionEditor questions={questions} onChange={setQuestions} max={40} />
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedQuiz(null)}>Otkaži</Button>
+            <Button variant="outline" onClick={closeModal}>Otkaži</Button>
             <Button
               onClick={() => submitMutation.mutate()}
-              disabled={!questions.every(isQValid) || submitMutation.isPending}
+              disabled={!questions.every(isQValid) || submitMutation.isPending || loadingQs}
               data-testid="button-submit-questions"
             >
               <Send className="mr-2 h-4 w-4" />
