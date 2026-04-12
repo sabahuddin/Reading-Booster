@@ -1282,7 +1282,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
-      let questionsList = await storage.getQuestionsByQuizId(quiz.id);
+      let questionsList = await storage.getPublicQuestionsForQuiz(quiz.id);
 
       const isAdmin = req.session?.userId ? (await storage.getUser(req.session.userId))?.role === "admin" : false;
       if (!isAdmin && questionsList.length > 20) {
@@ -1517,7 +1517,7 @@ Odgovori ISKLJUČIVO u JSON formatu:
         await storage.deleteQuizResultByUserAndQuiz(userId, quizId);
       }
 
-      const allQuestions = await storage.getQuestionsByQuizId(quizId);
+      const allQuestions = await storage.getPublicQuestionsForQuiz(quizId);
       if (allQuestions.length === 0) {
         return res.status(404).json({ message: "No questions found for this quiz" });
       }
@@ -3348,6 +3348,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
           if (!book) return null;
           const qs = await storage.getQuestionsByQuizId(quiz.id);
           const teacherAddedCount = qs.filter((q: any) => q.addedByTeacher).length;
+          const publicCount = qs.filter((q: any) => !q.addedByTeacher).length;
+          const status = quiz.teacherEditStatus || "none";
           return {
             quizId: quiz.id,
             quizTitle: quiz.title,
@@ -3356,11 +3358,11 @@ Odgovori ISKLJUČIVO u JSON formatu:
             bookAuthor: book.author,
             bookAgeGroup: book.ageGroup,
             coverImage: book.coverImage,
-            questionCount: qs.length,
-            teacherEditStatus: quiz.teacherEditStatus || "none",
+            questionCount: publicCount,
+            teacherEditStatus: status,
             approvedTeacherName: quiz.approvedTeacherName,
             teacherAddedQuestionsCount: teacherAddedCount,
-            canEdit: (quiz.teacherEditStatus === "none" || quiz.teacherEditStatus === null) && teacherAddedCount === 0,
+            canEdit: status !== "approved",
           };
         })
       );
@@ -3471,19 +3473,16 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const quiz = await storage.getQuiz(quizId);
       if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
 
-      // Kviz koji je već odobren ili u čekanju ne može se mijenjati
+      // Kviz koji je već odobren ne može se dalje mijenjati
       if (quiz.teacherEditStatus === "approved") {
-        return res.status(400).json({ message: "Ovaj kviz je već odobren i ne može se mijenjati." });
-      }
-      if (quiz.teacherEditStatus === "pending") {
-        return res.status(400).json({ message: "Vaše izmjene čekaju odobrenje. Pričekajte da admin pregleda." });
+        return res.status(400).json({ message: "Ovaj kviz je već odobren i ne može se dalje mijenjati." });
       }
 
       if (!Array.isArray(newQuestions) || newQuestions.length === 0) {
         return res.status(400).json({ message: "Morate unijeti najmanje 1 pitanje." });
       }
-      if (newQuestions.length > 5) {
-        return res.status(400).json({ message: "Možete dodati najviše 5 pitanja." });
+      if (newQuestions.length > 40) {
+        return res.status(400).json({ message: "Možete unijeti najviše 40 pitanja." });
       }
 
       // Validacija svakog pitanja
@@ -3497,7 +3496,8 @@ Odgovori ISKLJUČIVO u JSON formatu:
         }
       }
 
-      // Dodaj pitanja s oznakom addedByTeacher
+      // Obriši stara nastavnička pitanja (ako postoje) i dodaj nova
+      await storage.deleteTeacherAddedQuestions(quizId);
       const teacher = await storage.getUser(teacherId);
       for (const q of newQuestions) {
         await storage.createQuestion({
@@ -3584,15 +3584,17 @@ Odgovori ISKLJUČIVO u JSON formatu:
       const quizId = req.params.id as string;
       const quiz = await storage.getQuiz(quizId);
       if (!quiz) return res.status(404).json({ message: "Kviz nije pronađen" });
-      if (quiz.teacherEditStatus !== "pending") {
+      if (quiz.teacherEditStatus !== "pending" || quiz.isTeacherCreated) {
         return res.status(400).json({ message: "Kviz nema izmjene za odobrenje." });
       }
 
       const teacher = quiz.teacherEditorId ? await storage.getUser(quiz.teacherEditorId) : null;
-      const teacherName = teacher?.fullName || "Nepoznat učitelj";
+      const teacherName = teacher?.fullName || "Nepoznat nastavnik";
 
+      // Nastavnikova pitanja (addedByTeacher=true) ZAMJENJUJU stara pitanja
+      await storage.promoteTeacherQuestionsToOfficial(quizId);
       await storage.updateQuizTeacherStatus(quizId, "approved", quiz.teacherEditorId || undefined, teacherName);
-      return res.json({ message: `Kviz odobren. Prikazuje se: "Kviz odobrio: ${teacherName}"` });
+      return res.json({ message: `Kviz odobren. Ispod kviza piše: "Kviz odobrio/la: ${teacherName}"` });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
