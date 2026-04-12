@@ -343,4 +343,11 @@ export function requireSchoolAdmin(req: Request, res: Response, next: NextFuncti
         .catch((err) => console.error("[startup] STARTUP ERROR:", err));
     },
   );
+
+  const shutdown = () => {
+    httpServer.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 3000);
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 })();
