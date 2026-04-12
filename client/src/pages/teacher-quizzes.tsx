@@ -280,12 +280,20 @@ function TabQuizEdits() {
                 <div className="mt-auto space-y-2">
                   <StatusBadge status={quiz.teacherEditStatus} approvedBy={quiz.approvedTeacherName} />
                   {quiz.teacherEditStatus === "pending" && (
-                    <p className="text-xs text-muted-foreground">{quiz.teacherAddedQuestionsCount} pitanje(a) na čekanju</p>
+                    <p className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
+                      Na čekanju ({quiz.teacherAddedQuestionsCount} pitanja) — možete promijeniti prijedlog
+                    </p>
                   )}
                   {quiz.canEdit && (
-                    <Button size="sm" className="w-full" onClick={() => { setSelectedQuiz(quiz); setQuestions([emptyQuestion()]); }} data-testid={`button-edit-quiz-${quiz.quizId}`}>
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      variant={quiz.teacherEditStatus === "pending" ? "outline" : "default"}
+                      onClick={() => { setSelectedQuiz(quiz); setQuestions([emptyQuestion()]); }}
+                      data-testid={`button-edit-quiz-${quiz.quizId}`}
+                    >
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Dodaj pitanja (1–5)
+                      {quiz.teacherEditStatus === "pending" ? "Ažuriraj prijedlog" : "Uredi kviz (1–40 pitanja)"}
                     </Button>
                   )}
                 </div>
@@ -298,15 +306,19 @@ function TabQuizEdits() {
       <Dialog open={!!selectedQuiz} onOpenChange={open => { if (!open) { setSelectedQuiz(null); setQuestions([emptyQuestion()]); }}}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Dodaj pitanja kvizu</DialogTitle>
-            <DialogDescription>{selectedQuiz?.bookTitle} — max 5 novih pitanja</DialogDescription>
+            <DialogTitle>Uredi kviz — {selectedQuiz?.bookTitle}</DialogTitle>
+            <DialogDescription>
+              Unesite 1–40 pitanja koja <strong>zamjenjuju</strong> trenutni sadržaj kviza.
+              Vaš prijedlog čeka odobrenje admina, a potom se ispod kviza prikazuje vaše ime.
+              {selectedQuiz?.teacherEditStatus === "pending" && " Možete ažurirati prijedlog dok čeka odobrenje."}
+            </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 mb-2">
             <p className="text-sm text-primary font-medium flex items-center gap-2">
               <Heart className="h-4 w-4" />Administracija Čitanje.ba zahvaljuje na saradnji!
             </p>
           </div>
-          <QuestionEditor questions={questions} onChange={setQuestions} max={5} />
+          <QuestionEditor questions={questions} onChange={setQuestions} max={40} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedQuiz(null)}>Otkaži</Button>
             <Button
@@ -315,7 +327,10 @@ function TabQuizEdits() {
               data-testid="button-submit-questions"
             >
               <Send className="mr-2 h-4 w-4" />
-              {submitMutation.isPending ? "Šaljem..." : "Pošalji na pregled"}
+              {submitMutation.isPending ? "Šaljem..."
+                : selectedQuiz?.teacherEditStatus === "pending"
+                ? `Ažuriraj prijedlog (${questions.length} pitanja)`
+                : `Pošalji na pregled (${questions.length} pitanja)`}
             </Button>
           </DialogFooter>
         </DialogContent>
