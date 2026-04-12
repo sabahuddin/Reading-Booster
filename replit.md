@@ -58,6 +58,8 @@ Ne definirano.
 - **Certificates:** Printable certificates for each passed quiz, accessible via student/reader dashboards.
 - **Classrooms:** Teachers create and manage classroom groups. Students are assigned to classes. School admins can view all classes and move students between them.
 - **Teacher Quiz Editing:** Teachers can add 1-5 questions to existing quizzes, which enter a "pending" status for admin approval/rejection. Approved quizzes display the teacher's name.
+- **Teacher Quiz Creation:** Teachers can create new quizzes (1-40 questions) for books without a quiz, or create a brand new book + quiz together. Both require admin approval before becoming visible. Pending teacher-created quizzes/books are hidden from students until approved.
+- **Admin Quiz Creation Approvals:** New tab in admin approvals page for reviewing teacher-created quizzes (separate from quiz edits). Approve = publish book+quiz; Reject = delete everything.
 - **Forgot Password:** Allows users to reset passwords via a token-based system (for admin use, no email service).
 - **Weekly Streak:** Automatic tracking of consecutive weeks with a solved quiz, displayed as a banner and generates milestone notifications.
 - **Book Recommendations:** "Recommended for you" section displaying 5 unread books from the user's age group.
