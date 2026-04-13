@@ -155,7 +155,7 @@ export default function Library() {
               <SelectItem value="R1">Od 1. razreda</SelectItem>
               <SelectItem value="R4">Od 4. razreda</SelectItem>
               <SelectItem value="R7">Od 7. razreda</SelectItem>
-              <SelectItem value="O">Omladina</SelectItem>
+              <SelectItem value="O">Srednješkolci</SelectItem>
               <SelectItem value="A">Odrasli</SelectItem>
             </SelectContent>
           </Select>
