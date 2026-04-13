@@ -42,7 +42,7 @@ const AGE_GROUPS = [
   { value: "R1", label: "Od 1. razreda" },
   { value: "R4", label: "Od 4. razreda" },
   { value: "R7", label: "Od 7. razreda" },
-  { value: "O", label: "Omladina" },
+  { value: "O", label: "Srednješkolci" },
   { value: "A", label: "Odrasli" },
 ];
 
