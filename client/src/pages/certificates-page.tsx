@@ -18,7 +18,7 @@ const AGE_GROUP_LABELS: Record<string, string> = {
   R1: "Razred 1–3",
   R4: "Razred 4–6",
   R7: "Razred 7–9",
-  O: "Omladina",
+  O: "Srednješkolci",
   A: "Odrasli",
 };
 
