@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   Search, PlusCircle, Trash2, Send, Clock, Lock, CheckCircle2, FileQuestion, Heart,
-  BookPlus, BookOpen, AlertCircle, ChevronDown, ChevronUp, Eye,
+  BookPlus, BookOpen, AlertCircle,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -198,42 +198,6 @@ interface ExistingQuestions {
   pending: Array<{ id: string; questionText: string; optionA: string; optionB: string; optionC: string; optionD: string; correctAnswer: string }>;
 }
 
-function OfficialQuestionsPanel({ questions }: { questions: ExistingQuestions["official"] }) {
-  const [open, setOpen] = useState(false);
-  const letters: Record<string, string> = { a: "A", b: "B", c: "C", d: "D" };
-  return (
-    <div className="rounded-lg border bg-muted/40">
-      <button
-        type="button"
-        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium"
-        onClick={() => setOpen(o => !o)}
-        data-testid="button-toggle-official-questions"
-      >
-        <span className="flex items-center gap-2">
-          <Eye className="h-4 w-4 text-muted-foreground" />
-          Trenutna pitanja kviza ({questions.length})
-        </span>
-        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-      </button>
-      {open && (
-        <div className="px-4 pb-4 space-y-3 max-h-72 overflow-y-auto">
-          {questions.map((q, i) => (
-            <div key={q.id} className="text-xs border rounded-md p-3 bg-background">
-              <p className="font-semibold mb-1">{i + 1}. {q.questionText}</p>
-              {(["a","b","c","d"] as const).map(l => (
-                <p key={l} className={q.correctAnswer === l ? "text-green-700 font-medium" : "text-muted-foreground"}>
-                  {letters[l]}) {(q as any)[`option${l.toUpperCase()}`]}
-                  {q.correctAnswer === l && " ✓"}
-                </p>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function TabQuizEdits() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -260,11 +224,12 @@ function TabQuizEdits() {
     enabled: !!selectedQuiz,
   });
 
-  // When questions load, pre-populate editor with pending teacher questions (if any)
+  // Pre-populate editor: pending questions if exist, otherwise official questions
   useEffect(() => {
     if (!existingQs || questionsLoaded) return;
-    if (existingQs.pending.length > 0) {
-      setQuestions(existingQs.pending.map(q => ({
+    const source = existingQs.pending.length > 0 ? existingQs.pending : existingQs.official;
+    if (source.length > 0) {
+      setQuestions(source.map(q => ({
         questionText: q.questionText,
         optionA: q.optionA,
         optionB: q.optionB,
@@ -390,23 +355,25 @@ function TabQuizEdits() {
             <DialogTitle>Uredi kviz — {selectedQuiz?.bookTitle}</DialogTitle>
             <DialogDescription>
               {selectedQuiz?.teacherEditStatus === "pending"
-                ? "Vaš prijedlog čeka odobrenje. Možete ažurirati pitanja — nova lista zamjenjuje prethodnu."
-                : "Unesite 1–40 pitanja koja zamjenjuju trenutni sadržaj kviza. Admin odobrava i vaše ime se prikazuje ispod kviza."}
+                ? "Vaš prethodni prijedlog je učitan u editor. Izmijenite što želite i ponovo pošaljite."
+                : "Pitanja kviza su učitana u editor ispod. Izmijenite, dodajte ili obrišite pitanja pa pošaljite na pregled. Admin odobrava i vaše ime se prikazuje ispod kviza."}
             </DialogDescription>
           </DialogHeader>
 
-          {/* Existing official questions — collapsible read-only */}
+          {/* Info note */}
           {loadingQs ? (
-            <Skeleton className="h-10 w-full" />
-          ) : existingQs && existingQs.official.length > 0 ? (
-            <OfficialQuestionsPanel questions={existingQs.official} />
-          ) : null}
-
-          {/* Pending note */}
-          {existingQs && existingQs.pending.length > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800 flex items-start gap-2">
+            <Skeleton className="h-8 w-full" />
+          ) : existingQs && (
+            <div className={`rounded-lg border px-4 py-2 text-xs flex items-start gap-2 ${
+              existingQs.pending.length > 0
+                ? "border-amber-200 bg-amber-50 text-amber-800"
+                : "border-blue-200 bg-blue-50 text-blue-800"
+            }`}>
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>Vaš prethodni prijedlog ({existingQs.pending.length} pitanja) je učitan u editor ispod. Možete ga izmijeniti i ponovo poslati.</span>
+              {existingQs.pending.length > 0
+                ? <span>Učitan vaš prethodni prijedlog ({existingQs.pending.length} pitanja). Izmijenite i pošaljite ponovo.</span>
+                : <span>Učitana su sva pitanja kviza ({existingQs.official.length} pitanja). Izmijenite slobodno — originalna pitanja ostaju netaknuta dok admin ne odobri.</span>
+              }
             </div>
           )}
 
