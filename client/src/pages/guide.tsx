@@ -464,7 +464,7 @@ export default function GuidePage() {
                   { group: "R1", label: "1.–3. razred", points: "2 boda/pit.", color: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200", questions: "10 pitanja" },
                   { group: "R4", label: "4.–6. razred", points: "3 boda/pit.", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200", questions: "15 pitanja" },
                   { group: "R7", label: "7.–9. razred", points: "5 bodova/pit.", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200", questions: "20 pitanja" },
-                  { group: "O", label: "Omladina 15–18", points: "7 bodova/pit.", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200", questions: "20 pitanja" },
+                  { group: "O", label: "Srednješkolci 15–18", points: "7 bodova/pit.", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200", questions: "20 pitanja" },
                   { group: "A", label: "Odrasli 18+", points: "10 bodova/pit.", color: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200", questions: "20 pitanja" },
                 ].map(g => (
                   <div key={g.group} className={`p-4 rounded-xl text-center ${g.color}`}>
