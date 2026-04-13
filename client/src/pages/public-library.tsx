@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { BookOpen, Search, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight, Library } from "lucide-react";
+import { BookOpen, Search, Star, TrendingUp, Heart, Sparkles, ChevronLeft, ChevronRight, Library, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { Book, Genre } from "@shared/schema";
 import { BookCover } from "@/components/book-cover";
 import { AgeGroupBadge } from "@/components/age-group-badge";
@@ -22,7 +22,7 @@ const AGE_GROUPS = [
   { value: "R1", label: "Od 1. razreda" },
   { value: "R4", label: "Od 4. razreda" },
   { value: "R7", label: "Od 7. razreda" },
-  { value: "O", label: "Omladina" },
+  { value: "O", label: "Srednješkolci" },
   { value: "A", label: "Odrasli" },
 ];
 
@@ -58,6 +58,33 @@ function BookCard({ book }: { book: BookWithGenres }) {
   );
 }
 
+function BookListRow({ book }: { book: BookWithGenres }) {
+  const diffMap: Record<string, string> = { lako: "Lako", srednje: "Srednje", tesko: "Teško" };
+  return (
+    <Link href={`/knjiga/${book.id}`} data-testid={`link-book-list-${book.id}`}>
+      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors border-b last:border-0 group">
+        <div className="w-10 h-14 shrink-0 rounded overflow-hidden bg-muted">
+          <BookCover title={book.title} author={book.author} ageGroup={book.ageGroup} coverImage={book.coverImage} />
+        </div>
+        <div className="flex-1 min-w-0 grid grid-cols-[1fr_160px_80px_100px_80px] gap-2 items-center">
+          <div className="min-w-0">
+            <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors" data-testid={`text-list-title-${book.id}`}>{book.title}</p>
+            {book.pdfUrl && <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">PDF</span>}
+          </div>
+          <p className="text-sm text-muted-foreground truncate" data-testid={`text-list-author-${book.id}`}>{book.author}</p>
+          <div><AgeGroupBadge ageGroup={book.ageGroup} size="sm" /></div>
+          <p className="text-xs text-muted-foreground truncate">
+            {book.genres && book.genres.length > 0 ? book.genres[0].name : book.genre || "—"}
+          </p>
+          <p className="text-xs text-muted-foreground">{diffMap[book.readingDifficulty || ""] || "—"}</p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+type SortKey = "title" | "author" | "ageGroup" | "genre" | "readingDifficulty";
+
 const BOOKS_PER_PAGE = 20;
 
 type TabType = "biblioteka" | "preporuke" | "prijedlog";
@@ -70,6 +97,9 @@ export default function PublicLibrary() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState<"poster" | "list">("poster");
+  const [sortBy, setSortBy] = useState<SortKey>("title");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const { data: books, isLoading } = useQuery<BookWithGenres[]>({
     queryKey: ["/api/books"],
@@ -105,8 +135,22 @@ export default function PublicLibrary() {
     })).filter(r => r.books.length > 0);
   }, [books, allGenres]);
 
+  const AGE_ORDER: Record<string, number> = { R1: 1, R4: 2, R7: 3, O: 4, A: 5 };
+  const DIFF_ORDER: Record<string, number> = { lako: 1, srednje: 2, tesko: 3 };
+
+  function getBookSortValue(b: BookWithGenres, key: SortKey): string {
+    switch (key) {
+      case "title": return b.title?.toLowerCase() ?? "";
+      case "author": return b.author?.toLowerCase() ?? "";
+      case "ageGroup": return String(AGE_ORDER[b.ageGroup] ?? 9);
+      case "genre": return (b.genres?.[0]?.name ?? b.genre ?? "").toLowerCase();
+      case "readingDifficulty": return String(DIFF_ORDER[b.readingDifficulty ?? ""] ?? 9);
+      default: return "";
+    }
+  }
+
   const filtered = useMemo(() => {
-    return books?.filter((b) => {
+    const result = books?.filter((b) => {
       const matchSearch =
         b.title.toLowerCase().includes(search.toLowerCase()) ||
         b.author.toLowerCase().includes(search.toLowerCase());
@@ -116,13 +160,34 @@ export default function PublicLibrary() {
       const matchLanguage = selectedLanguage === "all" || (b.language || "bosanski") === selectedLanguage;
       return matchSearch && matchGenre && matchAge && matchDifficulty && matchLanguage;
     });
-  }, [books, search, selectedGenre, selectedAge, selectedDifficulty, selectedLanguage]);
+    if (!result) return result;
+    return [...result].sort((a, b) => {
+      const av = getBookSortValue(a, sortBy);
+      const bv = getBookSortValue(b, sortBy);
+      return sortDir === "asc" ? av.localeCompare(bv, "bs") : bv.localeCompare(av, "bs");
+    });
+  }, [books, search, selectedGenre, selectedAge, selectedDifficulty, selectedLanguage, sortBy, sortDir]);
 
   const totalPages = filtered ? Math.ceil(filtered.length / BOOKS_PER_PAGE) : 0;
   const paginatedBooks = filtered?.slice((currentPage - 1) * BOOKS_PER_PAGE, currentPage * BOOKS_PER_PAGE);
 
   function handleFilterChange() {
     setCurrentPage(1);
+  }
+
+  function handleSort(key: SortKey) {
+    if (sortBy === key) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  }
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortBy !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />;
   }
 
   const hasActiveFilters = search || selectedGenre !== "all" || selectedAge !== "all" || selectedDifficulty !== "all" || selectedLanguage !== "all";
@@ -321,6 +386,29 @@ export default function PublicLibrary() {
                       data-testid="input-search-books"
                     />
                   </div>
+                  {/* View mode toggle */}
+                  <div className="flex items-center gap-1 border rounded-lg p-0.5 self-start">
+                    <button
+                      onClick={() => setViewMode("poster")}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        viewMode === "poster" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      data-testid="button-view-poster"
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                      Posteri
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      data-testid="button-view-list"
+                    >
+                      <List className="h-3.5 w-3.5" />
+                      Spisak
+                    </button>
+                  </div>
                   <div className="flex gap-2 lg:hidden">
                     <Select value={selectedGenre} onValueChange={(v) => { setSelectedGenre(v); handleFilterChange(); }}>
                       <SelectTrigger className="w-[140px]" data-testid="select-filter-genre">
@@ -375,17 +463,21 @@ export default function PublicLibrary() {
                 </div>
 
                 {isLoading ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                      <Card key={i}>
-                        <CardContent className="p-3 space-y-2">
-                          <Skeleton className="aspect-[2/3] w-full rounded-md" />
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-3 w-1/2" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                  viewMode === "poster" ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                        <Card key={i}>
+                          <CardContent className="p-3 space-y-2">
+                            <Skeleton className="aspect-[2/3] w-full rounded-md" />
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 w-full" />)}</div>
+                  )
                 ) : !filtered || filtered.length === 0 ? (
                   <div className="text-center py-16">
                     <BookOpen className="mx-auto mb-4 text-muted-foreground" />
@@ -412,11 +504,42 @@ export default function PublicLibrary() {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {paginatedBooks?.map((book) => (
-                        <BookCard key={book.id} book={book} />
-                      ))}
-                    </div>
+                    {viewMode === "poster" ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {paginatedBooks?.map((book) => (
+                          <BookCard key={book.id} book={book} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="border rounded-lg overflow-hidden">
+                        {/* Sortable column headers */}
+                        <div className="flex items-center gap-3 px-3 py-2 bg-muted/50 border-b text-xs font-medium text-muted-foreground">
+                          <div className="w-10 shrink-0" />
+                          <div className="flex-1 min-w-0 grid grid-cols-[1fr_160px_80px_100px_80px] gap-2">
+                            {([
+                              { key: "title" as SortKey, label: "Naslov" },
+                              { key: "author" as SortKey, label: "Autor" },
+                              { key: "ageGroup" as SortKey, label: "Dob" },
+                              { key: "genre" as SortKey, label: "Žanr" },
+                              { key: "readingDifficulty" as SortKey, label: "Težina" },
+                            ]).map(col => (
+                              <button
+                                key={col.key}
+                                onClick={() => handleSort(col.key)}
+                                className="flex items-center gap-1 hover:text-foreground transition-colors text-left"
+                                data-testid={`button-sort-${col.key}`}
+                              >
+                                {col.label}
+                                <SortIcon col={col.key} />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {paginatedBooks?.map((book) => (
+                          <BookListRow key={book.id} book={book} />
+                        ))}
+                      </div>
+                    )}
                     {totalPages > 1 && (
                       <div className="flex items-center justify-center gap-2 pt-8">
                         <Button
