@@ -13,7 +13,7 @@ export const AGE_LABELS: Record<string, string> = {
   R1: "Od 1. razreda",
   R4: "Od 4. razreda",
   R7: "Od 7. razreda",
-  O: "Omladina",
+  O: "Srednješkolci",
   A: "Odrasli",
 };
 
