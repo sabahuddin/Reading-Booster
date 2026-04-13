@@ -758,7 +758,7 @@ export default function TeacherStudents() {
                             <SelectItem value="R1">R1 — 1.–3. razred (6–9 god)</SelectItem>
                             <SelectItem value="R4">R4 — 4.–6. razred (10–12 god)</SelectItem>
                             <SelectItem value="R7">R7 — 7.–9. razred (13–15 god)</SelectItem>
-                            <SelectItem value="O">O — Omladina (15–18 god)</SelectItem>
+                            <SelectItem value="O">O — Srednješkolci (15–18 god)</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
