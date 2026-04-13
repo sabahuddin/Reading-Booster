@@ -41,7 +41,7 @@ const ageGroupLabels: Record<string, string> = {
   R1: "Od 1. razreda (6-9 god.)",
   R4: "Od 4. razreda (10-12 god.)",
   R7: "Od 7. razreda (13-15 god.)",
-  O: "Omladina (15-18 god.)",
+  O: "Srednješkolci (15-18 god.)",
   A: "Odrasli (18+)",
 };
 
@@ -342,7 +342,7 @@ export default function ParentDashboard() {
                       <SelectItem value="R1">Od 1. razreda (6-9 god.)</SelectItem>
                       <SelectItem value="R4">Od 4. razreda (10-12 god.)</SelectItem>
                       <SelectItem value="R7">Od 7. razreda (13-15 god.)</SelectItem>
-                      <SelectItem value="O">Omladina (15-18 god.)</SelectItem>
+                      <SelectItem value="O">Srednješkolci (15-18 god.)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
